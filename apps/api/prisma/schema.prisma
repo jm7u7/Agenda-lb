@@ -1,0 +1,956 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm, pgcrypto]
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum ModoReserva {
+  preferencia_opcional // Podología
+  sin_eleccion // Baropodometría
+  preferencia_obligatoria // Fisioterapia
+}
+
+enum EstadoCita {
+  agendada
+  confirmada
+  llego
+  en_atencion
+  completada
+  no_show
+  cancelada
+  reprogramada
+}
+
+// Rol de una cita dentro de un BLOQUE COMBINADO (profilaxis + servicio extra en el
+// mismo slot de 1 h). `PRINCIPAL` = el ancla (profilaxis, siempre); `SECUNDARIO` = el
+// extra. null en `Cita.slotRol` = cita individual (no pertenece a ningún bloque).
+enum SlotRol {
+  PRINCIPAL
+  SECUNDARIO
+}
+
+// Tipo de beneficio de una Promoción: precio fijo (S/ N), porcentaje de descuento (N%),
+// u OTRO (sin valor numérico, p. ej. campañas tipo "ARIE SCANNER 3D").
+enum TipoPromocion {
+  PRECIO_FIJO
+  PORCENTAJE
+  OTRO
+}
+
+// Canal de reserva configurable (de dónde viene el cliente). Administrable desde Herramientas:
+// se pueden agregar/quitar canales sin migración. `Cita.canal` guarda el `valor` (slug).
+model Canal {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  valor         String    @unique // slug estable que se guarda en la cita (ej. "tiktok")
+  etiqueta      String // texto visible (ej. "TikTok")
+  orden         Int       @default(0)
+  activo        Boolean   @default(true)
+  deletedAt     DateTime?
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  @@map("canales")
+}
+
+// Promoción configurable (administrable desde Herramientas). Una cita puede llevar una
+// promoción (FK `Cita.promocionId`). En un BLOQUE COMBINADO la promo aplica UNA sola vez y
+// vive solo en la cita PRINCIPAL (profilaxis) — ver `resolverCitaPortadora` en el backend.
+model Promocion {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre        String
+  descripcion   String?
+  tipo          TipoPromocion @default(OTRO)
+  valor         Decimal?      @db.Decimal(10, 2) // S/ (PRECIO_FIJO) o % (PORCENTAJE); null en OTRO
+  activo        Boolean       @default(true)
+  orden         Int           @default(0)
+  deletedAt     DateTime?
+  creadoEn      DateTime      @default(now())
+  actualizadoEn DateTime      @updatedAt
+
+  citas Cita[]
+
+  // Único por nombre mientras viva: índice único PARCIAL (WHERE deletedAt IS NULL) en la
+  // migración — `promociones_nombre_unico`.
+  @@map("promociones")
+}
+
+enum OrigenAsignacion {
+  elegida_por_paciente
+  asignada_automaticamente
+}
+
+enum TipoProfesional {
+  podologa
+  medico
+  fisioterapeuta
+}
+
+enum TurnoHorario {
+  manana
+  tarde
+  completo
+}
+
+enum TipoBloqueo {
+  ALMUERZO
+  CAPACITACION
+  PERMISO
+  OTRO
+}
+
+enum MotivoMovimiento {
+  VACACIONES
+  CAMBIO_POR_TIEMPO
+  CERCANIA_A_CASA
+  PROBLEMAS_INTERNOS
+  COBERTURA_EMERGENCIA
+  OTRO
+}
+
+enum TipoDocumento {
+  DNI
+  CE
+  PASAPORTE
+  RUC
+}
+
+enum Sexo {
+  masculino
+  femenino
+  otro
+}
+
+// Estado de la confirmación por correo (independiente del ciclo de vida EstadoCita).
+enum EstadoConfirmacion {
+  pendiente
+  confirmada
+  cancelada
+}
+
+// ─── Sede ─────────────────────────────────────────────────────────────────────
+
+model Sede {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre    String    @unique
+  direccion String
+  color     String    @default("#3B82F6")
+  activa    Boolean   @default(true)
+  deletedAt DateTime?
+
+  // Horario por día de semana (JSON: {lunes: {apertura: "08:00", cierre: "20:00"}, ...})
+  horario Json @default("{}")
+
+  unidadesNegocio SedeUnidadNegocio[]
+  asignaciones    AsignacionSede[]
+  citas           Cita[]
+  usuarios        UsuarioSede[]
+  webhookSubs     WebhookSubscription[]
+  excepciones     ExcepcionHorario[]
+  agregados       AgregadoDiario[]
+  notificaciones  NotificacionSede[]
+  bloqueos        BloqueoAgenda[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("sedes")
+}
+
+// ─── Excepción de horario (cierres especiales, aperturas dominicales, etc.) ───
+
+model ExcepcionHorario {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sedeId       String   @db.Uuid
+  sede         Sede     @relation(fields: [sedeId], references: [id])
+  fecha        DateTime @db.Date
+  abierto      Boolean  @default(true)
+  horaApertura String?
+  horaCierre   String?
+  nota         String?
+  creadoEn     DateTime @default(now())
+
+  @@unique([sedeId, fecha])
+  @@map("excepciones_horario")
+}
+
+// ─── UnidadNegocio ────────────────────────────────────────────────────────────
+
+model UnidadNegocio {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre      String      @unique
+  modoReserva ModoReserva
+  color       String      @default("#6366F1")
+  activa      Boolean     @default(true)
+  deletedAt   DateTime?
+
+  sedes         SedeUnidadNegocio[]
+  profesionales Profesional[]
+  servicios     Servicio[]
+  citas         Cita[]
+  agregados     AgregadoDiario[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("unidades_negocio")
+}
+
+// ─── Relación Sede ↔ UnidadNegocio ───────────────────────────────────────────
+
+model SedeUnidadNegocio {
+  sedeId          String @db.Uuid
+  unidadNegocioId String @db.Uuid
+
+  sede          Sede          @relation(fields: [sedeId], references: [id])
+  unidadNegocio UnidadNegocio @relation(fields: [unidadNegocioId], references: [id])
+
+  @@id([sedeId, unidadNegocioId])
+  @@map("sede_unidad_negocio")
+}
+
+// ─── Profesional ──────────────────────────────────────────────────────────────
+
+model Profesional {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombres          String
+  apellidos        String
+  tipo             TipoProfesional
+  unidadNegocioId  String          @db.Uuid
+  colorAvatar      String          @default("#6B7F9E")
+  activo           Boolean         @default(true)
+  // "Solo por solicitud": nunca se auto-asigna ni aparece como columna fija en la agenda;
+  // solo es seleccionable al reservar (médicos de baropodometría y Daniel Doy) y su columna
+  // aparece únicamente el día que tiene citas. Puede atender en cualquier sede.
+  soloPorSolicitud Boolean         @default(false)
+  deletedAt        DateTime?
+
+  unidadNegocio    UnidadNegocio            @relation(fields: [unidadNegocioId], references: [id])
+  asignaciones     AsignacionSede[]         @relation("AsignacionProfesional")
+  reemplazado      AsignacionSede[]         @relation("Reemplazos")
+  horarios         HorarioProfesional[]
+  bloqueos         BloqueoAgenda[]
+  competencias     CompetenciaProfesional[]
+  citas            Cita[]                   @relation("CitaProfesional")
+  citasSolicitadas Cita[]                   @relation("CitaSolicitado")
+  agregados        AgregadoDiario[]
+  entradas         EntradaPodologa[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([activo])
+  @@map("profesionales")
+}
+
+// ─── AsignacionSede ───────────────────────────────────────────────────────────
+
+model AsignacionSede {
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId String           @db.Uuid
+  sedeId        String           @db.Uuid
+  fechaInicio   DateTime         @db.Date
+  fechaFin      DateTime?        @db.Date
+  activa        Boolean          @default(true)
+  motivo        MotivoMovimiento @default(OTRO)
+  reemplazaA    String?          @db.Uuid
+  notas         String?
+  creadoPor     String?          @db.Uuid
+
+  // Para deshacer un movimiento con exactitud: qué asignación previa cerró este
+  // movimiento y cuál era su fechaFin original (null = era indefinida). Al eliminar
+  // el movimiento se restaura esa asignación a su estado exacto.
+  cierraAsignacionId String?   @db.Uuid
+  cierraFechaFin     DateTime? @db.Date
+
+  profesional          Profesional  @relation("AsignacionProfesional", fields: [profesionalId], references: [id])
+  sede                 Sede         @relation(fields: [sedeId], references: [id])
+  reemplazaProfesional Profesional? @relation("Reemplazos", fields: [reemplazaA], references: [id])
+  creadoPorUsuario     Usuario?     @relation(fields: [creadoPor], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([profesionalId, activa])
+  @@index([sedeId, activa])
+  @@index([fechaInicio, fechaFin])
+  @@map("asignaciones_sede")
+}
+
+// ─── HorarioProfesional ───────────────────────────────────────────────────────
+
+model HorarioProfesional {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId String       @db.Uuid
+  diaSemana     Int // 0=Dom, 1=Lun, ..., 6=Sab
+  horaInicio    String // "HH:mm"
+  horaFin       String
+  turno         TurnoHorario @default(completo)
+  activo        Boolean      @default(true)
+
+  profesional Profesional @relation(fields: [profesionalId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@unique([profesionalId, diaSemana])
+  @@map("horarios_profesional")
+}
+
+// ─── EntradaPodologa ──────────────────────────────────────────────────────────
+// Hora de entrada (08:00/09:00) específica de una FECHA, gestionada por la
+// Coordinadora de Sedes semana a semana. Sobrescribe la entrada base de
+// HorarioProfesional para ese día. Si no hay fila para una fecha, se usa la base.
+model EntradaPodologa {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId String   @db.Uuid
+  fecha         DateTime @db.Date
+  horaInicio    String // "08:00" | "09:00"
+  creadoPor     String?  @db.Uuid
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  profesional Profesional @relation(fields: [profesionalId], references: [id])
+
+  @@unique([profesionalId, fecha])
+  @@index([fecha])
+  @@map("entradas_podologa")
+}
+
+// ─── BloqueoAgenda ────────────────────────────────────────────────────────────
+
+model BloqueoAgenda {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId String    @db.Uuid
+  fechaInicio   DateTime
+  fechaFin      DateTime
+  motivo        String
+  deletedAt     DateTime?
+
+  // Campos para almuerzos y bloqueos recurrentes
+  sedeId       String?     @db.Uuid
+  tipo         TipoBloqueo @default(OTRO)
+  esRecurrente Boolean     @default(false)
+  // Reunión administrativa de Daniel/Yasica: se pinta VERDE en la agenda (vs rojo del permiso).
+  esReunion    Boolean     @default(false)
+  // Sincronización con el calendario del celular del profesional (reuniones): id del evento
+  // Outlook (Daniel) para update/cancel; último error de sync (null = OK) para el reintentador.
+  outlookEventId   String?
+  outlookSyncError String?
+  horaInicio   String? // "HH:MM" — para bloqueos recurrentes de almuerzo
+  horaFin      String? // "HH:MM" — calculado al crear
+  duracionMin  Int         @default(60)
+  creadoPor    String?     @db.Uuid
+
+  profesional      Profesional @relation(fields: [profesionalId], references: [id])
+  sede             Sede?       @relation(fields: [sedeId], references: [id])
+  creadoPorUsuario Usuario?    @relation(fields: [creadoPor], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([profesionalId, fechaInicio, fechaFin])
+  @@index([sedeId, tipo, esRecurrente])
+  @@map("bloqueos_agenda")
+}
+
+// ─── Servicio ─────────────────────────────────────────────────────────────────
+
+model Servicio {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre            String
+  codigo            String    @unique
+  duracionMinutos   Int       @default(30)
+  color             String    @default("#6B7F9E")
+  precioReferencial Decimal?  @db.Decimal(10, 2)
+  unidadNegocioId   String    @db.Uuid
+  activo            Boolean   @default(true)
+  // Orden manual dentro de su unidad (0 = sin orden → alfabético). Sirve para listas
+  // como "Promociones", que deben mostrarse en una secuencia específica, no alfabética.
+  orden             Int       @default(0)
+  deletedAt         DateTime?
+
+  unidadNegocio UnidadNegocio            @relation(fields: [unidadNegocioId], references: [id])
+  competencias  CompetenciaProfesional[]
+  citas         Cita[]
+  paquetes      Paquete[]
+  agregados     AgregadoDiario[]
+  combinaciones CombinacionPermitida[]
+  anclaDe       ConfiguracionSistema[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([unidadNegocioId, activo])
+  @@map("servicios")
+}
+
+// ─── CombinacionPermitida ─────────────────────────────────────────────────────
+// Servicios que pueden combinarse como EXTRA de una profilaxis (el ancla es siempre
+// la profilaxis, así que basta una lista unidireccional de "extras permitidos").
+// Configurable desde Herramientas (NO hardcodear cruces). Soft-delete + AuditLog.
+model CombinacionPermitida {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  servicioExtraId String    @db.Uuid
+  activo          Boolean   @default(true)
+  deletedAt       DateTime?
+
+  servicio Servicio @relation(fields: [servicioExtraId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // Único por servicio mientras no esté borrado: refuerzo vía índice único PARCIAL
+  // (WHERE deletedAt IS NULL) creado en la migración — `combinaciones_servicio_unico`.
+  @@index([servicioExtraId])
+  @@map("combinaciones_permitidas")
+}
+
+// ─── ConfiguracionSistema ─────────────────────────────────────────────────────
+// Configuración global de fila única (patrón MailConfig). Por ahora guarda el
+// servicio ANCLA para combinaciones (la profilaxis), elegido desde Herramientas.
+// Extensible a futuras configuraciones globales.
+model ConfiguracionSistema {
+  id              String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  servicioAnclaId String? @db.Uuid
+
+  servicioAncla Servicio? @relation(fields: [servicioAnclaId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("configuracion_sistema")
+}
+
+// ─── CompetenciaProfesional ───────────────────────────────────────────────────
+
+model CompetenciaProfesional {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId    String   @db.Uuid
+  servicioId       String   @db.Uuid
+  habilitadoDesde  DateTime @db.Date
+  activa           Boolean  @default(true)
+  // "Solo por solicitud" a nivel de COMPETENCIA: este profesional realiza este servicio solo
+  // cuando el paciente lo pide (no se auto-asigna, no es columna fija; aparece como opción al
+  // reservar y como columna solo el día que tiene cita). Ej.: Daniel hace baropodometría solo
+  // por solicitud, pero su podología es normal (columna fija en su sede).
+  soloPorSolicitud Boolean  @default(false)
+
+  profesional Profesional @relation(fields: [profesionalId], references: [id])
+  servicio    Servicio    @relation(fields: [servicioId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@unique([profesionalId, servicioId])
+  @@index([servicioId, activa])
+  @@map("competencias_profesional")
+}
+
+// ─── Paciente ─────────────────────────────────────────────────────────────────
+
+model Paciente {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombres         String
+  apellidoPaterno String
+  apellidoMaterno String
+  tipoDocumento   TipoDocumento @default(DNI)
+  numeroDocumento String
+  fechaNacimiento DateTime?     @db.Date
+  sexo            Sexo?
+  telefono        String
+  email           String?
+  notas           String?
+  deletedAt       DateTime?
+
+  citas    Cita[]
+  paquetes PaquetePaciente[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // Índices para búsqueda rápida
+  @@index([numeroDocumento])
+  @@index([telefono])
+  // GIN trigram indexes are created via raw SQL in migration
+  @@map("pacientes")
+}
+
+// ─── Cita ─────────────────────────────────────────────────────────────────────
+
+model Cita {
+  id                      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId              String            @db.Uuid
+  profesionalId           String?           @db.Uuid // null en Baropodometría hasta asignación
+  solicitadoProfesionalId String?           @db.Uuid // médico pedido "Solo X" (baro): la cita va en una máquina
+  sedeId                  String            @db.Uuid
+  unidadNegocioId         String            @db.Uuid
+  servicioId              String            @db.Uuid
+  fecha                   DateTime          @db.Date
+  horaInicio              String // "HH:mm"
+  duracionMinutos         Int
+  estado                  EstadoCita        @default(agendada)
+  // Momento en que se marcó "Llegó" (ancla para el auto-completado por tiempo: 90 min después
+  // pasa a 'completada' automáticamente). Se reinicia si se revierte una cita ya atendida.
+  llegoEn                 DateTime?
+  canal                   String            @default("recepcion") // valor de un Canal configurable
+  origenAsignacion        OrigenAsignacion?
+  paquetePacienteId       String?           @db.Uuid
+  sesionNumero            Int?
+  // Marca si ESTA cita ya descontó una sesión del paquete. Hace idempotente el
+  // descuento/reembolso: una cita consume a lo sumo 1 sesión, sin importar
+  // cuántas veces se cambie su estado.
+  sesionConsumida         Boolean           @default(false)
+  motivoCancelacion       String?
+  consultorioNumero       Int?
+  citaOriginalId          String?           @db.Uuid // si esta cita es reprogramación de otra
+  deletedAt               DateTime?
+
+  // ─── Bloque combinado (profilaxis + servicio extra en el mismo slot de 1 h) ──
+  // null = cita individual. Si != null, esta cita pertenece a un bloque de 2 citas
+  // que comparten el mismo intervalo horario. `slotRol` distingue ancla vs extra.
+  slotGrupoId             String?           @db.Uuid
+  slotRol                 SlotRol?
+
+  // Promoción aplicada a la cita (opcional). En un bloque combinado vive SOLO en la cita
+  // PRINCIPAL (profilaxis); la SECUNDARIO lleva null. FK en Restrict (ver Promocion).
+  promocionId             String?           @db.Uuid
+
+  // Comprobante de pago anticipado (opcional)
+  comprobanteUrl       String?
+  comprobanteNombre    String?
+  comprobanteMimeType  String?
+  comprobanteSubidoPor String?   @db.Uuid
+  comprobanteSubidoEn  DateTime?
+
+  // Confirmación de cita por correo
+  estadoConfirmacion    EstadoConfirmacion @default(pendiente)
+  confirmacionToken     String? // JWT firmado con CONFIRM_TOKEN_SECRET
+  confirmacionEnviadaEn DateTime? // última vez que se envió el correo
+  confirmadaEn          DateTime? // cuándo el paciente confirmó desde el enlace
+
+  // Sincronización con Outlook Calendar (solo Yasica/Daniel Doy vía Microsoft Graph)
+  outlookEventId   String? // id del evento en el buzón del profesional (para update/cancel)
+  outlookSyncError String? // último error de sincronización (null si OK) — para reintento
+
+  // Quién hizo la reserva (usuario del sistema que la creó) — se llena en cada nueva cita.
+  creadoPorUsuarioId String? @db.Uuid
+
+  // Clave de idempotencia (para no duplicar al reintentar). NO se muestra; va en su propio campo
+  // (antes se metía dentro del comentario como [IK:...] y se filtraba a la vista).
+  idempotencyKey String?
+
+  paciente              Paciente           @relation(fields: [pacienteId], references: [id])
+  creadoPorUsuario      Usuario?           @relation("CitasCreadas", fields: [creadoPorUsuarioId], references: [id])
+  profesional           Profesional?       @relation("CitaProfesional", fields: [profesionalId], references: [id])
+  solicitadoProfesional Profesional?       @relation("CitaSolicitado", fields: [solicitadoProfesionalId], references: [id])
+  sede                  Sede               @relation(fields: [sedeId], references: [id])
+  unidadNegocio         UnidadNegocio      @relation(fields: [unidadNegocioId], references: [id])
+  servicio              Servicio           @relation(fields: [servicioId], references: [id])
+  paquetePaciente       PaquetePaciente?   @relation(fields: [paquetePacienteId], references: [id])
+  promocion             Promocion?         @relation(fields: [promocionId], references: [id], onDelete: Restrict)
+  citaOriginal          Cita?              @relation("Reprogramacion", fields: [citaOriginalId], references: [id])
+  reprogramaciones      Cita[]             @relation("Reprogramacion")
+  auditLogs             AuditLog[]
+  recordatorios         RecordatorioCita[]
+  tokensAccion          TokenAccionCita[]
+  comentarios           ComentarioCita[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // Anti double-booking: índice único PARCIAL (solo citas activas) creado vía SQL
+  // crudo en una migración/seed — ver `citas_slot_activo_unique`. Excluye estados
+  // cancelada/no_show/reprogramada y soft-deleted, para que al cancelar una cita su
+  // slot quede libre para reservar de nuevo (sin perder la cita del historial).
+  @@index([idempotencyKey])
+  @@index([sedeId, fecha])
+  @@index([profesionalId, fecha])
+  @@index([pacienteId])
+  @@index([promocionId])
+  @@index([estado])
+  @@index([unidadNegocioId, fecha])
+  @@index([slotGrupoId])
+  @@map("citas")
+}
+
+// ─── ComentarioCita (hilo APPEND-ONLY) ───────────────────────────────────────
+// Cada comentario es una ENTRADA inmutable del hilo de la cita. No se edita ni se
+// borra físicamente (solo `deletedAt` para ocultar). Dos usuarios comentando a la
+// vez generan dos entradas independientes → imposible pisarse (sin last-write-wins).
+// `autorEtiqueta` guarda el nombre del autor al momento de escribir (snapshot), para
+// que el hilo sea legible aunque el Usuario se borre o sea un autor legacy/sistema.
+model ComentarioCita {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  citaId        String    @db.Uuid
+  autorId       String?   @db.Uuid // Usuario que escribió (null = legacy/sistema)
+  autorEtiqueta String? // nombre mostrado, capturado al escribir (ej. "Recepción (legacy)")
+  texto         String
+  creadoEn      DateTime  @default(now())
+  deletedAt     DateTime?
+
+  cita  Cita     @relation(fields: [citaId], references: [id], onDelete: Restrict)
+  autor Usuario? @relation(fields: [autorId], references: [id], onDelete: SetNull)
+
+  @@index([citaId, creadoEn])
+  @@map("comentarios_cita")
+}
+
+// ─── Paquete (plantilla) ──────────────────────────────────────────────────────
+
+model Paquete {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre        String
+  servicioId    String    @db.Uuid
+  totalSesiones Int
+  consumeNoShow Boolean   @default(false)
+  precio        Decimal?  @db.Decimal(10, 2)
+  activo        Boolean   @default(true)
+  deletedAt     DateTime?
+
+  servicio   Servicio          @relation(fields: [servicioId], references: [id])
+  instancias PaquetePaciente[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("paquetes")
+}
+
+// ─── PaquetePaciente (instancia) ──────────────────────────────────────────────
+
+model PaquetePaciente {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId     String    @db.Uuid
+  paqueteId      String    @db.Uuid
+  fechaCompra    DateTime  @db.Date
+  sesionesTotal  Int
+  sesionesUsadas Int       @default(0)
+  activo         Boolean   @default(true)
+  notas          String?
+  deletedAt      DateTime?
+
+  paciente Paciente @relation(fields: [pacienteId], references: [id])
+  paquete  Paquete  @relation(fields: [paqueteId], references: [id])
+  citas    Cita[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([pacienteId, activo])
+  @@map("paquetes_paciente")
+}
+
+// ─── Usuario ──────────────────────────────────────────────────────────────────
+
+model Usuario {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre       String
+  email        String    @unique
+  passwordHash String
+  rol          String    @default("recepcionista")
+  activo       Boolean   @default(true)
+  deletedAt    DateTime?
+
+  sedes                 UsuarioSede[]
+  apiKeys               ApiKey[]
+  auditLogs             AuditLog[]
+  asignacionesCreadas   AsignacionSede[]
+  notificacionesCreadas Notificacion[]
+  notificacionesVistas  NotificacionVista[]
+  bloqueosCreados       BloqueoAgenda[]
+  citasCreadas          Cita[]              @relation("CitasCreadas")
+  comentariosCita       ComentarioCita[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("usuarios")
+}
+
+// ─── Rol ──────────────────────────────────────────────────────────────────────
+
+model Rol {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre        String   @unique
+  label         String
+  descripcion   String?
+  permisos      String[]
+  esSistema     Boolean  @default(false)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("roles")
+}
+
+// ─── UsuarioSede ──────────────────────────────────────────────────────────────
+
+model UsuarioSede {
+  usuarioId String @db.Uuid
+  sedeId    String @db.Uuid
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  sede    Sede    @relation(fields: [sedeId], references: [id])
+
+  @@id([usuarioId, sedeId])
+  @@map("usuarios_sedes")
+}
+
+// ─── ApiKey ───────────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre    String
+  keyHash   String    @unique
+  scopes    String[] // ["availability:read", "appointments:write", "patients:read"]
+  usuarioId String?   @db.Uuid
+  activa    Boolean   @default(true)
+  ultimoUso DateTime?
+  deletedAt DateTime?
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("api_keys")
+}
+
+// ─── AuditLog ─────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  citaId    String? @db.Uuid
+  usuarioId String? @db.Uuid
+  accion    String // "crear", "mover", "cambiar_estado", "cancelar", "redistribuir"
+  entidad   String // "cita", "paciente", "profesional", etc.
+  entidadId String  @db.Uuid
+  antes     Json?
+  despues   Json?
+  sedeId    String? @db.Uuid
+  ip        String?
+  userAgent String?
+
+  cita    Cita?    @relation(fields: [citaId], references: [id])
+  usuario Usuario? @relation(fields: [usuarioId], references: [id])
+
+  creadoEn DateTime @default(now())
+
+  @@index([citaId])
+  @@index([usuarioId])
+  @@index([sedeId, creadoEn])
+  @@index([entidad, entidadId])
+  @@map("audit_logs")
+}
+
+// ─── WebhookSubscription ──────────────────────────────────────────────────────
+
+model WebhookSubscription {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre    String
+  url       String
+  secret    String
+  eventos   String[] // ["appointment.created", "appointment.cancelled", ...]
+  sedeId    String?   @db.Uuid // null = todas las sedes
+  activa    Boolean   @default(true)
+  deletedAt DateTime?
+
+  sede Sede? @relation(fields: [sedeId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("webhook_subscriptions")
+}
+
+// ─── WebhookLog ───────────────────────────────────────────────────────────────
+
+model WebhookLog {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subscriptionId String    @db.Uuid
+  evento         String
+  payload        Json
+  statusCode     Int?
+  respuesta      String?
+  intentos       Int       @default(1)
+  exitoso        Boolean   @default(false)
+  proximoIntento DateTime?
+
+  creadoEn DateTime @default(now())
+
+  @@index([subscriptionId, creadoEn])
+  @@map("webhook_logs")
+}
+
+// ─── AgregadoDiario ───────────────────────────────────────────────────────────
+// Una fila por combinación fecha + sede + unidadNegocio + profesional + servicio.
+// El job de agregación usa delete+insert en transacción — sin unique constraint
+// para evitar el problema NULL != NULL en PostgreSQL con profesionalId nullable.
+
+model AgregadoDiario {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  fecha           DateTime @db.Date
+  sedeId          String   @db.Uuid
+  unidadNegocioId String   @db.Uuid
+  profesionalId   String?  @db.Uuid
+  servicioId      String   @db.Uuid
+
+  // Contadores de estado
+  totalCitas  Int @default(0)
+  completadas Int @default(0)
+  noShow      Int @default(0)
+  canceladas  Int @default(0)
+  llegaron    Int @default(0)
+  agendadas   Int @default(0)
+  confirmadas Int @default(0)
+  enAtencion  Int @default(0)
+
+  // Minutos
+  minutosDisponibles Int @default(0) // sum(duracionMinutos) de todas
+  minutosAtendidos   Int @default(0) // sum(duracionMinutos) de completadas
+
+  // Origen asignación
+  citasElegidasPorPaciente Int @default(0)
+  citasAsignadasAuto       Int @default(0)
+
+  // Marca para re-agregar si hubo cambios en el día
+  sucio Boolean @default(false)
+
+  sede          Sede          @relation(fields: [sedeId], references: [id])
+  unidadNegocio UnidadNegocio @relation(fields: [unidadNegocioId], references: [id])
+  profesional   Profesional?  @relation(fields: [profesionalId], references: [id])
+  servicio      Servicio      @relation(fields: [servicioId], references: [id])
+
+  actualizadoEn DateTime @updatedAt
+
+  @@index([fecha, sedeId])
+  @@index([fecha, unidadNegocioId])
+  @@index([fecha, profesionalId])
+  @@index([fecha, sedeId, unidadNegocioId])
+  @@map("agregados_diarios")
+}
+
+// ─── Notificaciones ───────────────────────────────────────────────────────────
+
+model Notificacion {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mensaje       String   @db.VarChar(500)
+  creadoPor     String   @db.Uuid
+  creadoEn      DateTime @default(now())
+  activaDesde   DateTime @default(now())
+  activaHasta   DateTime
+  todasLasSedes Boolean  @default(true)
+
+  autor  Usuario             @relation(fields: [creadoPor], references: [id])
+  sedes  NotificacionSede[]
+  vistas NotificacionVista[]
+
+  @@map("notificaciones")
+}
+
+model NotificacionSede {
+  notificacionId String       @db.Uuid
+  sedeId         String       @db.Uuid
+  notificacion   Notificacion @relation(fields: [notificacionId], references: [id], onDelete: Cascade)
+  sede           Sede         @relation(fields: [sedeId], references: [id])
+
+  @@id([notificacionId, sedeId])
+  @@map("notificaciones_sede")
+}
+
+model NotificacionVista {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  notificacionId String       @db.Uuid
+  usuarioId      String       @db.Uuid
+  vistaEn        DateTime     @default(now())
+  notificacion   Notificacion @relation(fields: [notificacionId], references: [id], onDelete: Cascade)
+  usuario        Usuario      @relation(fields: [usuarioId], references: [id])
+
+  @@unique([notificacionId, usuarioId])
+  @@map("notificaciones_vista")
+}
+
+// ─── MailConfig ───────────────────────────────────────────────────────────────
+// Configuración del remitente de correos de confirmación. Solo una fila activa.
+// Las credenciales OAuth del cliente (CLIENT_ID/SECRET/REDIRECT_URI) viven en .env;
+// aquí se persiste el correo activo, el nombre a mostrar y el refresh token de la
+// cuenta autorizada — para poder cambiar de cuenta desde la UI sin redeploy.
+// El refreshToken NUNCA se devuelve por la API (ver routes/herramientas.ts).
+model MailConfig {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fromEmail     String // correo remitente (Gmail de prueba o @limablue)
+  fromName      String   @default("Limablue Podología")
+  provider      String   @default("gmail")
+  refreshToken  String? // token OAuth de larga duración (sensible)
+  isActive      Boolean  @default(true)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("mail_config")
+}
+
+// ─── Recordatorios de cita (confirmación masiva por correo) ───────────────────
+enum TipoRecordatorio {
+  RESERVA // Correo 1 — confirmación de reserva (inmediato)
+  RECORDATORIO // Correo 2 — recordatorio con acciones (cita − 2h / 1h / inmediato)
+}
+
+enum EstadoRecordatorio {
+  PROGRAMADO
+  ENVIADO
+  FALLIDO
+  CANCELADO
+}
+
+model RecordatorioCita {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  citaId             String             @db.Uuid
+  tipo               TipoRecordatorio
+  programadoPara     DateTime
+  estado             EstadoRecordatorio @default(PROGRAMADO)
+  intentos           Int                @default(0)
+  gmailMessageId     String?
+  enviadoAt          DateTime? // momento real de envío (para métricas de tiempo)
+  jobId              String? // id del job en BullMQ (para cancelar/reagendar)
+  clickConfirmarAt   DateTime?
+  clickReprogramarAt DateTime?
+  confirmadoAt       DateTime?
+  errorMensaje       String?
+  deletedAt          DateTime?
+
+  cita Cita @relation(fields: [citaId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([citaId])
+  @@index([estado, programadoPara])
+  @@index([programadoPara])
+  // Idempotencia "un recordatorio por cita+tipo" se refuerza con un índice único
+  // PARCIAL (solo no borrados) creado vía SQL crudo: recordatorios_cita_unico.
+  @@map("recordatorios_cita")
+}
+
+model TokenAccionCita {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token     String    @unique
+  citaId    String    @db.Uuid
+  accion    String // "confirmar" | "reprogramar"
+  expiraEn  DateTime
+  usadoAt   DateTime? // single-use: una vez usado, se rechaza
+  deletedAt DateTime?
+
+  cita Cita @relation(fields: [citaId], references: [id])
+
+  creadoEn DateTime @default(now())
+
+  @@index([citaId])
+  @@map("tokens_accion_cita")
+}

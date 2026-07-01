@@ -1,0 +1,24 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Crontab de backups — Limablue Agenda
+#
+# INSTALAR (en el servidor de producción):
+#   crontab -l > /tmp/cron.bak 2>/dev/null; cat scripts/limablue-backup.cron >> /tmp/cron.bak; crontab /tmp/cron.bak
+#   (o `crontab -e` y pegar las líneas de abajo, ajustando RUTA y BACKUP_OFFSITE_CMD)
+#
+# Requisitos: que el usuario del cron pueda ejecutar `docker` (o tenga pg_dump en PATH).
+# Ajusta RUTA_APP a la ruta real de apps/api en el servidor.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Variables (edítalas):
+RUTA_APP=/ruta/al/proyecto/apps/api
+# Destino OFF-SITE — descomenta y configura UNO:
+# BACKUP_OFFSITE_CMD=aws s3 cp {} s3://mi-bucket/limablue/
+# BACKUP_OFFSITE_CMD=rclone copy {} gdrive:limablue-backups
+# BACKUP_OFFSITE_CMD=cp {} /mnt/backup-externo/limablue/
+
+# Backup DIARIO a las 02:30 (retención 7 diarios + 4 semanales + 3 mensuales).
+30 2 * * * cd $RUTA_APP && /usr/bin/env bash scripts/backup-postgres.sh >> /var/log/limablue-backup.log 2>&1
+
+# Prueba de RESTAURACIÓN el día 1 de cada mes a las 03:30 (alerta si falla).
+# Encadena tu mecanismo de alerta tras el `||` (correo, Slack, etc.).
+30 3 1 * * cd $RUTA_APP && /usr/bin/env bash scripts/restore-test.sh >> /var/log/limablue-restore-test.log 2>&1 || echo "ALERTA: restore-test FALLÓ" | mail -s "Limablue backup restore FALLÓ" ops@limablue.pe

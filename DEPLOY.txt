@@ -1,0 +1,106 @@
+========================================================================
+ LIMABLUE AGENDA — Guía de despliegue / actualización (Docker)
+ Versión del proyecto: 1.0.0
+ Empaquetado: 2026-06-30
+========================================================================
+
+Sistema de agendamiento de citas (React + Vite / Node + Express + Prisma /
+PostgreSQL 16 + Redis 7). Monorepo npm workspaces: apps/web, apps/api,
+packages/shared.
+
+------------------------------------------------------------------------
+0) REQUISITOS
+------------------------------------------------------------------------
+- Docker + Docker Compose
+- Node.js 20+ y npm
+- Puertos libres: 5432 (Postgres), 6379 (Redis), 3002 (API), 5180 (Web)
+
+------------------------------------------------------------------------
+1) LEVANTAR BASE DE DATOS Y REDIS (Docker)
+------------------------------------------------------------------------
+Desde la raíz del proyecto:
+
+    docker compose up -d
+
+Esto crea/actualiza los contenedores:
+  - limablue_postgres  (postgres:16-alpine, DB "limablue_agenda", user "limablue")
+  - limablue_redis     (redis:7-alpine)
+
+Para ACTUALIZAR a una nueva versión de las imágenes de Docker:
+
+    docker compose pull        # baja las imágenes nuevas (postgres/redis)
+    docker compose up -d       # recrea los contenedores con la versión nueva
+    docker image prune -f      # (opcional) limpia imágenes viejas
+
+Los datos de Postgres persisten en el volumen "limablue_pg_data"
+(no se pierden al recrear el contenedor).
+
+------------------------------------------------------------------------
+2) VARIABLES DE ENTORNO
+------------------------------------------------------------------------
+Copia y completa el archivo de ejemplo del API:
+
+    cp apps/api/.env.example apps/api/.env
+    # edita apps/api/.env con: DATABASE_URL, REDIS_URL, JWT_SECRET,
+    #   CONFIRM_TOKEN_SECRET, credenciales Gmail/Azure, API_BASE_URL, APP_BASE_URL, etc.
+
+NOTA: los .env NO están en el repo (tienen secretos). Consíguelos aparte.
+
+------------------------------------------------------------------------
+3) INSTALAR DEPENDENCIAS
+------------------------------------------------------------------------
+    npm install        # instala todo el monorepo (node_modules NO viene en el repo)
+
+------------------------------------------------------------------------
+4) APLICAR MIGRACIONES (estructura de la BD)  ← IMPORTANTE
+------------------------------------------------------------------------
+La ESTRUCTURA de la base vive en apps/api/prisma/migrations/ (versionada).
+Para dejar la BD al día SIN perder datos:
+
+    npm run db:migrate:prod        # = prisma migrate deploy (SOLO aditivo)
+
+    # Verificar:
+    cd apps/api && npx prisma migrate status   # debe decir "up to date"
+
+NUNCA usar en producción: prisma migrate dev, migrate reset, ni db push.
+NUNCA correr el seed destructivo (FORCE_SEED) contra la base real.
+
+------------------------------------------------------------------------
+5) (OPCIONAL) RESTAURAR DATOS DESDE EL DUMP
+------------------------------------------------------------------------
+El archivo limablue_dump.sql (en la raíz, NO versionado en git por contener
+datos reales de pacientes) es un dump completo (estructura + datos) hecho con:
+
+    pg_dump -U limablue -d limablue_agenda --no-owner --clean --if-exists
+
+Para restaurarlo en un Postgres limpio (contenedor arriba):
+
+    docker exec -i limablue_postgres psql -U limablue -d limablue_agenda < limablue_dump.sql
+
+(El --clean/--if-exists reemplaza los objetos existentes. Úsalo con cuidado:
+ sobrescribe la base destino.)
+
+------------------------------------------------------------------------
+6) CORRER LA APP
+------------------------------------------------------------------------
+    npm run dev                    # API (3002) + Web (5180) en desarrollo
+    # o por separado:
+    npm run dev --workspace=apps/api
+    npm run dev --workspace=apps/web
+
+Web:  http://localhost:5180   (proxy /api -> http://localhost:3002)
+API:  http://localhost:3002   ·  Docs: http://localhost:3002/api/docs
+
+Login admin (dev):  admin@limablue.pe / Admin1234!
+
+------------------------------------------------------------------------
+7) FLUJO CORRECTO DE UNA NUEVA VERSIÓN (resumen)
+------------------------------------------------------------------------
+    git pull                       # traer el código nuevo
+    npm install                    # dependencias (si cambiaron)
+    docker compose up -d           # asegurar pg/redis arriba (y actualizados)
+    npm run db:migrate:prod        # aplicar migraciones nuevas (aditivas)
+    npm run build                  # (si aplica) compilar
+    # reiniciar el proceso del API/Web
+
+========================================================================

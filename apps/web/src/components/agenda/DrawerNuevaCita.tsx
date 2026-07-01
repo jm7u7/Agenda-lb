@@ -1,0 +1,956 @@
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { v4 as uuidv4 } from 'uuid';
+import { pacientesApi, serviciosApi, profesionalesApi, paquetesApi, disponibilidadApi, horariosApi } from '../../api';
+import { citasApi } from '../../api/citas';
+import { combinacionesApi } from '../../api/combinaciones';
+import { cn } from '../../utils/cn';
+import { format } from 'date-fns';
+import { useAuthStore } from '../../stores/authStore';
+import { horaInicioValidaParaDuracion } from '@limablue/shared';
+import { useCanales } from '../../hooks/useCanales';
+import { usePromociones } from '../../hooks/usePromociones';
+import { formatPromoValor } from '../../api/promociones';
+import { RomboAlerta, type AlertaPaciente } from '../pacientes/RomboAlerta';
+import { CuadroFamiliares, type FamiliarPaciente } from '../pacientes/CuadroFamiliares';
+
+const toTitleCase = (str: string) =>
+  str.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+
+interface DrawerNuevaCitaProps {
+  sedeId: string;
+  unidadNegocioId: string;
+  modoReserva: string;
+  fecha: Date;
+  horaInicio?: string;
+  profesionalId?: string;
+  onClose: () => void;
+}
+
+interface ComprobanteInfo {
+  url: string;
+  nombre: string;
+  mimeType: string;
+}
+
+export function DrawerNuevaCita({
+  sedeId, unidadNegocioId, modoReserva, fecha, horaInicio, profesionalId: profIdInicial, onClose,
+}: DrawerNuevaCitaProps) {
+  const qc = useQueryClient();
+  const token = useAuthStore(s => s.token);
+  // Flujo paciente: elegir → existente | nuevo → seleccionado
+  const [fechaLocal, setFechaLocal] = useState<Date>(fecha);
+  const [pasoPaciente, setPasoPaciente] = useState<'elegir' | 'existente' | 'nuevo'>('elegir');
+  const [modoBusqueda, setModoBusqueda] = useState<'documento' | 'nombre'>('documento');
+  const [pacienteQuery, setPacienteQuery] = useState('');
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState<{ id: string; nombreCompleto: string; telefono: string; alerta?: AlertaPaciente | null; familiares?: FamiliarPaciente[] | null } | null>(null);
+  const [servicioId, setServicioId] = useState('');
+  // Paquete: "" = cita normal · "inst:<id>" = sesión de un paquete activo · "tpl:<id>" = activar paquete nuevo
+  const [paqueteSel, setPaqueteSel] = useState('');
+  const [profesionalId, setProfesionalId] = useState(profIdInicial ?? '');
+  const [hora, setHora] = useState(horaInicio ?? '08:00');
+  const [canal, setCanal] = useState('recepcion'); // de dónde viene el cliente
+  const { canales: canalesOpts } = useCanales();
+  const [promocionId, setPromocionId] = useState(''); // '' = sin promoción
+  const { promociones } = usePromociones();
+  const [comentario, setComentario] = useState('');
+
+  // ── Bloque combinado (profilaxis + servicio extra en el mismo turno) ──
+  const [combinar, setCombinar] = useState(false);
+  const [extraServicioId, setExtraServicioId] = useState('');
+  const [extraProfesionalId, setExtraProfesionalId] = useState(''); // '' = misma profesional del ancla
+  const [extraPaqueteSel, setExtraPaqueteSel] = useState('');
+
+  // Comprobante de pago
+  const [comprobante, setComprobante] = useState<ComprobanteInfo | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [errorSubida, setErrorSubida] = useState<string | null>(null);
+  const inputFileRef = useRef<HTMLInputElement>(null);
+
+  // Nuevo paciente — datos completos
+  const [npNombres, setNpNombres] = useState('');
+  const [npApellidoPat, setNpApellidoPat] = useState('');
+  const [npApellidoMat, setNpApellidoMat] = useState('');
+  const [npTipoDoc, setNpTipoDoc] = useState<'DNI' | 'CE' | 'PASAPORTE'>('DNI');
+  const [npNumDoc, setNpNumDoc] = useState('');
+  const [npTel, setNpTel] = useState('');
+  const [npEmail, setNpEmail] = useState('');
+  const [npFechaNac, setNpFechaNac] = useState('');
+
+  // Idempotencia: UNA sola key por apertura del drawer (no por intento). Así un
+  // doble-clic o un reintento NO crean dos citas — el backend devuelve la existente.
+  // El drawer se desmonta al cerrar, por lo que la próxima reserva tendrá su key.
+  const idempotencyKeyRef = useRef(uuidv4());
+
+  const resetPaciente = () => {
+    setPasoPaciente('elegir');
+    setModoBusqueda('documento');
+    setPacienteQuery('');
+    setPacienteSeleccionado(null);
+    setPaqueteSel('');
+  };
+
+  const fechaStr = format(fechaLocal, 'yyyy-MM-dd');
+
+  const subirComprobante = useCallback(async (file: File) => {
+    setSubiendo(true);
+    setErrorSubida(null);
+    const form = new FormData();
+    form.append('comprobante', file);
+    try {
+      const res = await fetch('/api/v1/citas/upload-comprobante', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      if (!res.ok) throw new Error('Error al subir el archivo');
+      const data = await res.json();
+      setComprobante({ url: data.url, nombre: data.nombre, mimeType: data.mimeType });
+    } catch {
+      setErrorSubida('No se pudo subir el comprobante. Intenta de nuevo.');
+    } finally {
+      setSubiendo(false);
+    }
+  }, [token]);
+
+  // Pegar desde portapapeles
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items ?? []);
+      const imagen = items.find(i => i.type.startsWith('image/'));
+      if (imagen) {
+        const file = imagen.getAsFile();
+        if (file) subirComprobante(file);
+      }
+    };
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [subirComprobante]);
+
+  const { data: pacientesSugeridos } = useQuery({
+    queryKey: ['buscar-pacientes', pacienteQuery],
+    queryFn: () => pacientesApi.buscar(pacienteQuery),
+    enabled: pacienteQuery.length >= 2,
+  });
+
+  const { data: servicios } = useQuery({
+    queryKey: ['servicios', unidadNegocioId],
+    queryFn: () => serviciosApi.listar({ unidadNegocioId, activo: true }),
+  });
+
+  // ── Config de bloques combinados: servicio ancla + extras permitidos (activos) ──
+  const { data: configCombi } = useQuery({
+    queryKey: ['combinaciones-config'],
+    queryFn: () => combinacionesApi.config(),
+  });
+  // El toggle "Combinar" solo aparece si hay ancla configurada y el servicio elegido ES el ancla.
+  const esServicioAncla = !!configCombi?.servicioAnclaId && servicioId === configCombi.servicioAnclaId;
+  const combinablesActivos = configCombi?.combinables ?? [];
+  // Al apagar el toggle o cambiar de servicio, limpiar la selección del extra.
+  useEffect(() => {
+    if (!esServicioAncla) { setCombinar(false); setExtraServicioId(''); setExtraProfesionalId(''); setExtraPaqueteSel(''); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esServicioAncla]);
+
+  // ── Paquetes del paciente (de esta unidad) + plantillas activables ──
+  const { data: paquetesPaciente } = useQuery({
+    queryKey: ['paquetes-paciente', pacienteSeleccionado?.id],
+    queryFn: () => paquetesApi.porPaciente(pacienteSeleccionado!.id),
+    enabled: !!pacienteSeleccionado,
+  });
+  const { data: plantillasPaquete } = useQuery({
+    queryKey: ['plantillas-paquete'],
+    queryFn: () => paquetesApi.plantillas(),
+    enabled: !!pacienteSeleccionado,
+  });
+  // Paquetes del paciente para el SERVICIO elegido (no toda la unidad).
+  // "Comprometidas" = sesiones ya consumidas (sesionesUsadas) + citas activas ya agendadas (pendientes).
+  // Un paquete está DISPONIBLE solo si quedan sesiones (comprometidas < total); si no, está AGOTADO.
+  const comprometidas = (pp: { sesionesUsadas: number; citas: { estado: string }[] }) =>
+    pp.sesionesUsadas + pp.citas.filter(c => ['agendada', 'confirmada', 'llego', 'en_atencion'].includes(c.estado)).length;
+  const instanciasServicioTodas = (paquetesPaciente ?? []).filter(pp => pp.activo && pp.paquete.servicio.id === servicioId);
+  const instanciasDisponibles = instanciasServicioTodas.filter(pp => comprometidas(pp) < pp.sesionesTotal);
+  const instanciasAgotadas = instanciasServicioTodas.filter(pp => comprometidas(pp) >= pp.sesionesTotal);
+  const plantillasServicio = (plantillasPaquete ?? []).filter(t => t.activo && t.servicio.id === servicioId);
+  // Hay un paquete con CUPO disponible (se puede agendar otra sesión) → no se ofrece activar otro.
+  // Si todos los paquetes del servicio están llenos, sí se permite activar uno nuevo (6 o 12 más).
+  const tienePaqueteActivoServicio = instanciasDisponibles.length > 0;
+  // Próxima sesión a agendar (nunca excede el total, porque solo se ofrecen disponibles).
+  const proximaSesion = (pp: typeof instanciasDisponibles[number]) => comprometidas(pp) + 1;
+  // Al cambiar de servicio (o al cargar los paquetes), proponer automáticamente el paquete
+  // activo si el paciente tiene EXACTAMENTE uno disponible para ese servicio. Así no se agenda
+  // por error "sin paquete" una sesión que sí debía descontar del paquete. Si hay varios o
+  // ninguno disponible, queda en "Sin paquete" (la recepción elige).
+  useEffect(() => {
+    setPaqueteSel(instanciasDisponibles.length === 1 ? `inst:${instanciasDisponibles[0].id}` : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [servicioId, paquetesPaciente]);
+
+  // Al cambiar de servicio, limpiar el profesional elegido: la lista se filtra a quienes hacen
+  // ese servicio, y un profesional previo podría no realizarlo.
+  useEffect(() => { setProfesionalId(''); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [servicioId]);
+
+  // Opciones que la recepción puede ELEGIR (incluye médicos de baro + Daniel "solo por solicitud").
+  const { data: profesionales } = useQuery({
+    queryKey: ['profesionales-seleccionables', sedeId, unidadNegocioId, fechaStr, servicioId],
+    queryFn: () => profesionalesApi.seleccionables({ sedeId, unidadNegocioId, fecha: fechaStr, servicioId: servicioId || undefined }),
+    enabled: modoReserva !== 'sin_eleccion' && !!servicioId,
+  });
+
+  // Profesionales que pueden atender el servicio EXTRA (default: la misma del ancla).
+  const extraServicio = combinablesActivos.find(c => c.servicio.id === extraServicioId)?.servicio;
+  const { data: profesionalesExtra } = useQuery({
+    queryKey: ['profesionales-extra', sedeId, extraServicio?.unidadNegocioId, fechaStr, extraServicioId],
+    queryFn: () => profesionalesApi.seleccionables({ sedeId, unidadNegocioId: extraServicio!.unidadNegocioId, fecha: fechaStr, servicioId: extraServicioId }),
+    enabled: combinar && !!extraServicioId && !!extraServicio,
+  });
+  // Paquetes del paciente para el servicio EXTRA (mismo criterio de cupo que el principal).
+  const instanciasExtraDisp = (paquetesPaciente ?? [])
+    .filter(pp => pp.activo && pp.paquete.servicio.id === extraServicioId && comprometidas(pp) < pp.sesionesTotal);
+  const plantillasExtra = (plantillasPaquete ?? []).filter(t => t.activo && t.servicio.id === extraServicioId);
+  const extraPaqueteElegible = combinar && !!extraServicioId && (instanciasExtraDisp.length > 0 || plantillasExtra.length > 0);
+  useEffect(() => {
+    setExtraPaqueteSel(instanciasExtraDisp.length === 1 ? `inst:${instanciasExtraDisp[0].id}` : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extraServicioId, paquetesPaciente]);
+
+  // Horarios DISPONIBLES del servicio (y del profesional si se eligió uno): respeta su turno,
+  // los ocupados, almuerzo/permiso y la regla de hora entera.
+  const { data: dispo, isFetching: dispoCargando } = useQuery({
+    queryKey: ['disponibilidad', sedeId, unidadNegocioId, servicioId, fechaStr, profesionalId],
+    queryFn: () => disponibilidadApi.consultar({ sede: sedeId, unidadNegocio: unidadNegocioId, servicio: servicioId, fecha: fechaStr, profesional: profesionalId || undefined }),
+    enabled: !!sedeId && !!unidadNegocioId && !!servicioId,
+  });
+
+  // Ocupación del profesional elegido ese día en CUALQUIER unidad (para avisar "Solo X"
+  // que ya está ocupado, p.ej. Daniel en Podología bloquea su baro). Las horas ocupadas
+  // ya se excluyen de la disponibilidad; este aviso explica por qué no están.
+  const { data: citasDiaSede = [] } = useQuery({
+    queryKey: ['ocupacion-prof', sedeId, fechaStr],
+    queryFn: () => citasApi.listar({ sedeId, fecha: fechaStr }),
+    enabled: !!sedeId && !!profesionalId,
+  });
+  const horasOcupadasProf = useMemo(() => {
+    if (!profesionalId) return [] as { hora: string; unidad: string }[];
+    return citasDiaSede
+      .filter(c => (c.profesionalId === profesionalId || c.solicitadoProfesional?.id === profesionalId)
+        && !['cancelada', 'no_show', 'reprogramada'].includes(c.estado))
+      .map(c => ({ hora: c.horaInicio, unidad: c.unidadNegocio.nombre }))
+      .sort((a, b) => a.hora.localeCompare(b.hora));
+  }, [citasDiaSede, profesionalId]);
+  // Horario efectivo de la sede para esa fecha (para distinguir "sede cerrada ese día"
+  // de "abierta pero sin cupos"). `abierto=false` → no se atiende; `esExcepcion` → día especial.
+  const { data: horarioEf } = useQuery({
+    queryKey: ['horario-efectivo', sedeId, fechaStr],
+    queryFn: () => horariosApi.efectivo(sedeId, fechaStr),
+    enabled: !!sedeId && !!fechaStr,
+  });
+  const sedeCerradaEseDia = horarioEf?.efectivo?.abierto === false;
+  const diaHabilitadoExcepcion = horarioEf?.efectivo?.abierto === true && horarioEf?.efectivo?.esExcepcion === true;
+
+  const horasDisponibles = [...new Set((dispo?.slots ?? []).map(s => s.horaInicio))].sort();
+  // Si la hora elegida ya no está disponible (cambió servicio/profesional/fecha), limpiarla.
+  useEffect(() => {
+    if (servicioId && dispo && hora && !horasDisponibles.includes(hora)) setHora('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispo]);
+
+  const crearPacienteMutation = useMutation({
+    mutationFn: () => pacientesApi.crear({
+      nombres: npNombres.trim(),
+      apellidoPaterno: npApellidoPat.trim(),
+      apellidoMaterno: npApellidoMat.trim(),
+      tipoDocumento: npTipoDoc,
+      numeroDocumento: npNumDoc.trim(),
+      telefono: npTel.trim(),
+      email: npEmail.trim() || undefined,
+      fechaNacimiento: npFechaNac || undefined,
+    }),
+    onSuccess: (p) => {
+      setPacienteSeleccionado({ id: p.id, nombreCompleto: `${p.nombres} ${p.apellidoPaterno} ${p.apellidoMaterno}`, telefono: p.telefono });
+      setPasoPaciente('elegir');
+      toast.success('Paciente creado');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Resuelve una selección de paquete ("inst:<id>" | "tpl:<id>" | "") a un paquetePacienteId,
+  // activando una plantilla al vuelo si hace falta. Reutilizado por el ancla y el extra.
+  const resolverPaquete = async (sel: string): Promise<string | undefined> => {
+    if (sel.startsWith('inst:')) return sel.slice(5);
+    if (sel.startsWith('tpl:')) {
+      const inst = await paquetesApi.asignar(pacienteSeleccionado!.id, {
+        paqueteId: sel.slice(4),
+        fechaCompra: format(new Date(), 'yyyy-MM-dd'),
+      }) as { id: string };
+      return inst.id;
+    }
+    return undefined;
+  };
+
+  const crearCitaMutation = useMutation({
+    mutationFn: async () => {
+      const paquetePacienteId = await resolverPaquete(paqueteSel);
+
+      // ── Bloque combinado: 2 citas atómicas (profilaxis ancla + extra). SIN optimistic
+      // UI: esperamos la respuesta del server antes de refrescar (aparecen o fallan juntas).
+      if (combinar && esServicioAncla && extraServicioId) {
+        const extraPaquetePacienteId = await resolverPaquete(extraPaqueteSel);
+        return citasApi.crearCombinada({
+          pacienteId: pacienteSeleccionado!.id,
+          profesionalId: profesionalId || undefined, // si no se eligió → auto-asignación
+          sedeId,
+          unidadNegocioId,
+          servicioId,
+          fecha: fechaStr,
+          horaInicio: hora,
+          canal,
+          comentarioRecepcion: comentario || undefined,
+          paquetePacienteId,
+          promocionId: promocionId || null, // se guarda 1 vez (backend → PRINCIPAL)
+          extra: {
+            servicioId: extraServicioId,
+            profesionalId: extraProfesionalId || undefined,
+            paquetePacienteId: extraPaquetePacienteId,
+          },
+        });
+      }
+
+      return citasApi.crear({
+        pacienteId: pacienteSeleccionado!.id,
+        profesionalId: modoReserva === 'sin_eleccion' ? null : (profesionalId || null),
+        sedeId,
+        unidadNegocioId,
+        servicioId,
+        fecha: fechaStr,
+        horaInicio: hora,
+        canal,
+        comentarioRecepcion: comentario || undefined,
+        paquetePacienteId,
+        promocionId: promocionId || null,
+        ...(comprobante ? {
+          comprobanteUrl: comprobante.url,
+          comprobanteNombre: comprobante.nombre,
+          comprobanteMimeType: comprobante.mimeType,
+        } : {}),
+      }, idempotencyKeyRef.current);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['citas'] });
+      qc.invalidateQueries({ queryKey: ['paquetes-paciente'] });
+      toast.success(combinar ? 'Bloque combinado agendado (2 servicios)' : ((paqueteSel.startsWith('inst:') || paqueteSel.startsWith('tpl:')) ? 'Sesión de paquete agendada' : 'Cita agendada'));
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const servicioSeleccionado = servicios?.find(s => s.id === servicioId);
+  const slotInvalidoParaServicio = !!servicioSeleccionado && !horaInicioValidaParaDuracion(hora, servicioSeleccionado.duracionMinutos);
+  // Si el servicio tiene paquetes elegibles, el campo "Paquete de sesiones" es OBLIGATORIO:
+  // hay que elegir explícitamente una opción (un paquete o "Sin paquete"), no dejar el placeholder.
+  const paqueteElegible = !!pacienteSeleccionado && !!servicioId && (instanciasDisponibles.length > 0 || plantillasServicio.length > 0);
+  // En bloque combinado: la profesional del ancla ES obligatoria (acción deliberada sobre
+  // una columna), debe elegirse el servicio extra, y su paquete si es elegible.
+  // En combinado NO se exige profesional aparte: el chequeo general de arriba ya pide
+  // profesional solo cuando el modo lo requiere (fisio). Profilaxis permite auto-asignación.
+  const combinadoValido = !combinar || (!!extraServicioId && (!extraPaqueteElegible || extraPaqueteSel !== ''));
+  const valido = !!pacienteSeleccionado && !!servicioId && !!hora && !slotInvalidoParaServicio &&
+    (modoReserva === 'sin_eleccion' || modoReserva === 'preferencia_opcional' || !!profesionalId) &&
+    (!paqueteElegible || paqueteSel !== '') &&
+    combinadoValido;
+
+  return (
+    <>
+      <div className="drawer-overlay" onClick={onClose} />
+      <div className="drawer">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-limablue-600">
+          <div>
+            <h2 className="text-base font-semibold text-white">Nueva Cita</h2>
+            <p className="text-xs text-limablue-200 mt-0.5">
+              {format(fechaLocal, "d 'de' MMMM · yyyy")}
+              {hora && ` · ${hora}`}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-limablue-200 hover:text-white p-1">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {/* ── Paciente ── */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-2">
+              Paciente <span className="text-red-500">*</span>
+            </label>
+
+            {/* Paciente ya seleccionado */}
+            {pacienteSeleccionado ? (
+              <div className="space-y-2">
+              <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-xl">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center text-green-800 text-xs font-bold shrink-0">
+                    {pacienteSeleccionado.nombreCompleto[0]}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-green-800 flex items-center gap-1.5">
+                      <RomboAlerta alerta={pacienteSeleccionado.alerta} size={13} />
+                      <span>{pacienteSeleccionado.nombreCompleto}</span>
+                    </p>
+                    <p className="text-xs text-green-600">{pacienteSeleccionado.telefono}</p>
+                    {pacienteSeleccionado.alerta?.alerta && (
+                      <p className="text-[11px] font-semibold text-amber-700 mt-0.5">
+                        {pacienteSeleccionado.alerta.frecuenteInasistente && `No asiste con frecuencia (${pacienteSeleccionado.alerta.noShows}). `}
+                        {pacienteSeleccionado.alerta.frecuenteReprogramador && `Reprograma con frecuencia (${pacienteSeleccionado.alerta.reprogramaciones}).`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <button onClick={resetPaciente} className="text-xs text-green-600 hover:text-red-500 transition-colors font-medium">
+                  Cambiar
+                </button>
+              </div>
+              <CuadroFamiliares familiares={pacienteSeleccionado.familiares} compacto />
+              </div>
+
+            ) : pasoPaciente === 'elegir' ? (
+              /* PASO 0: ¿Nuevo o existente? */
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setPasoPaciente('existente')}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-slate-200 hover:border-limablue-400 hover:bg-limablue-50 transition-all text-center group"
+                >
+                  <svg className="w-7 h-7 text-slate-400 group-hover:text-limablue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700 group-hover:text-limablue-700">Paciente existente</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Ya está registrado</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setPasoPaciente('nuevo')}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all text-center group"
+                >
+                  <svg className="w-7 h-7 text-slate-400 group-hover:text-emerald-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700 group-hover:text-emerald-700">Paciente nuevo</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Registrar por primera vez</p>
+                  </div>
+                </button>
+              </div>
+
+            ) : pasoPaciente === 'existente' ? (
+              /* PASO 1A: Buscar paciente existente */
+              <div className="space-y-3">
+                {/* Selector modo búsqueda */}
+                <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+                  {([
+                    { id: 'documento', label: '🪪 Por DNI / CE / Pasaporte' },
+                    { id: 'nombre',    label: '🔤 Por nombre' },
+                  ] as { id: 'documento' | 'nombre'; label: string }[]).map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => { setModoBusqueda(opt.id); setPacienteQuery(''); }}
+                      className={cn(
+                        'flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all',
+                        modoBusqueda === opt.id
+                          ? 'bg-white text-limablue-700 shadow-sm'
+                          : 'text-slate-500 hover:text-slate-700'
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Input de búsqueda */}
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    className="input text-sm pl-9"
+                    placeholder={modoBusqueda === 'documento' ? 'Ingresa el número de documento…' : 'Escribe el nombre del paciente…'}
+                    value={pacienteQuery}
+                    onChange={e => setPacienteQuery(e.target.value)}
+                    autoFocus
+                  />
+
+                  {/* Resultados dropdown */}
+                  {pacientesSugeridos && pacientesSugeridos.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto">
+                      {pacientesSugeridos.map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => { setPacienteSeleccionado(p); setPacienteQuery(''); }}
+                          className="w-full text-left px-3 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-0 flex items-center gap-2.5"
+                        >
+                          <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 text-xs font-bold shrink-0">
+                            {p.nombres[0]}{p.apellidoPaterno[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 truncate flex items-center gap-1.5">
+                              <RomboAlerta alerta={p.alerta} size={11} />
+                              <span className="truncate">{p.nombreCompleto}</span>
+                            </p>
+                            <p className="text-xs text-slate-500">{p.tipoDocumento} {p.numeroDocumento} · {p.telefono}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {pacienteQuery.length >= 2 && pacientesSugeridos?.length === 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-4 text-center">
+                      <p className="text-sm text-slate-500 mb-3">No se encontró ningún paciente</p>
+                      <button onClick={() => setPasoPaciente('nuevo')} className="btn-primary btn-sm w-full">
+                        + Registrar como paciente nuevo
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button onClick={resetPaciente} className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Volver
+                </button>
+              </div>
+
+            ) : (
+              /* PASO 1B: Registrar paciente nuevo */
+              <div className="space-y-2.5 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-semibold text-slate-700">Datos del nuevo paciente</p>
+                  <button onClick={resetPaciente} className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Volver
+                  </button>
+                </div>
+
+                <input className="input text-sm" placeholder="Nombres *" value={npNombres} onChange={e => setNpNombres(toTitleCase(e.target.value))} autoFocus />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <input className="input text-sm" placeholder="Apellido paterno *" value={npApellidoPat} onChange={e => setNpApellidoPat(toTitleCase(e.target.value))} />
+                  <input className="input text-sm" placeholder="Apellido materno *" value={npApellidoMat} onChange={e => setNpApellidoMat(toTitleCase(e.target.value))} />
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                  <select className="input text-sm col-span-2" value={npTipoDoc} onChange={e => setNpTipoDoc(e.target.value as 'DNI' | 'CE' | 'PASAPORTE')}>
+                    <option value="DNI">DNI</option>
+                    <option value="CE">CE</option>
+                    <option value="PASAPORTE">Pasaporte</option>
+                  </select>
+                  <input
+                    className="input text-sm col-span-3"
+                    placeholder={npTipoDoc === 'DNI' ? 'Número (8 dígitos) *' : npTipoDoc === 'CE' ? 'Nº carnet extranjería *' : 'Nº pasaporte *'}
+                    value={npNumDoc}
+                    onChange={e => setNpNumDoc(e.target.value)}
+                    maxLength={npTipoDoc === 'DNI' ? 8 : 20}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-slate-500 mb-0.5">Celular *</label>
+                    <input className="input text-sm" placeholder="9XXXXXXXX" value={npTel} onChange={e => setNpTel(e.target.value)} maxLength={15} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-500 mb-0.5">Fecha de nacimiento</label>
+                    <input type="date" className="input text-sm" value={npFechaNac} onChange={e => setNpFechaNac(e.target.value)} max={new Date().toISOString().slice(0, 10)} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">Correo electrónico</label>
+                  <input type="email" className="input text-sm" placeholder="correo@ejemplo.com" value={npEmail} onChange={e => setNpEmail(e.target.value)} />
+                </div>
+
+                <button
+                  onClick={() => crearPacienteMutation.mutate()}
+                  disabled={!npNombres || !npApellidoPat || !npApellidoMat || !npNumDoc || !npTel || crearPacienteMutation.isPending}
+                  className="btn-primary btn-sm w-full mt-1"
+                >
+                  {crearPacienteMutation.isPending ? 'Guardando...' : 'Crear paciente'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Servicio */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Servicio <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="input text-sm"
+              value={servicioId}
+              onChange={e => setServicioId(e.target.value)}
+            >
+              <option value="">Seleccionar servicio...</option>
+              {servicios?.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre} ({s.duracionMinutos} min)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Canal de reserva — de dónde viene el cliente */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Canal de reserva</label>
+            <select className="input text-sm" value={canal} onChange={e => setCanal(e.target.value)}>
+              {canalesOpts.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </div>
+
+          {/* Promoción (opcional) — disponible en TODA cita de las 3 unidades */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Promoción (opcional)</label>
+            <select className="input text-sm" value={promocionId} onChange={e => setPromocionId(e.target.value)}>
+              <option value="">— Ninguna —</option>
+              {promociones.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}{p.tipo !== 'OTRO' ? ` · ${formatPromoValor(p.tipo, p.valor)}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Paquete (sesiones) — SOLO los del servicio elegido (no toda la lista del sistema) */}
+          {pacienteSeleccionado && servicioId && (instanciasDisponibles.length > 0 || plantillasServicio.length > 0 || instanciasAgotadas.length > 0) && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Paquete de sesiones {paqueteElegible && <span className="text-red-500">*</span>}
+              </label>
+              <select className="input text-sm" value={paqueteSel} onChange={e => setPaqueteSel(e.target.value)}>
+                <option value="" disabled>— Selecciona una opción —</option>
+                <option value="sin">Sin paquete (cita normal)</option>
+                {instanciasDisponibles.length > 0 && (
+                  <optgroup label="Paquetes activos del paciente">
+                    {instanciasDisponibles.map(pp => (
+                      <option key={pp.id} value={`inst:${pp.id}`}>
+                        📦 {pp.paquete.nombre} — agendar sesión {proximaSesion(pp)} de {pp.sesionesTotal}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {plantillasServicio.length > 0 && !tienePaqueteActivoServicio && (
+                  <optgroup label="Activar paquete nuevo">
+                    {plantillasServicio.map(t => (
+                      <option key={t.id} value={`tpl:${t.id}`}>
+                        ➕ {t.nombre} ({t.totalSesiones} sesiones) — empezar en sesión 1
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+              {tienePaqueteActivoServicio && plantillasServicio.length > 0 && (
+                <p className="text-xs text-slate-500 mt-1">El paciente ya tiene un paquete con sesiones disponibles; úsalo. Podrás activar otro cuando se llene.</p>
+              )}
+              {/* Aviso de paquete(s) agotado(s): SOLO si no hay otro paquete con cupo. Si el
+                  paciente ya tiene uno disponible (arriba), avisar "active uno nuevo" se
+                  contradice y confunde — en ese caso se omite. */}
+              {!tienePaqueteActivoServicio && instanciasAgotadas.map(pp => (
+                <p key={pp.id} className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5 mt-1.5">
+                  ⚠️ El paquete «{pp.paquete.nombre}» está completo ({pp.sesionesTotal}/{pp.sesionesTotal} sesiones). Si el paciente necesita más, active un paquete nuevo.
+                </p>
+              ))}
+              {(paqueteSel.startsWith('inst:') || paqueteSel.startsWith('tpl:')) && (
+                <p className="text-xs text-indigo-600 mt-1">La sesión se numera automáticamente.</p>
+              )}
+              {paqueteElegible && paqueteSel === '' && (
+                <p className="text-xs text-red-500 mt-1">Elige una opción para continuar.</p>
+              )}
+            </div>
+          )}
+
+          {/* Profesional (según modo) */}
+          {modoReserva !== 'sin_eleccion' && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Profesional {modoReserva === 'preferencia_obligatoria' && <span className="text-red-500">*</span>}
+              </label>
+              <select
+                className="input text-sm"
+                value={profesionalId}
+                onChange={e => setProfesionalId(e.target.value)}
+              >
+                {modoReserva === 'preferencia_opcional' && (
+                  <option value="" className="font-semibold">⭐ Sin preferencia (asignación automática)</option>
+                )}
+                {modoReserva === 'preferencia_obligatoria' && (
+                  <option value="">Seleccionar fisioterapeuta...</option>
+                )}
+                {profesionales?.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.tipo === 'medico' ? 'Dr(a). ' : ''}{p.nombres} {p.apellidos}{p.porSolicitud ? ' — por solicitud' : ''}
+                  </option>
+                ))}
+              </select>
+              {modoReserva === 'preferencia_opcional' && !profesionalId && (
+                <p className="text-xs text-slate-500 mt-1">Por defecto se asigna automáticamente. Elige un médico o a Daniel solo si el paciente lo pidió.</p>
+              )}
+              {/* Aviso: el profesional elegido ya está ocupado a ciertas horas (otra unidad incluida). */}
+              {profesionalId && horasOcupadasProf.length > 0 && (
+                <div className="mt-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5">
+                  <p className="text-xs text-amber-800 font-medium leading-snug">
+                    🔒 Ya tiene cita a las {horasOcupadasProf.map(h => `${h.hora} (${h.unidad})`).join(', ')}. Esas horas no están disponibles (no puede atender en dos lugares a la vez).
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {modoReserva === 'sin_eleccion' && (
+            <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
+              <p className="text-xs text-violet-700">
+                El médico de baropodometría se asigna automáticamente según disponibilidad.
+              </p>
+            </div>
+          )}
+
+          {/* Fecha */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Fecha <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              className="input text-sm"
+              value={format(fechaLocal, 'yyyy-MM-dd')}
+              onChange={e => {
+                const d = new Date(e.target.value + 'T12:00:00');
+                if (!isNaN(d.getTime())) setFechaLocal(d);
+              }}
+            />
+          </div>
+
+          {/* Hora */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Hora <span className="text-red-500">*</span>
+              {servicioSeleccionado && (
+                <span className="font-normal text-slate-500 ml-2">
+                  · Duración: {servicioSeleccionado.duracionMinutos} min
+                </span>
+              )}
+            </label>
+            <select
+              className="input text-sm"
+              value={hora}
+              onChange={e => setHora(e.target.value)}
+              disabled={!servicioId || dispoCargando}
+            >
+              {!servicioId ? (
+                <option value="">Elige primero un servicio…</option>
+              ) : dispoCargando ? (
+                <option value="">Cargando horarios…</option>
+              ) : horasDisponibles.length === 0 ? (
+                <option value="">Sin horarios disponibles</option>
+              ) : (
+                <>
+                  <option value="">-- Seleccionar hora --</option>
+                  {horasDisponibles.map(val => <option key={val} value={val}>{val}</option>)}
+                </>
+              )}
+            </select>
+            {servicioId && !dispoCargando && horasDisponibles.length === 0 && (
+              <p className="mt-1.5 text-xs text-amber-600 font-medium">
+                {sedeCerradaEseDia
+                  ? 'La sede no atiende este día. Elige otra fecha (o habilítalo en Horarios de entrada).'
+                  : diaHabilitadoExcepcion
+                    ? 'Este día está habilitado pero aún no hay podólogas asignadas. Márcalas en Horarios de entrada.'
+                    : profesionalId
+                      ? 'Este profesional no tiene horarios libres para este servicio en la fecha elegida.'
+                      : 'No hay horarios libres para este servicio en la fecha elegida.'}
+              </p>
+            )}
+          </div>
+
+          {/* ── Bloque combinado: profilaxis + servicio extra en el mismo turno ── */}
+          {esServicioAncla && combinablesActivos.length > 0 && (
+            <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 accent-violet-600"
+                  checked={combinar}
+                  onChange={e => setCombinar(e.target.checked)}
+                />
+                <span className="text-sm font-semibold text-violet-800">Combinar servicio en este turno</span>
+              </label>
+              <p className="text-xs text-violet-600 -mt-1">
+                Agrega un segundo servicio en la misma hora (2 servicios en 1 turno de 1 h).
+              </p>
+
+              {combinar && (
+                <div className="space-y-3 pt-1">
+                  {/* Servicio extra */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Servicio extra <span className="text-red-500">*</span>
+                    </label>
+                    <select className="input text-sm" value={extraServicioId} onChange={e => { setExtraServicioId(e.target.value); setExtraProfesionalId(''); }}>
+                      <option value="">-- Seleccionar servicio --</option>
+                      {combinablesActivos.map(c => (
+                        <option key={c.servicio.id} value={c.servicio.id}>{c.servicio.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Profesional del extra (opcional: misma del ancla por defecto) */}
+                  {extraServicioId && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">Profesional del extra</label>
+                      <select className="input text-sm" value={extraProfesionalId} onChange={e => setExtraProfesionalId(e.target.value)}>
+                        <option value="">Misma profesional del ancla</option>
+                        {(profesionalesExtra ?? []).map(p => (
+                          <option key={p.id} value={p.id}>{p.nombres} {p.apellidos}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Paquete del extra (si el servicio extra tiene paquetes del paciente) */}
+                  {extraServicioId && (instanciasExtraDisp.length > 0 || plantillasExtra.length > 0) && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                        Paquete del extra {extraPaqueteElegible && <span className="text-red-500">*</span>}
+                      </label>
+                      <select className="input text-sm" value={extraPaqueteSel} onChange={e => setExtraPaqueteSel(e.target.value)}>
+                        <option value="">Sin paquete</option>
+                        {instanciasExtraDisp.map(pp => (
+                          <option key={pp.id} value={`inst:${pp.id}`}>
+                            {pp.paquete.nombre} · sesión {comprometidas(pp) + 1}/{pp.sesionesTotal}
+                          </option>
+                        ))}
+                        {plantillasExtra.map(t => (
+                          <option key={t.id} value={`tpl:${t.id}`}>Activar nuevo: {t.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Comentario */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Comentario de recepción
+            </label>
+            <textarea
+              className="input text-sm resize-none"
+              rows={2}
+              placeholder="Notas internas opcionales..."
+              value={comentario}
+              onChange={e => setComentario(e.target.value)}
+            />
+          </div>
+
+          {/* ── Comprobante de pago anticipado (opcional) — al final del formulario ── */}
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+                  💳 Pago anticipado <span className="font-normal">(opcional)</span>
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Si el paciente pagó por adelantado, adjunta el comprobante.
+                </p>
+              </div>
+
+              {/* Área de carga */}
+              {!comprobante && !subiendo && (
+                <div
+                  className={cn(
+                    'border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors',
+                    errorSubida ? 'border-red-300 bg-red-50' : 'border-amber-300 hover:border-amber-400 hover:bg-amber-100/50',
+                  )}
+                  onClick={() => inputFileRef.current?.click()}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file) subirComprobante(file);
+                  }}
+                >
+                  <p className="text-lg mb-1">📎</p>
+                  <p className="text-xs font-medium text-amber-700">Arrastra, pega (Ctrl+V) o haz clic</p>
+                  <p className="text-xs text-amber-600 mt-0.5">JPG · PNG · PDF · máx. 10MB</p>
+                  {errorSubida && <p className="text-xs text-red-500 mt-1">{errorSubida}</p>}
+                  <input
+                    ref={inputFileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) subirComprobante(file);
+                    }}
+                  />
+                </div>
+              )}
+
+              {subiendo && (
+                <div className="border-2 border-dashed border-amber-300 rounded-lg p-4 flex items-center justify-center gap-2 text-amber-700">
+                  <span className="w-4 h-4 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
+                  <span className="text-xs">Subiendo...</span>
+                </div>
+              )}
+
+              {comprobante && (
+                <div className="border-2 border-emerald-300 bg-emerald-50 rounded-lg p-3 flex items-center gap-3">
+                  {comprobante.mimeType.startsWith('image/') ? (
+                    <img
+                      src={comprobante.url}
+                      alt="comprobante"
+                      className="w-14 h-14 object-cover rounded border border-emerald-200 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 bg-red-100 rounded border border-red-200 flex items-center justify-center shrink-0 text-2xl">
+                      📄
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-emerald-800 truncate">{comprobante.nombre}</p>
+                    <p className="text-xs text-emerald-600 mt-0.5">✓ Comprobante listo</p>
+                  </div>
+                  <button
+                    onClick={() => { setComprobante(null); setErrorSubida(null); }}
+                    className="text-slate-400 hover:text-red-500 transition-colors text-lg shrink-0"
+                    title="Quitar comprobante"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              <p className="text-xs text-amber-600">Sin comprobante la cita igual se crea con normalidad.</p>
+            </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-slate-200 px-6 py-4 flex gap-3">
+          <button onClick={onClose} className="btn-secondary flex-1">Cancelar</button>
+          <button
+            onClick={() => crearCitaMutation.mutate()}
+            disabled={!valido || crearCitaMutation.isPending}
+            className="btn-primary flex-1"
+          >
+            {crearCitaMutation.isPending ? 'Agendando...' : 'Agendar cita'}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}

@@ -1,0 +1,14 @@
+LOGO DE LA CABECERA DE LOS CORREOS
+==================================
+Coloca aquí tu logo con EXACTAMENTE este nombre:
+
+    logo-correo.png        (recomendado PNG; también vale .jpg / .jpeg)
+
+Ruta completa:
+    apps/api/assets/correo/logo-correo.png
+
+Se incrusta automáticamente por CID en el correo de "Cita registrada" y en el de
+"Recordatorio". No requiere reiniciar el servidor (se lee en cada envío).
+Recomendado: fondo TRANSPARENTE o blanco; la cabecera es azul (#1e3a8a), así que
+un logo en versión BLANCA se ve mejor; si tu logo es azul sobre blanco, igual se
+verá (queda una caja blanca sobre el azul).

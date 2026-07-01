@@ -1,0 +1,2807 @@
+{
+  "fecha": "2026-06-14T00:26:02.579Z",
+  "resumen": {
+    "creados": 500,
+    "citasCreadas": 162,
+    "erroresPaciente": 0,
+    "erroresCita": 441,
+    "totalBugs": 464
+  },
+  "bugs": [
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d86a4334-aeaa-4cc8-a821-68fb3e4f29fd",
+      "detalle": "Cita 2026-06-13 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fba1d165-d7c4-42f4-8b2c-cfd4ea82fd37",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1f847826-8256-477c-a333-93504f26d3ff",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ebb63359-7492-4ed5-b100-9c84eefdcf8f",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ebb63359-7492-4ed5-b100-9c84eefdcf8f",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d97dfe0e-9c51-424f-9c24-029035153980",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e3e3821c-9b98-43a7-b53b-45fbbc0cefd7",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e3e3821c-9b98-43a7-b53b-45fbbc0cefd7",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "ed9495d5-5512-4d4d-8089-3857fa6cfc13",
+      "citaId": "5ec4d0a8-d5c1-4d25-a6d9-6a8c7f137a02",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e785b213-44a6-41e7-8d95-e0239d936c7e",
+      "detalle": "Cita 2026-06-13 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e785b213-44a6-41e7-8d95-e0239d936c7e",
+      "detalle": "Cita 2026-06-14 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "3db80323-1d2d-4ef9-ab3d-b111d3b444a8",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1326d19a-39a9-4787-af82-a07a4ecd57b5",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1326d19a-39a9-4787-af82-a07a4ecd57b5",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1326d19a-39a9-4787-af82-a07a4ecd57b5",
+      "detalle": "Cita 2026-06-17 15:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c5a18bca-bb14-40e6-bba5-53701de27c22",
+      "detalle": "Cita 2026-06-11 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5abb813a-6204-4662-9152-dff09e9dadf8",
+      "detalle": "Cita 2026-06-12 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "42879d54-f0b9-4b37-9e2c-4661dd28d0f4",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c795c904-845f-4bd1-8d21-a91e4e0812de",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "6e1aca24-2b6e-4d23-864a-f1b30290c0b8",
+      "citaId": "6b362904-c4d9-4159-8f33-0b8747dd7a14",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b3f45976-23e8-4542-bdbd-e23d4a949e0c",
+      "detalle": "Cita 2026-06-11 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "54216700-9e9c-4e5f-b828-e05063bc7015",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2cc23f88-2b43-4c34-80bd-b28d545602b0",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5617baf7-5ce2-42c8-af64-7f65f09393cd",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2c465a9f-fb65-4672-9531-ff23fcd07b8e",
+      "detalle": "Cita 2026-06-11 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2c465a9f-fb65-4672-9531-ff23fcd07b8e",
+      "detalle": "Cita 2026-06-12 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0b8dbd5f-ff33-441c-9346-118f81284108",
+      "detalle": "Cita 2026-06-12 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0b8dbd5f-ff33-441c-9346-118f81284108",
+      "detalle": "Cita 2026-06-13 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0b8dbd5f-ff33-441c-9346-118f81284108",
+      "detalle": "Cita 2026-06-14 10:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "845a47fa-1bbd-4a9c-a89c-37807fd708bb",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "24b1ff0b-c1a7-424b-91b9-daf596a47c2b",
+      "citaId": "695b7922-9e4c-4a3d-a3bd-e4210825d56b",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ac9e9730-d5cb-460d-b428-aa250da389c5",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "32fea8c3-81b5-4bff-af40-fe82a906ab55",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fb7a051c-807e-4a22-9346-b0845be3e301",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fb7a051c-807e-4a22-9346-b0845be3e301",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1d7eb5bb-83e2-4fd9-b595-8d7c9d062320",
+      "detalle": "Cita 2026-06-11 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1d7eb5bb-83e2-4fd9-b595-8d7c9d062320",
+      "detalle": "Cita 2026-06-13 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "3bd83716-f918-465c-8228-c2ffe2bcaf68",
+      "detalle": "Cita 2026-06-12 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "32672d8c-e3b7-4d78-a0e1-48bc560ad94f",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "125401dc-eb61-4293-964a-2297242610c8",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "08f305ab-7c67-42d4-8acc-ddf91f90e50d",
+      "detalle": "Cita 2026-06-14 09:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "90461409-53d7-4ade-8aff-042f9155a1a4",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "affd525e-8814-4eea-9eb5-db7b20237387",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "affd525e-8814-4eea-9eb5-db7b20237387",
+      "detalle": "Cita 2026-06-17 15:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "affd525e-8814-4eea-9eb5-db7b20237387",
+      "citaId": "c1caf888-da97-49dd-a85e-5f8bfbbb2e55",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "20f50c5c-f017-4a54-9b6f-cba6887bf5eb",
+      "detalle": "Cita 2026-06-12 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "20f50c5c-f017-4a54-9b6f-cba6887bf5eb",
+      "detalle": "Cita 2026-06-13 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fcfe6903-b016-4ca8-ac64-157c1cdf177d",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4fa78dc6-8ab8-47ad-9d45-5604b778b983",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4fe137a9-e05f-47ad-b400-674f10a211f8",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "4fe137a9-e05f-47ad-b400-674f10a211f8",
+      "citaId": "17341b6c-0601-4919-93b9-23daf42dbc41",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "82de9a81-9efd-4836-be80-316eed9e65a6",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2d65d424-d750-4f63-b7d3-6538d55a987f",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "1de8f600-17d5-46a0-af5e-d1ac5a019a3d",
+      "citaId": "051fc03a-5ddd-46d3-ba90-0681f323fa6e",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "a89889a4-df56-488f-ba2a-5683f68acb8b",
+      "detalle": "Cita 2026-06-13 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "a89889a4-df56-488f-ba2a-5683f68acb8b",
+      "detalle": "Cita 2026-06-14 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "443ae8cf-5e5b-44de-8f4d-8f3737c97f20",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fe6be7a4-3d00-4618-9ca5-d27c876e5cc8",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fe6be7a4-3d00-4618-9ca5-d27c876e5cc8",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "fe6be7a4-3d00-4618-9ca5-d27c876e5cc8",
+      "citaId": "2086d3e1-04bf-489a-adce-19ecb5fc5e9b",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d91fb710-569b-44df-b636-21a2d329f885",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "22fc3b6f-29dd-439c-84d9-5ab5fe2a3aad",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "1b1bd9b0-d55a-4559-9f63-02cba6323f10",
+      "citaId": "423b510f-fc7c-4072-9f9c-eb52ac09f86a",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e4043adf-665f-48db-9f5e-2087dd86dd8a",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ed204884-6a1b-441f-82c4-253387a71b74",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1c9d09f9-4a43-4be5-a3e7-ede26ed7798f",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c62b9449-716e-433f-a11e-5bce14fc7051",
+      "detalle": "Cita 2026-06-11 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4d50a48f-8d68-40a3-9496-1d94e6003380",
+      "detalle": "Cita 2026-06-12 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4d50a48f-8d68-40a3-9496-1d94e6003380",
+      "detalle": "Cita 2026-06-14 08:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "32b96e4a-7e07-4c05-884a-2f935a0350c1",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "729eeccb-9f77-4a60-a5c5-d49c8a112f38",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "729eeccb-9f77-4a60-a5c5-d49c8a112f38",
+      "citaId": "e73cb341-6f67-44bf-bef7-e910390a321c",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1a2b4939-6bfe-496c-ada3-8865df65ac59",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0569cac9-420a-471f-b316-4fce02211495",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "cedf0252-affa-40e2-bfb3-a84339f3b4a1",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "cedf0252-affa-40e2-bfb3-a84339f3b4a1",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "16ea92c0-e99d-4fc0-97a4-d692024d5ff1",
+      "detalle": "Cita 2026-06-12 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7db267d6-6a8e-47bc-b4cf-20d4e8063b41",
+      "detalle": "Cita 2026-06-12 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c5937c6f-53ff-4a0f-b452-2befd284ba87",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7a6405dc-ea16-4560-8522-6fe0c9bcdf6a",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "3c2f36af-9091-46d6-bb8c-6727bfd91ecc",
+      "detalle": "Cita 2026-06-12 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "898ddce7-f3cc-494a-87ac-d6427f270366",
+      "detalle": "Cita 2026-06-12 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "898ddce7-f3cc-494a-87ac-d6427f270366",
+      "detalle": "Cita 2026-06-14 08:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "992c59bd-d793-4856-af3a-84a7881c216a",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c1c3f5fd-ea99-46d3-bb19-a668cb224dc3",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c1c3f5fd-ea99-46d3-bb19-a668cb224dc3",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c1c3f5fd-ea99-46d3-bb19-a668cb224dc3",
+      "detalle": "Cita 2026-06-17 12:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "6ad22fca-9bbc-4a6e-9634-4fc0fe892a15",
+      "detalle": "Cita 2026-06-11 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d7c372c8-43b7-4726-bb44-614f37b9a84e",
+      "detalle": "Cita 2026-06-12 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d7c372c8-43b7-4726-bb44-614f37b9a84e",
+      "detalle": "Cita 2026-06-13 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "eee1c998-e79f-4913-b1e9-5114d54f9f08",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "af67db8d-f4b2-427c-be69-eb2eb33fb3ff",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "4cf76159-a57d-4da7-94e7-1ed69e630a95",
+      "citaId": "431bfb4c-616d-46de-85ab-adbe9e3e4f28",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "29f5104f-b510-44c2-b773-1741c22b8db2",
+      "detalle": "Cita 2026-06-13 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "64b62d20-b7d3-4de3-b7ce-4baee725a028",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "6227da8a-65ff-418b-b895-0debd09cd1c8",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "44e686a1-dcbc-4bb2-b1b5-a977d92168c9",
+      "citaId": "1a4d8efd-67d2-4045-b2fa-8f88afeb7cfa",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0a5d7e42-87a7-4367-bd83-27e99406c3d2",
+      "detalle": "Cita 2026-06-12 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "SESIONES_DUPLICADAS_EN_PAQUETE",
+      "detalle": "Dos citas del mismo paquete tienen sesionNumero=2 porque sesionesUsadas no se incrementa al CREAR, solo al COMPLETAR. Un paciente con 10 sesiones podría creer que consumió solo 1 cuando en realidad hay 2 agendadas.",
+      "severidad": "ALTO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4f79910f-ce09-43ad-889f-702e8f5b7474",
+      "detalle": "Cita 2026-06-12 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4f79910f-ce09-43ad-889f-702e8f5b7474",
+      "detalle": "Cita 2026-06-13 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4f79910f-ce09-43ad-889f-702e8f5b7474",
+      "detalle": "Cita 2026-06-14 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "78040291-f4c2-4201-ad33-4a2a6778cebf",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9d1cbdcb-0c45-4bea-b2b8-2e36356c4c66",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "9d1cbdcb-0c45-4bea-b2b8-2e36356c4c66",
+      "citaId": "b7304553-200c-47b7-b0ee-82e66944c697",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "COMPLETAR_CITA_FALLO",
+      "pacienteId": "9d1cbdcb-0c45-4bea-b2b8-2e36356c4c66",
+      "citaId": "b7304553-200c-47b7-b0ee-82e66944c697",
+      "detalle": "No se pudo completar: HTTP 404 {\"error\":\"APP_ERROR\",\"message\":\"Cita no encontrada\",\"statusCode\":404}",
+      "severidad": "ALTO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8e319744-28ec-4e29-a944-777527cda1f0",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e20aa6dd-6d33-47af-bf23-d97bceb7cab4",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ec50a559-09c3-4bd0-be06-c79d7e41864c",
+      "detalle": "Cita 2026-06-13 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0b0b9f8f-7285-4b8e-b26d-3b7aafa6b868",
+      "detalle": "Cita 2026-06-12 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "698045d3-721e-4c22-aac4-988b6f470ce4",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4d3fdaec-a130-47b0-b7df-926701ef53f0",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9c012116-9e5a-4bb6-ab84-7fc8b20e519d",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7612942f-fcdb-4061-a0af-53f1b3c809ad",
+      "detalle": "Cita 2026-06-14 11:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "46914e90-b2f8-44a6-9745-d467f344622b",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "46914e90-b2f8-44a6-9745-d467f344622b",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "6e451ddc-5d33-4e66-ba97-24ac00099421",
+      "citaId": "4492155a-4139-47ac-966f-edf5bd250135",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ab28b970-71bb-4cf2-bbf4-10295da8a39e",
+      "detalle": "Cita 2026-06-13 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b774e5be-1b98-4d0a-bf0c-39ea85f41282",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "81292104-5bd0-48e5-aa6c-e99949ea1aa8",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "179e090f-2838-45cc-aeaf-6e390d473dd2",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "179e090f-2838-45cc-aeaf-6e390d473dd2",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "eef503cc-919e-47d1-952b-8ac72e8df311",
+      "detalle": "Cita 2026-06-11 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "25654c41-996a-4722-a3ea-6b94d3e621ae",
+      "detalle": "Cita 2026-06-12 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ca82130a-0fe2-4bdb-b831-3e0d7ffd57db",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4dfec2f4-0987-4975-b934-317773c6d4a6",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "35e89181-9e3b-4263-b536-2a3b6383922d",
+      "detalle": "Cita 2026-06-14 10:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "3f94e911-4f7d-4348-b89f-6279253655ca",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5f72090f-63b7-4c62-9381-64f331957492",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5f72090f-63b7-4c62-9381-64f331957492",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5f72090f-63b7-4c62-9381-64f331957492",
+      "detalle": "Cita 2026-06-17 15:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8099d14e-4f2f-4c1c-93de-fbfbeca4930a",
+      "detalle": "Cita 2026-06-11 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "482928b0-1a4d-46b8-8498-55cef47ba18f",
+      "detalle": "Cita 2026-06-12 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "482928b0-1a4d-46b8-8498-55cef47ba18f",
+      "detalle": "Cita 2026-06-13 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5ff0d638-a62f-40f9-a057-ff9e8d47102b",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5551c0ed-a194-4bca-9a79-241429c004bc",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "eccfa433-9386-425c-ba09-7ebfca25a1de",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e82ef925-4185-4a81-ab4d-5fd286dd3abe",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e82ef925-4185-4a81-ab4d-5fd286dd3abe",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c59859c9-eb0d-421f-b103-1af961aee879",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "262622dc-0eed-4ace-ad99-5b848b403e4c",
+      "detalle": "Cita 2026-06-11 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2b7644b5-972d-41bd-b07d-819fa92791f5",
+      "detalle": "Cita 2026-06-12 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2b7644b5-972d-41bd-b07d-819fa92791f5",
+      "detalle": "Cita 2026-06-13 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2b7644b5-972d-41bd-b07d-819fa92791f5",
+      "detalle": "Cita 2026-06-14 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4111009f-af0d-4baa-85a1-0d527d46ef0c",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "f2d901f0-2c07-4c25-a5c8-0dc60342668c",
+      "detalle": "Cita 2026-06-13 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2deb21f9-36b4-46c7-a73c-c5f829e0c4ff",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ff0d57b6-94e0-464a-b4e9-9bac593030d7",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b0f7af60-774a-46e8-880f-8df9cf8c071d",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "dbb4a76a-4b3b-4926-b681-bde7eb81dfae",
+      "detalle": "Cita 2026-06-12 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9cae996d-4cd8-40e0-bbc4-716959474124",
+      "detalle": "Cita 2026-06-12 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9917d845-316c-490c-8fe6-79128f8c9265",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "464a2eb1-18c5-4efd-b08d-fe78804d763c",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "04f9239b-b5e7-43d2-80c3-1f3be575ffaa",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "a99390f5-8c96-45a9-be22-ba2420943576",
+      "detalle": "Cita 2026-06-14 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c86d6ad0-f0ef-4b79-9d6e-bca91cd47662",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0f2d4863-3ef7-4841-9ec6-7ba9896bab77",
+      "detalle": "Cita 2026-06-17 15:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e3d0ea5e-d313-4017-9d8a-5b62ed4de455",
+      "detalle": "Cita 2026-06-13 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "44b3ccd0-7072-476b-bd6a-8e738144481d",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d5ed4e2a-e840-4008-ac1d-88ad58e7fb3b",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fd5f83ae-6956-4ad5-9fca-2986ecbf19a9",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fd5f83ae-6956-4ad5-9fca-2986ecbf19a9",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "3bec27e9-450c-4d1f-a5a5-0bcd78114ff5",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7612491d-4e28-4070-b24b-bdafd796bb68",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7612491d-4e28-4070-b24b-bdafd796bb68",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "599883ca-60bd-4997-a879-0e303a85fa20",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c9dc36c6-e412-4e14-97f8-a6faed882c92",
+      "detalle": "Cita 2026-06-14 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2d161684-9c11-4bac-8ce5-0a5b1a82625a",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d730ba6a-539e-47a5-a325-de38437ee36f",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d730ba6a-539e-47a5-a325-de38437ee36f",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d730ba6a-539e-47a5-a325-de38437ee36f",
+      "detalle": "Cita 2026-06-17 12:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "85e0c307-f42c-494b-9738-b824b467d744",
+      "detalle": "Cita 2026-06-11 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "33d259e6-128b-4abd-8924-4481242cc87f",
+      "detalle": "Cita 2026-06-12 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2c235787-be4d-431d-a08e-d83b86b3860c",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9e820296-45d4-4c41-846f-1c3b58d50404",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fd0d83ca-c671-41b3-babc-3bda71854629",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "25e30e93-8e08-41d1-9b9e-4c12dfefe1b0",
+      "detalle": "Cita 2026-06-11 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b6686cec-7b89-4129-916a-c6a9265352aa",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "775e8642-0814-4911-824f-523bb2a71931",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5fd1f162-308c-4c0f-9535-80f22ed8fe53",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "65767e1b-26ec-4a71-9ed3-561e463ff20e",
+      "detalle": "Cita 2026-06-12 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "56ba92e9-1dc4-4300-9c3e-80c58b8569e2",
+      "detalle": "Cita 2026-06-12 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "56ba92e9-1dc4-4300-9c3e-80c58b8569e2",
+      "detalle": "Cita 2026-06-13 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "56ba92e9-1dc4-4300-9c3e-80c58b8569e2",
+      "detalle": "Cita 2026-06-14 08:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "16c857c8-02f8-47c4-916e-793f896abda2",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "dfaa58ea-36ca-4fba-845f-6463882affcd",
+      "detalle": "Cita 2026-06-17 15:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d1d10d59-5181-4ba8-8ec1-a1f5d7fb7f77",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "41de43a0-419d-4df6-9b6b-8838dbb10f78",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d76ef59b-d9e5-4302-ba5a-310acf24b119",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d76ef59b-d9e5-4302-ba5a-310acf24b119",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5c9ea148-43d5-41fd-94d8-c7ab51161bf1",
+      "detalle": "Cita 2026-06-11 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5c9ea148-43d5-41fd-94d8-c7ab51161bf1",
+      "detalle": "Cita 2026-06-13 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ebb63987-1c4b-4a01-b31b-e66afff96048",
+      "detalle": "Cita 2026-06-12 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "493460f2-36d7-42be-805d-66980120091e",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "14667ae0-fc90-41cc-93f1-e9108cb1ef2d",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "cdc14795-686b-49cc-a67d-a56447fa53c4",
+      "detalle": "Cita 2026-06-14 08:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4f31d56d-3403-42f5-8caf-ad1d92538ecf",
+      "detalle": "Cita 2026-06-13 15:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8bf1bae0-f239-4a12-9c70-52742d15815d",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b7f4b700-e137-4f91-885d-9104232bc6b8",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b7f4b700-e137-4f91-885d-9104232bc6b8",
+      "detalle": "Cita 2026-06-17 12:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "559bf913-b6b3-412f-adaa-7c742b598704",
+      "detalle": "Cita 2026-06-12 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "559bf913-b6b3-412f-adaa-7c742b598704",
+      "detalle": "Cita 2026-06-13 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "bc8f9abd-9e4d-41ad-a504-a24b9c2fd9f0",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "18cd2f6c-a726-46cb-a45d-0c36025d5498",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "20e12f9c-a834-459e-8d92-d9877481ac45",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ba27dc53-b713-4187-a449-2aa689a9dbab",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "82e92b8b-7b6e-45b0-b0cb-862e6b552d18",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "adb18f4f-a316-47c7-8c4c-7b6697cd93c7",
+      "detalle": "Cita 2026-06-12 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "adb18f4f-a316-47c7-8c4c-7b6697cd93c7",
+      "detalle": "Cita 2026-06-13 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "adb18f4f-a316-47c7-8c4c-7b6697cd93c7",
+      "detalle": "Cita 2026-06-14 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4f3a960a-11d5-4af7-bde4-3ea6c39c6d20",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e67db946-e3ed-41a6-b997-9d22216ba9e8",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e67db946-e3ed-41a6-b997-9d22216ba9e8",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "e67db946-e3ed-41a6-b997-9d22216ba9e8",
+      "citaId": "5c0bf12b-65a7-468c-b023-a858beb802f3",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "53b22f46-1d0c-4cf5-9adc-990f4eb9438c",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "53b22f46-1d0c-4cf5-9adc-990f4eb9438c",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "a8ec23aa-4f52-428c-9afe-5b42d0def47f",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c5434c34-63bf-40c7-9356-a835629dae0e",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "84b81f7b-9ae2-4e83-b9fd-fe8a1b102990",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "046b1fc0-9eec-446d-b36c-fe80e9022236",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "07f7c289-f862-4a75-bd05-4591520d223c",
+      "detalle": "Cita 2026-06-11 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7fa46399-f049-418c-aa99-50e9717999b6",
+      "detalle": "Cita 2026-06-12 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7fa46399-f049-418c-aa99-50e9717999b6",
+      "detalle": "Cita 2026-06-14 11:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8d94d890-1617-4d42-8800-72c1f4ef7d67",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8df459f5-cd89-45bb-b788-81da5b8dbef1",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5eb03b48-d19a-4d02-9b46-957e76b37cb2",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4f787f3b-68ee-4308-883b-56eb5d65866d",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4f787f3b-68ee-4308-883b-56eb5d65866d",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "34222898-72bd-495c-97d5-97ea14b73d4f",
+      "detalle": "Cita 2026-06-12 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "a0d41f94-2671-4b6d-a7ca-65905d67a9c2",
+      "detalle": "Cita 2026-06-12 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "96884efa-c360-4b62-8f33-e81604265a2b",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "48209107-5b1e-4f6e-a96b-36abb1df9f70",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "79c414bf-49ed-43ed-b67a-3523014f7d44",
+      "detalle": "Cita 2026-06-14 10:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "de460bb7-42e5-43fb-8d4c-917fcdffe637",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "dd03a251-83bb-4fcf-a82c-9adbdebbf924",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "dd03a251-83bb-4fcf-a82c-9adbdebbf924",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "dd03a251-83bb-4fcf-a82c-9adbdebbf924",
+      "detalle": "Cita 2026-06-17 15:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9f12e746-ebee-4166-99c3-d29e5e70dc06",
+      "detalle": "Cita 2026-06-11 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c6c71fed-8571-4536-b8af-4a456d26876b",
+      "detalle": "Cita 2026-06-12 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c6c71fed-8571-4536-b8af-4a456d26876b",
+      "detalle": "Cita 2026-06-13 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ba3c986f-9205-47f0-8dda-9a7f4269f5db",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fbd63dd9-2455-4145-a3ab-b6bfd74d0cd1",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "5ebfc1da-af0a-4231-8808-ea6bfec9b25d",
+      "citaId": "94616306-aa43-4f7f-a0e6-7ec67391e9d8",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "675295c4-2981-4183-b42c-02df016a3316",
+      "detalle": "Cita 2026-06-13 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "bf745b27-f5b5-4678-90f8-1fc39bfc493c",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "621b885e-ec14-44c9-8873-0c8aca4f7eaf",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2a15fbdb-5558-46d8-b5e0-6e2aff32540c",
+      "detalle": "Cita 2026-06-12 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "f51f8815-9e56-4598-b126-20f6e9b52506",
+      "detalle": "Cita 2026-06-12 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "f51f8815-9e56-4598-b126-20f6e9b52506",
+      "detalle": "Cita 2026-06-13 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "f51f8815-9e56-4598-b126-20f6e9b52506",
+      "detalle": "Cita 2026-06-14 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "63e1888d-2897-4276-9e78-ee6a1fdea16e",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "a270afa5-93a2-4721-a260-b252d3ea43ce",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c47aa0cb-e4fb-4cf2-aecc-c35638fb4675",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fc00858c-dcde-4e0d-8688-32c16a4b8764",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2dafd74d-f7ae-45f4-bba6-f79e828cfd6b",
+      "detalle": "Cita 2026-06-13 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "066d63b2-209f-48c3-ae81-078b968eb2e2",
+      "detalle": "Cita 2026-06-12 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b975acca-ede0-433f-891e-5dfca5b3e95f",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ec1e3284-6f0b-4525-87b2-93cbd7e25670",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "96543081-a5d3-46a2-b3c9-a4b14194ce01",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "bd914dd2-72a1-4b7c-ae96-4a40e2830979",
+      "detalle": "Cita 2026-06-14 09:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0285c24d-c946-4d32-8b43-dacef7740f9c",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0285c24d-c946-4d32-8b43-dacef7740f9c",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "817c4047-79d0-409e-b5d4-d9662ce94655",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4ead3aea-40b0-4d2a-80eb-51c9e604c0ee",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "18b96c6d-eeec-4b9e-b2c0-d4abe14fbb4a",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "38febf23-b266-430e-ba26-a30ed00576f3",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "38febf23-b266-430e-ba26-a30ed00576f3",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "61d7ec40-ad58-4c09-bf83-e7f6315d8518",
+      "detalle": "Cita 2026-06-11 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d5630d61-d1ac-49b0-b20d-da173ddb9064",
+      "detalle": "Cita 2026-06-12 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "148c9e44-7f2b-4e5d-ad0d-90248b35977d",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "587bcd0f-dd60-4a32-866c-3da61cd0fc76",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "587bcd0f-dd60-4a32-866c-3da61cd0fc76",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5bae3caf-666c-429c-b737-8d142de47aba",
+      "detalle": "Cita 2026-06-11 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "702b213f-b93e-4bfd-bbd8-134d4ea8e9cd",
+      "detalle": "Cita 2026-06-14 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1800bf12-a1eb-4c64-97b9-db164f907d13",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "99585718-0517-4439-b06c-7d91b079aa2d",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "99585718-0517-4439-b06c-7d91b079aa2d",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "99585718-0517-4439-b06c-7d91b079aa2d",
+      "detalle": "Cita 2026-06-17 12:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "bd2fb46a-b608-4b9a-96fc-ca8bb55f72f0",
+      "detalle": "Cita 2026-06-12 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "bd2fb46a-b608-4b9a-96fc-ca8bb55f72f0",
+      "detalle": "Cita 2026-06-13 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "cb4b7b09-37f4-4650-97bc-2e9b57415961",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "3bf4e50f-a11c-45a7-8cf5-23fed744b185",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c0973b5f-e480-4968-8aec-879e65b25b6e",
+      "detalle": "Cita 2026-06-12 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e121fc28-2bf8-47b6-a86b-ee8c243c568c",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "378bb918-a459-43f6-8186-acf0573444a1",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "378bb918-a459-43f6-8186-acf0573444a1",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ac31017c-9e12-4a39-a88b-4b93a8ad2435",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "770b9f3e-3bd8-46b2-a00f-6f9d4730bf6b",
+      "detalle": "Cita 2026-06-11 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "770b9f3e-3bd8-46b2-a00f-6f9d4730bf6b",
+      "detalle": "Cita 2026-06-12 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7956f7be-7bec-40d3-b3fc-efd979f5307f",
+      "detalle": "Cita 2026-06-12 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7956f7be-7bec-40d3-b3fc-efd979f5307f",
+      "detalle": "Cita 2026-06-13 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7956f7be-7bec-40d3-b3fc-efd979f5307f",
+      "detalle": "Cita 2026-06-14 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "a0fe7bbb-010f-4d94-9e78-feeb0cfbe12e",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4b2fcdf7-1ad9-444b-b9b1-a8d9a7eade23",
+      "detalle": "Cita 2026-06-13 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "040378c7-6d32-47bc-9a72-64fb5cbd6efa",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7f1245b3-c066-4d82-8274-ddd5230ddabb",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "fbd66d60-176e-4b83-9e2d-ef16abaa4518",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5b13713f-6ffb-4350-9d7b-c794378a0d24",
+      "detalle": "Cita 2026-06-12 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "01838ab4-525d-40f2-a632-ceda4eef9c1e",
+      "detalle": "Cita 2026-06-12 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5eb0f910-2d1d-4885-b604-9a794257d63c",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ad57beec-506b-47a8-8b5e-d86a0ddf965d",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5d96b918-2f93-4537-94df-63004d01f6b5",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c556d972-5daa-45ec-85b5-c98555b8a901",
+      "detalle": "Cita 2026-06-14 08:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9dda0bf1-a9db-48de-91c1-271516683237",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "54c329f1-13da-40a2-81ae-91fcba6d0530",
+      "detalle": "Cita 2026-06-17 12:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d18ceab9-96d4-474f-acb9-09265663b0c4",
+      "detalle": "Cita 2026-06-13 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5cd2c19b-7ca1-4fd7-aefd-d43bc6b8ce1e",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "31eec579-4c88-4fda-9b3b-0f8dfb1d2d14",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "bb455f51-949b-4de5-82bb-51e1c96580d6",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "bb455f51-949b-4de5-82bb-51e1c96580d6",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "178a2a8b-f880-4ce8-9194-1a46445bb077",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "f9ba93eb-ec87-4074-9ddb-2bb4354a3609",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "f9ba93eb-ec87-4074-9ddb-2bb4354a3609",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ce756562-76b4-4759-a48f-9f97a8ae90df",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "90a82adb-6c11-4e35-9681-7d9ff58ce5cd",
+      "detalle": "Cita 2026-06-13 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "90a82adb-6c11-4e35-9681-7d9ff58ce5cd",
+      "detalle": "Cita 2026-06-14 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5946ba15-82e0-45ee-bc0e-e96f38781627",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "38680ff0-78e0-4433-930f-7cb5cbb8b427",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "38680ff0-78e0-4433-930f-7cb5cbb8b427",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "38680ff0-78e0-4433-930f-7cb5cbb8b427",
+      "detalle": "Cita 2026-06-17 15:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e88774a3-700f-4d34-850e-83f93a3f0916",
+      "detalle": "Cita 2026-06-11 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "75a75dad-2e74-4fa4-a204-ea15ec9680ee",
+      "detalle": "Cita 2026-06-12 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e58cb538-98f2-47a0-96be-d801a8e9d64e",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "a6cedcbf-5ae1-41a3-a2f6-6e2639dfa611",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "764a28c4-f300-427d-82b0-290711c8a327",
+      "detalle": "Cita 2026-06-11 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "db6dbea7-a599-4263-92a2-62cc23d54a56",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e08eeb37-e006-4cba-b92d-19c10e8fd771",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4b66a9ab-e260-419a-9b22-d04c48965a9b",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8e5a79a3-2dcd-405e-827c-3471741f92ca",
+      "detalle": "Cita 2026-06-12 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "be48cba2-7ff5-4f4a-9c75-a7623870bb7d",
+      "detalle": "Cita 2026-06-12 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "be48cba2-7ff5-4f4a-9c75-a7623870bb7d",
+      "detalle": "Cita 2026-06-13 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "be48cba2-7ff5-4f4a-9c75-a7623870bb7d",
+      "detalle": "Cita 2026-06-14 11:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c848980b-6a5c-4991-a2e5-2a0a8791233e",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4c75b628-131c-4bae-ae90-0c61d6cdeaa5",
+      "detalle": "Cita 2026-06-17 12:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0f35a296-7a6f-41b3-acb9-d927cce12626",
+      "detalle": "Cita 2026-06-12 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "bd109ea4-650c-434c-95d7-05b7f98ed609",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "6b28d91f-301f-49f5-b11b-a100e16fab5d",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8b77d309-3bfa-4891-8e79-7dedb55c0a8e",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8b77d309-3bfa-4891-8e79-7dedb55c0a8e",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "661f3066-ec1c-4621-aa05-a2dab2dd9ebd",
+      "detalle": "Cita 2026-06-11 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "661f3066-ec1c-4621-aa05-a2dab2dd9ebd",
+      "detalle": "Cita 2026-06-12 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "661f3066-ec1c-4621-aa05-a2dab2dd9ebd",
+      "detalle": "Cita 2026-06-13 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8163ede4-00f4-434d-9582-3d4d1d7353a0",
+      "detalle": "Cita 2026-06-12 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "2a65534b-1053-40b6-b798-f37d2b3c3a29",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "dda58aac-0d8e-4f96-875e-90fcd6bf8206",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8040413b-80d9-4276-8613-e2625ef6879f",
+      "detalle": "Cita 2026-06-13 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8040413b-80d9-4276-8613-e2625ef6879f",
+      "detalle": "Cita 2026-06-14 10:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b06bde22-bcd2-4c1f-af5d-f4c255ac08db",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b171888e-edb3-4052-9291-9b71e71f0ae1",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b171888e-edb3-4052-9291-9b71e71f0ae1",
+      "detalle": "Cita 2026-06-17 15:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "79d4cef2-e6bc-4685-9453-c3fc79048cda",
+      "detalle": "Cita 2026-06-12 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "79d4cef2-e6bc-4685-9453-c3fc79048cda",
+      "detalle": "Cita 2026-06-13 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "68dcd763-9e14-4824-8aae-e52b8f7c8ea3",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "3af03283-9e0d-418a-9b4e-c47595146ce1",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "65ddba97-016a-46e4-b774-6dde436447f2",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c0061194-04ac-4804-bfdd-3fbeec890e90",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c4f973ce-5477-4b23-988c-a89a2c9d6b9c",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5878ffc6-06aa-440f-b2b2-73199a5180ae",
+      "detalle": "Cita 2026-06-13 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5878ffc6-06aa-440f-b2b2-73199a5180ae",
+      "detalle": "Cita 2026-06-14 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5895ce9a-3e56-4dcd-ac88-3952765c9252",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "47d31788-ab3d-4d33-862b-0451ce605693",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "47d31788-ab3d-4d33-862b-0451ce605693",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0af13dea-680a-46ea-88d1-3f32018c0d32",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "eb5b648c-3e7e-42c0-948e-99d8cb990bb6",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "6e3a17ef-2ef0-4ec7-bbdf-a3688143c2ea",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "042af797-bc35-4bd5-9286-f52e72e814d5",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1b64c096-3390-4ecc-b254-2aa9dff107d3",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b9dbf3f6-1c7a-41df-b455-a5788369d986",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b8b9fe62-d2fb-4f93-8095-2ffe35c7d396",
+      "detalle": "Cita 2026-06-11 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9223bc19-d60c-4001-8887-ed9780416fb4",
+      "detalle": "Cita 2026-06-12 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9223bc19-d60c-4001-8887-ed9780416fb4",
+      "detalle": "Cita 2026-06-14 09:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "a894c521-4d19-4a25-bd14-a3d6df432cea",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "31161531-2d71-445b-b8f2-a3ef1519478a",
+      "detalle": "Cita 2026-06-11 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "cb03226c-a37d-43e9-8d33-ee43cf195b9c",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "82a054d7-3b30-4c3c-bdc6-90dbe64d1ff5",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e708d3f6-f708-4e7e-8551-6d7252888b49",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e708d3f6-f708-4e7e-8551-6d7252888b49",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9fdc404d-6e79-4b07-9cc1-c430d578674d",
+      "detalle": "Cita 2026-06-11 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9fdc404d-6e79-4b07-9cc1-c430d578674d",
+      "detalle": "Cita 2026-06-12 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c29bcf60-2f91-4c68-bc60-23e2f1add352",
+      "detalle": "Cita 2026-06-12 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "3070ab3b-aaa4-4adc-becc-9da4bab215d0",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7de08ba3-ccdb-4073-ae49-01e0fbdfe93d",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "197aa848-dc45-4d7e-947b-2a0170bf47a9",
+      "detalle": "Cita 2026-06-14 09:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "38160d08-b310-47e1-ac75-db247934cb3d",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "69a52806-d845-4ceb-90d7-6fe1b778528a",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "69a52806-d845-4ceb-90d7-6fe1b778528a",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "69a52806-d845-4ceb-90d7-6fe1b778528a",
+      "detalle": "Cita 2026-06-17 12:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1418c49d-f6a7-43ae-a11d-aff89ed0ef62",
+      "detalle": "Cita 2026-06-11 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d70d1f55-38b3-4332-b03d-382b32fa3611",
+      "detalle": "Cita 2026-06-12 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d70d1f55-38b3-4332-b03d-382b32fa3611",
+      "detalle": "Cita 2026-06-13 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5d54ba27-0433-4d86-b672-fce438725679",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "b386d188-8e11-4d79-ae8e-8d04f5be233b",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4fa17abf-d528-49cf-a0d1-0b80a850d9ef",
+      "detalle": "Cita 2026-06-13 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "69506d54-670d-4de1-8d3a-0389c40e3d75",
+      "detalle": "Cita 2026-06-13 15:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "69506d54-670d-4de1-8d3a-0389c40e3d75",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "27cf71ea-27b3-4c9a-aee6-ea3b36c05bb1",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c3e72b9d-185b-4663-bafe-f861e6ec53b7",
+      "detalle": "Cita 2026-06-12 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1dac67a4-7f53-4107-8530-5b311c7cab63",
+      "detalle": "Cita 2026-06-12 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1dac67a4-7f53-4107-8530-5b311c7cab63",
+      "detalle": "Cita 2026-06-13 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1dac67a4-7f53-4107-8530-5b311c7cab63",
+      "detalle": "Cita 2026-06-14 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "8070d411-75ec-486b-b4bd-a3c5f0f626eb",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7ba2af9c-33b0-47de-a883-eceb20857320",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_CANCELADA_DESAPARECE_HISTORIAL",
+      "pacienteId": "7ba2af9c-33b0-47de-a883-eceb20857320",
+      "citaId": "7366cfd9-d2a6-4bd3-a208-be8c374ef41f",
+      "detalle": "Cita cancelada vía DELETE desaparece del historial (deletedAt filtra el registro). Un auditor no puede ver que el paciente tuvo/canceló esta cita.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d5ea6970-e319-4149-b229-e5c6f8018fb0",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "0e4638e5-85af-4cc9-a86c-12fba1df7afc",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "12ef38ea-be56-4a08-8ecc-c38e3d5e674b",
+      "detalle": "Cita 2026-06-13 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "d82b860b-c992-4a07-9903-634a406bbb08",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1948319c-bba6-47e8-a46a-201498ff4229",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "04f7e85d-bde8-4f4d-944f-b4e6fdb49ed4",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "3182f619-01ad-42e5-8f82-60a8deddb63f",
+      "detalle": "Cita 2026-06-14 08:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5fd58924-a1f7-4bb6-992f-7f605b171e6e",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "5fd58924-a1f7-4bb6-992f-7f605b171e6e",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "28c7759c-c8d4-4cb5-8030-adc9cb1c88de",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9001c875-ce28-4d96-8b95-c29e027ccc05",
+      "detalle": "Cita 2026-06-13 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "84d774ca-646b-4f10-9849-2358a6aa5b96",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "a1b436c2-9fc7-4312-a29e-6f1a90a35678",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e8822cfc-f16a-4de5-b87d-29810c0e4de0",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e8822cfc-f16a-4de5-b87d-29810c0e4de0",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "516171f2-8369-4f32-aa2e-e4dd1400249d",
+      "detalle": "Cita 2026-06-11 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "59a70c59-8d50-4909-b519-58eb99d10e84",
+      "detalle": "Cita 2026-06-12 08:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7ce6f4f0-9054-49e3-91fc-b266e5e2f9fc",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "74931d23-9854-4672-8cd7-c3e4a5642029",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "35a8153e-a838-44da-8e7e-30349f4f4ebf",
+      "detalle": "Cita 2026-06-11 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ffc5e673-7967-459d-a275-503d476254da",
+      "detalle": "Cita 2026-06-14 11:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "795255b2-0a39-4cd9-b3e8-bd3a8e48d4c6",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "98219893-7bd0-4351-be78-9d6a46972438",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "98219893-7bd0-4351-be78-9d6a46972438",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "98219893-7bd0-4351-be78-9d6a46972438",
+      "detalle": "Cita 2026-06-17 15:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ecef3473-fe5c-48e7-98ca-ca74a91e37bb",
+      "detalle": "Cita 2026-06-11 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "73bf71cc-1b91-4577-807d-93d881620389",
+      "detalle": "Cita 2026-06-12 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "73bf71cc-1b91-4577-807d-93d881620389",
+      "detalle": "Cita 2026-06-13 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ddf8cde4-223f-4df6-901a-28c194e4b6ea",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "c48efdde-d2ef-4706-9c6e-ac6d845196f5",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "47d851db-656c-4961-91da-8b80a3ed2cc4",
+      "detalle": "Cita 2026-06-12 11:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "bd668c21-ea2e-40bf-9e2e-ce3661b00e76",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "18c274a2-9714-40bd-9a68-f6ee1c596592",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "db2e54ac-e9fc-4cba-8039-de58ea060e0e",
+      "detalle": "Cita 2026-06-16 14:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4e304a12-e598-4144-943d-31ea088cc76e",
+      "detalle": "Cita 2026-06-11 09:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "53591c72-27d8-43dc-a9c2-170cd9a962b0",
+      "detalle": "Cita 2026-06-12 10:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "53591c72-27d8-43dc-a9c2-170cd9a962b0",
+      "detalle": "Cita 2026-06-13 10:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "53591c72-27d8-43dc-a9c2-170cd9a962b0",
+      "detalle": "Cita 2026-06-14 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "415d2e9d-e7d8-4a1b-8bc3-b28491a5e358",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "7d90f9bb-52e2-46a4-ad7c-8f70e63bd31e",
+      "detalle": "Cita 2026-06-13 09:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "4a918b29-e4c4-4814-8ee8-16000d82859b",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1ff60f11-023a-4708-95e4-f517864d4722",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "f88879d9-a769-4b15-87e0-27e55615845e",
+      "detalle": "Cita 2026-06-16 14:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "26d0480f-0c5b-4a86-9e0e-5bd632e26ee4",
+      "detalle": "Cita 2026-06-12 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "450f55db-886f-4fc2-80be-2e19592b9cc2",
+      "detalle": "Cita 2026-06-12 11:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "e4e53c23-7581-4744-ad58-1c2da3ae57bc",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "58a1ab00-d213-4624-abee-2ece149ab3c8",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "1581d02a-1134-490c-aef0-6d590d0b02ac",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "ed85ceb9-cfc6-49b8-92cf-cfaf957fb912",
+      "detalle": "Cita 2026-06-14 10:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "08c55825-8ba1-4cc0-9bb3-8121288791b6",
+      "detalle": "Cita 2026-06-14 13:30 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "93d22c46-d643-41a4-874a-d9910d317012",
+      "detalle": "Cita 2026-06-17 15:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "55b924f9-3c7a-4ab3-9e58-917674c4d7d4",
+      "detalle": "Cita 2026-06-13 08:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "9884e0bc-eabd-4c62-ba4a-bc7f1ad40ff5",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "729bbed1-45a6-4d4a-92ad-3a55555a47bb",
+      "detalle": "Cita 2026-06-14 16:00 rechazada 400: {\"error\":\"SIN_HORARIO\",\"message\":\"El profesional no tiene horario este día\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "6a47dc61-6a03-4921-a593-3a9ba5acba04",
+      "detalle": "Cita 2026-06-16 16:30 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "CITA_RECHAZADA_400",
+      "pacienteId": "6a47dc61-6a03-4921-a593-3a9ba5acba04",
+      "detalle": "Cita 2026-06-16 12:00 rechazada 400: {\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado este servicio\",\"statusCode\":400}",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "HISTORIAL_PERDIDO_CANCELACIONES",
+      "detalle": "16 citas canceladas tienen deletedAt y NO aparecen en el historial del paciente. La API de historial filtra deletedAt=null, así que estas citas son invisibles para la recepcionista. En un litigio, no se podría probar que el paciente tuvo y canceló esas citas.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "NUMEROS_SESION_DUPLICADOS",
+      "detalle": "1 paquetes tienen citas con el mismo sesionNumero. Causa: sesionNumero se calcula como sesionesUsadas+1 al crear la cita, pero sesionesUsadas solo se incrementa al COMPLETAR. Si se crean 2 citas del mismo paquete sin completar ninguna, ambas tienen sesionNumero=1.",
+      "severidad": "ALTO"
+    },
+    {
+      "tipo": "CITAS_FUERA_DE_HORARIO_EN_DB",
+      "detalle": "7 citas en DB tienen horaInicio >= horaFin del horario del profesional. La validación en POST /citas solo verifica que EXISTA un horario para ese día, pero no verifica que el slot esté dentro de horaInicio..horaFin.",
+      "severidad": "CRITICO"
+    },
+    {
+      "tipo": "CAPACIDAD_MAXIMA_HARDCODEADA",
+      "detalle": "GET /citas/sede/:id/stats usa capacidadMaxima=400 fija. No calcula la capacidad real según número de profesionales y horario del día. El porcentaje de ocupación mostrado en el dashboard es incorrecto.",
+      "severidad": "MEDIO"
+    },
+    {
+      "tipo": "TIMEZONE_PROXIMAS",
+      "detalle": "GET /pacientes/:id calcula \"mañana\" como new Date() en UTC del servidor, no en America/Lima (UTC-5). Entre las 19:00 y 23:59 hora Lima (00:00-04:59 UTC del día siguiente), el servidor considera \"mañana\" un día después del que la recepcionista de Lima esperaría, haciendo que citas de \"mañana Lima\" aparezcan en historial en vez de en próximas.",
+      "severidad": "MEDIO"
+    }
+  ]
+}

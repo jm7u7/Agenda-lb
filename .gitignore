@@ -1,0 +1,37 @@
+# ─── Dependencias ─────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ─── Entorno / secretos (NO subir) ────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Base de datos: dump/backup con DATOS REALES DE PACIENTES ──
+# NUNCA subir al remoto (PII de salud). La estructura va en las migraciones de Prisma.
+/limablue_dump.sql
+*.dump
+*.sql.gz
+apps/api/backups/
+# (OJO: las migraciones apps/api/prisma/migrations/**/migration.sql SÍ se versionan)
+
+# ─── Build / artefactos ───────────────────────────────────────
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+coverage/
+
+# ─── Uploads (comprobantes de pago) ───────────────────────────
+apps/api/uploads/
+
+# ─── Logs / sistema / editor ──────────────────────────────────
+*.log
+.DS_Store
+.claude/settings.local.json
+.vscode/
+
+# ─── Herramientas locales de Claude Code / skills (no van al repo) ────
+.claude/
+.agents/
+skills-lock.json

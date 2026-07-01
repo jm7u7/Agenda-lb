@@ -1,0 +1,167 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900;
+    overflow: hidden;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-limablue-500;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400;
+  }
+}
+
+@layer components {
+  /* Tarjetas de cita */
+  .cita-card {
+    @apply rounded-md px-2 py-1 text-white cursor-pointer select-none
+           transition-all duration-100 border border-white/20
+           hover:brightness-105 hover:shadow-md active:scale-95;
+  }
+  .cita-card.dragging {
+    @apply opacity-75 shadow-xl scale-105 rotate-1 z-50;
+  }
+
+  /* Slots de agenda */
+  .agenda-slot {
+    @apply border-b border-slate-100 relative;
+    height: 40px;
+  }
+  .agenda-slot:hover .slot-add-btn {
+    @apply opacity-100;
+  }
+  .slot-add-btn {
+    @apply opacity-0 transition-opacity absolute inset-0 flex items-center
+           justify-center text-slate-400 hover:text-limablue-600
+           hover:bg-limablue-50 rounded cursor-pointer;
+  }
+
+  /* Columna de horas */
+  .hora-label {
+    @apply text-xxs font-medium text-slate-400 text-right pr-2 leading-none;
+    height: 40px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding-top: 2px;
+  }
+
+  /* Badges de estado */
+  .badge-agendada    { @apply bg-slate-500/15 text-slate-700 border-slate-300; }
+  .badge-confirmada  { @apply bg-blue-500/15 text-blue-700 border-blue-300; }
+  .badge-llego       { @apply bg-green-500/15 text-green-700 border-green-300; }
+  .badge-en_atencion { @apply bg-amber-500/15 text-amber-700 border-amber-300; }
+  .badge-completada  { @apply bg-emerald-500/15 text-emerald-700 border-emerald-300; }
+  .badge-no_show     { @apply bg-red-500/15 text-red-600 border-red-300; }
+  .badge-cancelada   { @apply bg-slate-400/15 text-slate-500 border-slate-300; }
+  .badge-reprogramada{ @apply bg-violet-500/15 text-violet-700 border-violet-300; }
+
+  /* Colores de fondo de tarjetas según estado */
+  .cita-agendada     { @apply bg-slate-500; }
+  .cita-confirmada   { @apply bg-blue-500; }
+  .cita-llego        { @apply bg-green-500; }
+  .cita-en_atencion  { @apply bg-amber-500; }
+  .cita-completada   { @apply bg-emerald-700; }
+  .cita-no_show      { @apply bg-red-400; }
+  .cita-cancelada    { @apply bg-slate-400 line-through opacity-60; }
+  .cita-reprogramada { @apply bg-violet-500; }
+
+  /* Skeleton */
+  .skeleton {
+    @apply animate-pulse bg-slate-200 rounded;
+  }
+
+  /* Drawer */
+  .drawer-overlay {
+    @apply fixed inset-0 bg-black/40 z-40 backdrop-blur-sm;
+  }
+  .drawer {
+    @apply fixed right-0 top-0 bottom-0 w-[480px] max-w-full bg-white
+           shadow-2xl z-50 flex flex-col overflow-hidden;
+  }
+
+  /* Botones principales */
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium
+           text-sm transition-all duration-150 focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-limablue-500 focus-visible:ring-offset-1
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-limablue-600 text-white hover:bg-limablue-700 active:bg-limablue-800;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-slate-700 border border-slate-300
+           hover:bg-slate-50 hover:border-slate-400;
+  }
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100;
+  }
+  .btn-danger {
+    @apply btn bg-red-500 text-white hover:bg-red-600;
+  }
+  .btn-sm {
+    @apply text-xs px-3 py-1.5;
+  }
+  .btn-icon {
+    @apply btn p-2 !px-2;
+  }
+
+  /* Input */
+  .input {
+    @apply w-full px-3 py-2 rounded-lg border border-slate-300 text-sm
+           bg-white focus:outline-none focus:ring-2 focus:ring-limablue-500
+           focus:border-limablue-500 placeholder:text-slate-400
+           disabled:bg-slate-50 disabled:text-slate-500;
+  }
+
+  /* Command palette */
+  .command-palette {
+    @apply fixed inset-0 z-50 flex items-start justify-center pt-[15vh]
+           bg-black/50 backdrop-blur-sm;
+  }
+  .command-box {
+    @apply w-full max-w-xl bg-white rounded-xl shadow-2xl overflow-hidden
+           border border-slate-200;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .agenda-grid {
+    display: grid;
+    grid-template-rows: repeat(var(--slots, 24), 40px);
+  }
+}
