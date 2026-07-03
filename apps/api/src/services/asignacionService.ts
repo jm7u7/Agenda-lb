@@ -149,6 +149,30 @@ export async function crearMovimiento(data: CrearMovimientoInput) {
       },
     });
 
+    // ── 3-bis. RETORNO a la sede matriz tras un movimiento TEMPORAL ─────────
+    // Si el movimiento tiene fecha de fin y cerró una asignación previa, al terminar
+    // la profesional debe VOLVER a su sede matriz. Creamos la asignación de retorno
+    // (desde el día siguiente al fin) con el fin ORIGINAL de la base (null = indefinida).
+    // Sin esto, el día siguiente al movimiento la profesional quedaba SIN sede vigente.
+    if (nuevaFechaFin && actual) {
+      const retornoInicio = addDays(nuevaFechaFin, 1);
+      // Solo si la base no habría terminado antes del retorno.
+      if (cierraFechaFin === null || cierraFechaFin >= retornoInicio) {
+        await tx.asignacionSede.create({
+          data: {
+            profesionalId: data.profesionalId,
+            sedeId: actual.sedeId,
+            fechaInicio: retornoInicio,
+            fechaFin: cierraFechaFin, // fin original de la base (null = indefinida)
+            activa: true,
+            motivo: data.motivo,
+            notas: `Retorno automático a ${actual.sede.nombre} tras ${MOTIVO_LABELS[data.motivo]}`,
+            creadoPor: data.creadoPor,
+          },
+        });
+      }
+    }
+
     // Audit del movimiento DENTRO de la transacción (antes solo se auditaba el
     // borrado; ahora la creación de rotación también deja rastro inmutable).
     await auditEnTx(tx, {

@@ -114,13 +114,18 @@ export async function sincronizarCitaOutlook(accion: Accion, citaId: string): Pr
   try {
     const cita = await prisma.cita.findUnique({
       where: { id: citaId },
-      include: { profesional: true, paciente: true, sede: true, servicio: true },
+      include: { profesional: true, solicitadoProfesional: true, paciente: true, sede: true, servicio: true },
     });
     if (!cita || !cita.profesional) return;
 
+    // Persona REAL que atiende: en baro "Solo X" la cita vive en una MÁQUINA (profesionalId =
+    // "Baro 1") y el médico pedido va en solicitadoProfesional — el calendario es el de ESA
+    // persona. Sin esto, las baro "Solo Daniel/Yasica" nunca llegaban a su celular.
+    const persona = cita.solicitadoProfesional ?? cita.profesional;
+
     // Yasica Doy → su Gmail personal por correo con invitación (.ics). Graph no
     // puede escribir en un buzón externo, así que se notifica por email.
-    const gmailDestino = gmailDeProfesional(cita.profesional.nombres, cita.profesional.apellidos);
+    const gmailDestino = gmailDeProfesional(persona.nombres, persona.apellidos);
     if (gmailDestino) {
       await notificarCitaGmailProfesional(accion, cita, gmailDestino);
       return;
@@ -128,7 +133,7 @@ export async function sincronizarCitaOutlook(accion: Accion, citaId: string): Pr
 
     // Daniel Doy → buzón Outlook vía Microsoft Graph (requiere credenciales Azure).
     if (!outlookConfigurado()) return; // inerte si no hay credenciales Azure
-    const email = emailOutlookDeProfesional(cita.profesional.nombres, cita.profesional.apellidos);
+    const email = emailOutlookDeProfesional(persona.nombres, persona.apellidos);
     if (!email) return; // solo Daniel Doy
 
     // Cancelar: borrar el evento si existe y limpiar el id.

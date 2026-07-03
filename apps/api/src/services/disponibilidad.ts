@@ -40,6 +40,9 @@ export async function turnosDelDia(sedeId: string, fecha: string, profIds: strin
   // Una excepción abierta manda sobre el horario regular de la sede.
   const sede = await prisma.sede.findUnique({ where: { id: sedeId }, select: { horario: true } });
   const dia = (sede?.horario as Record<string, { apertura?: string; cierre?: string; abierto?: boolean }> | null | undefined)?.[String(diaSemana)];
+  // Cierre NORMAL de la sede ese día (antes de aplicar la excepción). Sirve para saber si una
+  // excepción EXTIENDE el cierre (cierreExcepcion > cierreNormal) y a quién extender.
+  const cierreNormal = (dia && dia.abierto && dia.cierre) ? dia.cierre : null;
   // `null` = sin horario configurado (no recortar, compat). `'CERRADA'` = sede cerrada ese día.
   let ventana: { apertura: string; cierre: string } | 'CERRADA' | null;
   if (excAbierta) ventana = { apertura: excAbierta.horaApertura!, cierre: excAbierta.horaCierre! };
@@ -48,13 +51,17 @@ export async function turnosDelDia(sedeId: string, fecha: string, profIds: strin
   else if (dia.apertura && dia.cierre) ventana = { apertura: dia.apertura, cierre: dia.cierre };
   else ventana = null;
 
-  // Intersección (turno ∩ apertura de sede). Las horas "HH:mm" comparan bien como string.
+  // Turno ∩ ventana de la sede. Normalmente el fin = mín(turno, cierre) — solo puede RECORTAR.
+  // PERO una EXCEPCIÓN ABIERTA que EXTIENDE el cierre normal (p.ej. viernes hasta las 19:00 en
+  // vez de 18:00) empuja el fin de turno de quienes trabajan HASTA (o más allá de) el cierre
+  // normal hasta el cierre extendido. Los de medio turno (terminan antes del cierre) no cambian.
   const recortar = (ini: string, fin: string): TurnoDia | null => {
     if (ventana === 'CERRADA') return null;
     if (!ventana) return { horaInicio: ini, horaFin: fin };
     const horaInicio = ini > ventana.apertura ? ini : ventana.apertura; // máx(turno, apertura)
-    const horaFin = fin < ventana.cierre ? fin : ventana.cierre;          // mín(turno, cierre)
-    return horaInicio < horaFin ? { horaInicio, horaFin } : null;         // ventana vacía → sin turno
+    const extiende = !!excAbierta && !!cierreNormal && ventana.cierre > cierreNormal && fin >= cierreNormal;
+    const horaFin = extiende ? ventana.cierre : (fin < ventana.cierre ? fin : ventana.cierre);
+    return horaInicio < horaFin ? { horaInicio, horaFin } : null;       // ventana vacía → sin turno
   };
 
   // Solo si hay excepción abierta importa quién está marcado (EntradaPodologa de esa fecha).

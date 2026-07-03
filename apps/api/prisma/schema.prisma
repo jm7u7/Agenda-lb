@@ -134,6 +134,15 @@ enum EstadoConfirmacion {
   cancelada
 }
 
+// Área de un agente de agendamiento (módulo Desempeño de Agentes). Independiente del
+// rol (los roles son renombrables/editables); se backfillea desde el rol una sola vez
+// y de ahí en más se administra desde la ficha del usuario. null = sin clasificar.
+enum AreaAgente {
+  CONTACT_CENTER
+  RECEPCION
+  OTRO
+}
+
 // ─── Sede ─────────────────────────────────────────────────────────────────────
 
 model Sede {
@@ -151,6 +160,7 @@ model Sede {
   asignaciones    AsignacionSede[]
   citas           Cita[]
   usuarios        UsuarioSede[]
+  usuariosAsignados Usuario[]           @relation("UsuarioSedeAsignada")
   webhookSubs     WebhookSubscription[]
   excepciones     ExcepcionHorario[]
   agregados       AgregadoDiario[]
@@ -577,6 +587,8 @@ model Cita {
   @@index([estado])
   @@index([unidadNegocioId, fecha])
   @@index([slotGrupoId])
+  // Desempeño de Agentes: consultas por autor de la reserva en un rango de fechas.
+  @@index([creadoPorUsuarioId, fecha])
   @@map("citas")
 }
 
@@ -657,6 +669,12 @@ model Usuario {
   rol          String    @default("recepcionista")
   activo       Boolean   @default(true)
   deletedAt    DateTime?
+
+  // Desempeño de Agentes: área del agente (null = sin clasificar) y su sede "principal"
+  // para reportes (null = multi-sede o no aplica). NO reemplaza a UsuarioSede (acceso).
+  area           AreaAgente?
+  sedeAsignadaId String?     @db.Uuid
+  sedeAsignada   Sede?       @relation("UsuarioSedeAsignada", fields: [sedeAsignadaId], references: [id])
 
   sedes                 UsuarioSede[]
   apiKeys               ApiKey[]

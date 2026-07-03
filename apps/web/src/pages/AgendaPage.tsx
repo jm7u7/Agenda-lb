@@ -123,8 +123,12 @@ export function AgendaPage() {
   // Citas de TODAS las unidades de la sede ese día — para bloquear visualmente el
   // slot de una persona que está ocupada en otra unidad (p.ej. Daniel en Baropodometría
   // bloquea su columna de Podología). Una persona no puede estar en dos lados a la vez.
+  // Prefijo 'citas' A PROPÓSITO: así CUALQUIER invalidateQueries(['citas']) (crear/mover/estado/
+  // cancelar cita, en drawer/popover/socket) refresca también esta ocupación cruzada al instante.
+  // Antes la clave era ['citas-ocupacion',…] y NADIE la invalidaba → la franja "Ocupado" de otra
+  // unidad quedaba desactualizada hasta 60 s (p.ej. baro de Daniel no bloqueaba su podología al toque).
   const { data: citasSedeTodas = [] } = useQuery({
-    queryKey: ['citas-ocupacion', sedeId, fechaStr()],
+    queryKey: ['citas', 'ocupacion', sedeId, fechaStr()],
     queryFn: () => citasApi.listar({ sedeId: sedeId!, fecha: fechaStr() }),
     enabled: !!sedeId,
     refetchInterval: 60_000,

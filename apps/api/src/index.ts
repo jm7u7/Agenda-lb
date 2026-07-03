@@ -41,6 +41,7 @@ import authRouter from './routes/auth';
 import webhooksRouter from './routes/webhooks';
 import { horariosRouter } from './routes/horarios';
 import analyticsRouter from './routes/analytics';
+import analyticsAgentesRouter from './routes/analyticsAgentes';
 import exportarRouter from './routes/exportar';
 import movimientosRouter from './routes/movimientos';
 import notificacionesRouter from './routes/notificaciones';
@@ -103,6 +104,7 @@ app.use(`${v1}/paquetes`, paquetesRouter);
 app.use(`${v1}/audit`, auditRouter);
 app.use(`${v1}/webhooks`, webhooksRouter);
 app.use(`${v1}/horarios`, horariosRouter);
+app.use(`${v1}/analytics/agentes`, analyticsAgentesRouter); // antes que /analytics (prefijo más específico)
 app.use(`${v1}/analytics`, analyticsRouter);
 app.use(`${v1}/exportar`, exportarRouter);
 app.use(`${v1}/movimientos`, movimientosRouter);

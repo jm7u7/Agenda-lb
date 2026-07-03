@@ -8,6 +8,9 @@ import { PacientesPage, FichaPacientePage } from './pages/PacientesPage';
 import { AdminPage } from './pages/AdminPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { AnalyticsDetallePage } from './pages/analytics/AnalyticsDetallePage';
+import { AgentesResumenPage } from './pages/analytics/agentes/AgentesResumenPage';
+import { AgentesComparativaPage } from './pages/analytics/agentes/AgentesComparativaPage';
+import { AgenteDetallePage } from './pages/analytics/agentes/AgenteDetallePage';
 import { HerramientasPage } from './pages/HerramientasPage';
 import { MovimientosPage } from './pages/MovimientosPage';
 import { UsersPage } from './pages/admin/UsersPage';
@@ -54,6 +57,10 @@ export default function App() {
         <Route path="/admin/roles" element={<RolesPage />} />
         <Route path="/admin/notificaciones" element={<NotificacionesAdminPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        {/* Desempeño de Agentes: rutas estáticas ganan sobre /analytics/:kpi */}
+        <Route path="/analytics/agentes" element={<AgentesResumenPage />} />
+        <Route path="/analytics/agentes/comparativa" element={<AgentesComparativaPage />} />
+        <Route path="/analytics/agentes/:agenteId" element={<AgenteDetallePage />} />
         <Route path="/analytics/:kpi" element={<AnalyticsDetallePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

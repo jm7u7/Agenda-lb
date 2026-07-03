@@ -538,6 +538,13 @@ router.get('/cancelar', async (req, res) => {
       motivoCancelacion: 'Cancelada por el paciente desde el correo de confirmación',
     },
   });
+  // Cancelación de ORIGEN PACIENTE (vía token del correo): acción propia y sin usuarioId,
+  // para distinguirla de las cancelaciones internas ('cancelar'/'cambiar_estado').
+  await registrarAudit({
+    citaId: cita.id, accion: 'cancelar_por_paciente', entidad: 'cita', entidadId: cita.id,
+    antes: { estado: cita.estado }, despues: { estado: 'cancelada', origen: 'token_correo' },
+    sedeId: cita.sedeId, ip: req.ip,
+  });
 
   try {
     const fechaStr = cita.fecha.toISOString().split('T')[0]!;

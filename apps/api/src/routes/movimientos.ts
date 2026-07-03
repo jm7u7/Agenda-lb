@@ -308,6 +308,17 @@ router.delete('/:id', requireAuth, requireRol('admin', 'coordinadora_sedes'), as
     // vuelve a quedar indefinido (fechaFin=null), no debe coexistir un instante
     // con el movimiento (también abierto) → respeta el índice "una sola abierta".
     await tx.asignacionSede.delete({ where: { id: asignacion.id } });
+    // Si el movimiento era TEMPORAL, se creó una asignación de RETORNO a la sede previa
+    // (desde el día siguiente al fin). Hay que eliminarla también, si no al reabrir el
+    // predecesor quedarían DOS asignaciones abiertas de la misma sede (viola el índice).
+    if (asignacion.fechaFin && pred) {
+      const rIni = addDays(asignacion.fechaFin, 1);
+      const d0 = new Date(Date.UTC(rIni.getUTCFullYear(), rIni.getUTCMonth(), rIni.getUTCDate(), 0, 0, 0));
+      const d1 = new Date(Date.UTC(rIni.getUTCFullYear(), rIni.getUTCMonth(), rIni.getUTCDate(), 23, 59, 59));
+      await tx.asignacionSede.deleteMany({
+        where: { profesionalId: asignacion.profesionalId, sedeId: pred.predecesorSedeId, fechaInicio: { gte: d0, lte: d1 } },
+      });
+    }
     if (pred) {
       await tx.asignacionSede.update({ where: { id: pred.predecesorId }, data: { activa: true, fechaFin: pred.restaurarFechaFin } });
     }

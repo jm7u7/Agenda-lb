@@ -591,14 +591,14 @@ async function main() {
   const TODOS_PERMISOS = [
     'agenda.ver', 'agenda.editar',
     'pacientes.ver', 'pacientes.editar',
-    'admin.ver', 'analytics.ver',
+    'admin.ver', 'analytics.ver', 'analytics.agentes',
     'usuarios.ver', 'usuarios.editar',
     'roles.editar',
   ];
   await prisma.rol.createMany({
     data: [
       { nombre: 'admin', label: 'Administrador', descripcion: 'Acceso total al sistema', permisos: TODOS_PERMISOS, esSistema: true },
-      { nombre: 'coordinadora_sedes', label: 'Coordinadora de Sedes', descripcion: 'Gestión de agenda, pacientes y reportes', permisos: ['agenda.ver','agenda.editar','pacientes.ver','pacientes.editar','admin.ver','analytics.ver'], esSistema: true },
+      { nombre: 'coordinadora_sedes', label: 'Coordinadora de Sedes', descripcion: 'Gestión de agenda, pacientes y reportes', permisos: ['agenda.ver','agenda.editar','pacientes.ver','pacientes.editar','admin.ver','analytics.ver','analytics.agentes'], esSistema: true },
       { nombre: 'recepcionista', label: 'Recepcionista', descripcion: 'Agenda y atención al paciente', permisos: ['agenda.ver','agenda.editar','pacientes.ver','pacientes.editar'], esSistema: true },
       { nombre: 'contact_center', label: 'Contact Center', descripcion: 'Atención telefónica y agendamiento', permisos: ['agenda.ver','agenda.editar','pacientes.ver','pacientes.editar'], esSistema: false },
     ],

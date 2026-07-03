@@ -11,7 +11,7 @@ const PERMISOS_VALIDOS = [
   'pacientes.ver', 'pacientes.editar',
   'herramientas.operativas', 'herramientas.estrategicas',
   'movimientos.ver', 'movimientos.editar',
-  'admin.ver', 'analytics.ver',
+  'admin.ver', 'analytics.ver', 'analytics.agentes',
   'notificaciones.ver',
   'usuarios.ver', 'usuarios.editar',
   'roles.editar',
@@ -55,6 +55,7 @@ router.get('/permisos', requireAuth, async (_req, res) => {
     'Administración': [
       { id: 'admin.ver', label: 'Ver panel de administración' },
       { id: 'analytics.ver', label: 'Ver analytics y reportes' },
+      { id: 'analytics.agentes', label: 'Ver desempeño de agentes (Contact Center / Recepción)' },
       { id: 'notificaciones.ver', label: 'Ver / gestionar notificaciones' },
     ],
     'Usuarios y Roles': [

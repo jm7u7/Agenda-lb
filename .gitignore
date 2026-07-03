@@ -35,3 +35,4 @@ apps/api/uploads/
 .claude/
 .agents/
 skills-lock.json
+sync-nightly.log
