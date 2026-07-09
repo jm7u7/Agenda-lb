@@ -28,6 +28,23 @@ LOG="$REPO/sync-nightly.log"
     echo "AVISO: contenedor limablue_postgres apagado; dump omitido"
   fi
 
+  # ── 1b. Cifrar el dump para respaldo EN EL REMOTO (AES-256, PBKDF2). La clave vive SOLO
+  #     local (~/limablue-backup-key.txt), nunca en el repo → el .enc es inútil sin ella.
+  #     Así la BD SÍ se respalda a git, pero protegida (PII de pacientes). ──
+  KEYFILE="$HOME/limablue-backup-key.txt"
+  if [ -f "$REPO/limablue_dump.sql.gz" ] && [ -f "$KEYFILE" ]; then
+    if openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 200000 -salt \
+         -in "$REPO/limablue_dump.sql.gz" -out "$REPO/limablue_dump.sql.gz.enc.tmp" -pass file:"$KEYFILE"; then
+      mv "$REPO/limablue_dump.sql.gz.enc.tmp" "$REPO/limablue_dump.sql.gz.enc"
+      echo "Dump cifrado actualizado ($(du -h "$REPO/limablue_dump.sql.gz.enc" | cut -f1 | tr -d ' '))"
+    else
+      rm -f "$REPO/limablue_dump.sql.gz.enc.tmp"
+      echo "ERROR: cifrado del dump falló; se conserva el .enc anterior"
+    fi
+  elif [ ! -f "$KEYFILE" ]; then
+    echo "AVISO: sin clave ($KEYFILE); dump cifrado omitido (no se respalda la BD al remoto)"
+  fi
+
   # ── 2. Sincronizar código fuente → repo ──
   # Los --exclude protegen tanto archivos que no deben copiarse como los que
   # existen solo en el repo (rsync --delete no borra lo excluido).
@@ -47,6 +64,7 @@ LOG="$REPO/sync-nightly.log"
     --exclude='DEPLOY.txt' \
     --exclude='limablue_dump.sql' \
     --exclude='limablue_dump.sql.gz' \
+    --exclude='limablue_dump.sql.gz.enc' \
     --exclude='sync-nightly.sh' \
     --exclude='sync-nightly.log' \
     "$SRC" "$REPO/"

@@ -108,6 +108,41 @@ npm run dev
 
 ---
 
+## Replicar en otro entorno (con datos)
+
+Este repo trae **código**, **migraciones** (estructura de la BD) y el **respaldo de la BD cifrado**
+(`limablue_dump.sql.gz.enc`). Los **secretos NO están en el repo** (`.env`, clave de descifrado):
+por seguridad se copian aparte. Para levantar una réplica idéntica con datos:
+
+```bash
+# 1) Clonar y dependencias
+git clone git@github.com:jm7u7/Agenda-lb.git && cd Agenda-lb
+npm install
+
+# 2) Config: copia el .env real a apps/api/.env (o parte de la plantilla)
+cp apps/api/.env.example apps/api/.env   # y completa los valores (o copia tu .env real)
+
+# 3) Levantar Postgres + Redis (Docker) con el contenedor esperado
+docker run -d --name limablue_postgres -e POSTGRES_USER=limablue -e POSTGRES_PASSWORD=<pass> \
+  -e POSTGRES_DB=limablue_agenda -p 5432:5432 postgres:16
+docker run -d --name limablue_redis -p 6379:6379 redis:7
+
+# 4) Restaurar los DATOS desde el respaldo cifrado (necesitas la CLAVE, que copiaste aparte):
+./restaurar-bd.sh /ruta/a/limablue-backup-key.txt
+
+# 5) Arrancar
+npm run dev
+```
+
+> **Dos archivos secretos** que debes llevar al nuevo entorno por un canal privado (NO por git):
+> `apps/api/.env` (config: DB, JWT, Resend, etc.) y `~/limablue-backup-key.txt` (clave para
+> descifrar el respaldo). Sin la clave, el respaldo cifrado es irrecuperable.
+>
+> Si prefieres empezar **sin datos** (BD vacía): omite el paso 4 y corre
+> `npm run db:migrate:prod && npm run db:seed` (estructura + datos base).
+
+---
+
 ## Unidades de negocio y lógica de agendamiento
 
 El campo `modoReserva` en `UnidadNegocio` controla el comportamiento de toda la UI y la API:
