@@ -16,7 +16,7 @@ for (let m = 8 * 60; m <= 20 * 60; m += 30) {
 }
 
 function hoyISO() { return format(new Date(), 'yyyy-MM-dd'); }
-const tipoLabel = (t: string) => (t === 'podologa' ? 'Podóloga' : t === 'fisioterapeuta' ? 'Fisioterapeuta' : t);
+const tipoLabel = (t: string) => (t === 'podologa' ? 'Podóloga' : t === 'fisioterapeuta' ? 'Fisioterapeuta' : t === 'medico' ? 'Baropodometría' : t);
 
 export function PermisosPage() {
   const navigate = useNavigate();
@@ -26,8 +26,9 @@ export function PermisosPage() {
   const [sedeSelId, setSedeSelId] = useState('');
   const [fecha, setFecha] = useState<string>(hoyISO());
 
-  // Formulario
-  const [profesionalId, setProfesionalId] = useState('');
+  // Formulario — se puede bloquear a uno o VARIOS profesionales a la vez.
+  const [profesionalIds, setProfesionalIds] = useState<string[]>([]);
+  const toggleProf = (id: string) => setProfesionalIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   const [desde, setDesde] = useState('09:00');
   const [hasta, setHasta] = useState('13:00');
   const [motivo, setMotivo] = useState('');
@@ -46,8 +47,10 @@ export function PermisosPage() {
     queryFn: () => profesionalesApi.listar({ sedeId, fecha, activo: true }),
     enabled: !!sedeId && puedeGestionar,
   });
+  // Bloqueables: podólogas, fisioterapeutas y baro (médico/máquina "Baro N") — para
+  // bloquear baro cuando hay reunión de médicos y no pueden atender.
   const elegibles = useMemo(
-    () => profesionales.filter(p => p.tipo === 'podologa' || p.tipo === 'fisioterapeuta'),
+    () => profesionales.filter(p => p.tipo === 'podologa' || p.tipo === 'fisioterapeuta' || p.tipo === 'medico'),
     [profesionales],
   );
 
@@ -58,18 +61,24 @@ export function PermisosPage() {
   });
 
   const crearMut = useMutation({
-    mutationFn: () => permisosApi.crear({ profesionalId, sedeId, fecha, horaInicio: desde, horaFin: hasta, motivo: motivo.trim() }),
-    onSuccess: () => {
+    mutationFn: () => permisosApi.crearMultiple({ profesionalIds, sedeId, fecha, horaInicio: desde, horaFin: hasta, motivo: motivo.trim() }),
+    onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['permisos', sedeId, fecha] });
       qc.invalidateQueries({ queryKey: ['permisos-agenda'] });
-      toast.success('Permiso registrado');
-      setProfesionalId(''); setMotivo(''); setCitasConflicto([]);
+      // Bloqueados los libres; los que tienen pacientes se reportan (nunca se bloquean).
+      const conflictos = r.conflictos.flatMap(c => c.citas.map(x => ({ ...x, paciente: `${c.nombre}: ${x.paciente}` })));
+      setCitasConflicto(conflictos);
+      if (r.creados.length > 0) {
+        toast.success(`Bloqueado(s): ${r.creados.map(c => c.nombre).join(', ')}`
+          + (r.conflictos.length > 0 ? ` · No se pudo con ${r.conflictos.map(c => c.nombre).join(', ')} (tienen pacientes)` : ''));
+        // Deseleccionar solo a los que SÍ se bloquearon; los con conflicto quedan marcados para gestionarlos.
+        setProfesionalIds(r.conflictos.map(c => c.profesionalId));
+        if (r.conflictos.length === 0) setMotivo('');
+      } else {
+        toast.error(`Ninguno se bloqueó: ${r.conflictos.map(c => c.nombre).join(', ')} tienen pacientes en ese rango`);
+      }
     },
-    onError: (e: Error & { data?: { citas?: typeof citasConflicto } }) => {
-      // Si el rechazo trae la lista de pacientes en el rango, la mostramos.
-      if (e.data?.citas?.length) { setCitasConflicto(e.data.citas); toast.error('Hay pacientes agendados en ese rango'); }
-      else { setCitasConflicto([]); toast.error(e.message); }
-    },
+    onError: (e: Error) => { setCitasConflicto([]); toast.error(e.message); },
   });
 
   const crearReunionMut = useMutation({
@@ -104,7 +113,7 @@ export function PermisosPage() {
     );
   }
 
-  const valido = (modo === 'reunion' || !!profesionalId) && !!desde && !!hasta && hasta > desde && motivo.trim().length >= 3;
+  const valido = (modo === 'reunion' || profesionalIds.length > 0) && !!desde && !!hasta && hasta > desde && motivo.trim().length >= 3;
   const enviando = crearMut.isPending || crearReunionMut.isPending;
   const enviar = () => (modo === 'reunion' ? crearReunionMut.mutate() : crearMut.mutate());
 
@@ -118,7 +127,7 @@ export function PermisosPage() {
         <div className="w-9 h-9 rounded-xl bg-rose-500 flex items-center justify-center shrink-0"><span className="text-white text-lg">🚫</span></div>
         <div>
           <h1 className="text-base font-bold text-slate-900">Permisos / Bloqueos</h1>
-          <p className="text-xs text-slate-500">Bloquea a una podóloga o fisioterapeuta en un rango horario</p>
+          <p className="text-xs text-slate-500">Bloquea a una podóloga, fisioterapeuta o baropodometría en un rango horario</p>
         </div>
       </div>
 
@@ -173,14 +182,40 @@ export function PermisosPage() {
 
           {modo === 'individual' ? (
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Profesional</label>
-              <select value={profesionalId} onChange={e => setProfesionalId(e.target.value)} className="input w-full text-sm">
-                <option value="">Seleccionar…</option>
-                {elegibles.map(p => (
-                  <option key={p.id} value={p.id}>{p.nombres.split(' ')[0]} {p.apellidos.split(' ')[0]} · {tipoLabel(p.tipo)}</option>
-                ))}
-              </select>
-              {elegibles.length === 0 && <p className="mt-1 text-xxs text-slate-400">No hay podólogas/fisioterapeutas en esta sede.</p>}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Profesional(es) <span className="font-normal text-slate-400">— marca uno o varios</span>
+                </label>
+                {elegibles.length > 0 && (
+                  <div className="flex gap-2 text-xxs">
+                    <button type="button" onClick={() => { setProfesionalIds(elegibles.map(p => p.id)); setCitasConflicto([]); }} className="text-rose-600 hover:underline font-semibold">Todos</button>
+                    {profesionalIds.length > 0 && <button type="button" onClick={() => { setProfesionalIds([]); setCitasConflicto([]); }} className="text-slate-400 hover:underline">Ninguno</button>}
+                  </div>
+                )}
+              </div>
+              <div className="max-h-52 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
+                {elegibles.map(p => {
+                  const marcado = profesionalIds.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { toggleProf(p.id); setCitasConflicto([]); }}
+                      className={cn('w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors', marcado ? 'bg-rose-50' : 'hover:bg-slate-50')}
+                    >
+                      <span className={cn('w-4 h-4 rounded border flex items-center justify-center shrink-0', marcado ? 'bg-rose-500 border-rose-500 text-white' : 'border-slate-300 bg-white')}>
+                        {marcado && <span className="text-[10px] leading-none">✓</span>}
+                      </span>
+                      <span className={cn('flex-1', marcado ? 'font-semibold text-slate-800' : 'text-slate-600')}>
+                        {p.nombres.split(' ')[0]} {p.apellidos.split(' ')[0]}
+                      </span>
+                      <span className={cn('text-xxs', p.tipo === 'medico' ? 'text-teal-600 font-semibold' : 'text-slate-400')}>{tipoLabel(p.tipo)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {elegibles.length === 0 && <p className="mt-1 text-xxs text-slate-400">No hay profesionales bloqueables en esta sede.</p>}
+              {profesionalIds.length > 0 && <p className="mt-1 text-xxs text-slate-500">{profesionalIds.length} seleccionado(s) — se bloquearán en el mismo rango.</p>}
             </div>
           ) : (
             <div className="space-y-2">
@@ -245,14 +280,14 @@ export function PermisosPage() {
               ? (modo === 'reunion' ? 'Agendando reunión…' : 'Bloqueando…')
               : (modo === 'reunion'
                   ? (destinatario === 'ambos' ? '🤝 Agendar reunión en ambas agendas' : `🤝 Agendar reunión de ${destinatario === 'daniel' ? 'Daniel' : 'Yasica'}`)
-                  : '🚫 Bloquear horario')}
+                  : `🚫 Bloquear horario${profesionalIds.length > 1 ? ` (${profesionalIds.length})` : ''}`)}
           </button>
 
-          {/* Pacientes en el rango: por qué no se puede bloquear (gestionarlos primero) */}
+          {/* Pacientes en el rango: por qué NO se pudo bloquear a esos profesionales */}
           {citasConflicto.length > 0 && (
             <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 space-y-2">
               <p className="text-xs font-bold text-amber-800">
-                No se puede bloquear: {citasConflicto.length} paciente(s) en ese rango. Reprograma o cancela sus citas primero.
+                No se pudo bloquear a quien tiene pacientes en ese rango ({citasConflicto.length} cita(s)). Reprograma o cancela sus citas primero.
               </p>
               <ul className="space-y-1">
                 {citasConflicto.map((c, i) => (

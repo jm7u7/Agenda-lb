@@ -34,11 +34,18 @@ Reemplaza un ERP de escritorio de 14 años. 5 sedes, ~400 citas diarias, 40 pod�
 - **Estructura va en migraciones, NO en `seed.ts`.** El seed es SOLO datos (sedes, roles,
   profesionales). Los índices/constraints viven en las migraciones.
 - **Índices únicos PARCIALES** (con `WHERE`): Prisma no los representa en el schema, así que
-  viven como SQL crudo dentro de la migración baseline (`00000000000000_baseline/migration.sql`):
-  `citas_slot_activo_unique`, `recordatorios_cita_unico`, `asignaciones_sede_una_abierta`,
-  `pacientes_documento_unico`, `citas_idempotency_unico`. Como NO están en `schema.prisma`, al
-  correr `migrate dev` Prisma intentará "dropearlos" en la migración generada → **revisa el SQL
-  generado y borra cualquier `DROP INDEX` de esos 5** (o genera la migración con
+  viven como SQL crudo dentro de las migraciones. Son 9 (verificados contra `pg_indexes`):
+  - En la baseline (`00000000000000_baseline/migration.sql`): `recordatorios_cita_unico`,
+    `asignaciones_sede_una_abierta`, `pacientes_documento_unico`, `citas_idempotency_unico`.
+  - En `20260624120000_bloques_combinados`: `citas_slot_primario_unique` y
+    `citas_slot_secundario_unique` (reemplazan al antiguo `citas_slot_activo_unique` de la
+    baseline, que ya NO existe en la BD), más `combinaciones_servicio_unico`.
+  - En `20260625230000_promociones`: `promociones_nombre_unico`.
+  - En `20260705193100_modulo_sesiones`: `consumos_cita_unico` (máx 1 consumo vivo por cita).
+
+  Como NO están en `schema.prisma`, al correr `migrate dev` Prisma intentará "dropearlos" en la
+  migración generada → **revisa el SQL generado y borra cualquier `DROP INDEX` de esos 8** (o
+  genera la migración con
   `prisma migrate diff --from-schema-datamodel <viejo> --to-schema-datamodel <nuevo> --script`,
   que no los toca). `prisma migrate status` debe quedar siempre "up to date".
 
@@ -71,7 +78,7 @@ packages/shared/     ← tipos TypeScript compartidos
 ```
 
 ## Reglas críticas
-- Anti-doble-booking: constraint único en DB `unique_slot_profesional` (profesionalId, fecha, horaInicio)
+- Anti-doble-booking: índices únicos parciales en DB `citas_slot_primario_unique` + `citas_slot_secundario_unique` (profesionalId, fecha, horaInicio) — máx 1 primario + 1 secundario por slot (bloques combinados)
 - Soft delete en todos los modelos (`deletedAt`, `activo`)
 - Un SUPER_ADMIN/admin no puede desactivarse a sí mismo
 - Drag & drop para reprogramar citas entre especialistas

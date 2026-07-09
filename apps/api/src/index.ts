@@ -21,6 +21,7 @@ import { redis } from './redis';
 import { initSocket } from './socket';
 import { corsOrigin } from './cors';
 import { iniciarRecordatorioWorker } from './queue/recordatorioWorker';
+import { iniciarVideoWorker, programarBarridoVideos } from './queue/videoQueue';
 import { outlookConfigurado, reintentarOutlookFallidos } from './services/outlookCalendarService';
 import { errorHandler } from './middleware/errorHandler';
 import { swaggerSpec } from './swagger';
@@ -30,6 +31,7 @@ import usersRouter from './routes/users';
 import rolesRouter from './routes/roles';
 import disponibilidadRouter from './routes/disponibilidad';
 import pacientesRouter from './routes/pacientes';
+import reniecRouter from './routes/reniec';
 import profesionalesRouter from './routes/profesionales';
 import sedesRouter from './routes/sedes';
 import servicesRouter from './routes/servicios';
@@ -39,6 +41,7 @@ import paquetesRouter from './routes/paquetes';
 import auditRouter from './routes/audit';
 import authRouter from './routes/auth';
 import webhooksRouter from './routes/webhooks';
+import resendWebhookRouter from './routes/resendWebhook';
 import { horariosRouter } from './routes/horarios';
 import analyticsRouter from './routes/analytics';
 import analyticsAgentesRouter from './routes/analyticsAgentes';
@@ -53,6 +56,11 @@ import recordatoriosRouter from './routes/recordatorios';
 import baroSolicitudRouter from './routes/baroSolicitud';
 import combinacionesRouter from './routes/combinaciones';
 import promocionesRouter from './routes/promociones';
+import membresiasRouter from './routes/membresias';
+import conciliacionRouter from './routes/conciliacion';
+import consumosRouter from './routes/consumos';
+import reportesRouter from './routes/reportes';
+import servicioVideosRouter from './routes/servicioVideos';
 
 const app = express();
 const server = http.createServer(app);
@@ -64,6 +72,9 @@ app.use(cors({
   credentials: true,
 }));
 app.use(compression());
+// Webhook de Resend: se monta ANTES de express.json() porque valida la firma svix
+// sobre el RAW body (el router usa su propio parser raw). Ruta específica primero.
+app.use('/api/v1/webhooks/resend', resendWebhookRouter);
 app.use(express.json({ limit: '10mb' }));
 app.use(morgan('combined'));
 
@@ -95,6 +106,7 @@ app.use(`${v1}/roles`, rolesRouter);
 app.use(`${v1}/citas`, citasRouter);
 app.use(`${v1}/disponibilidad`, disponibilidadRouter);
 app.use(`${v1}/pacientes`, pacientesRouter);
+app.use(`${v1}/reniec`, reniecRouter);
 app.use(`${v1}/profesionales`, profesionalesRouter);
 app.use(`${v1}/sedes`, sedesRouter);
 app.use(`${v1}/servicios`, servicesRouter);
@@ -117,6 +129,11 @@ app.use(`${v1}/recordatorios`, recordatoriosRouter);
 app.use(`${v1}/baro-solicitud`, baroSolicitudRouter);
 app.use(`${v1}/combinaciones`, combinacionesRouter);
 app.use(`${v1}/promociones`, promocionesRouter);
+app.use(`${v1}/membresias`, membresiasRouter);
+app.use(`${v1}/conciliacion`, conciliacionRouter);
+app.use(`${v1}/consumos`, consumosRouter);
+app.use(`${v1}/reportes`, reportesRouter);
+app.use(`${v1}/servicio-videos`, servicioVideosRouter);
 
 // ─── Error handler ────────────────────────────────────────────────────────────
 app.use(errorHandler);
@@ -129,7 +146,11 @@ initSocket(server);
 // en el API y arranca `npm run worker` aparte.
 if (process.env.RECORDATORIOS_WORKER_INLINE !== 'false') {
   iniciarRecordatorioWorker();
+  iniciarVideoWorker();
 }
+// Registra el job repetible del barrido de videos (cada 5 min). Idempotente: limpia
+// repeticiones previas. Se registra aunque el worker corra aparte (el worker lo procesa).
+void programarBarridoVideos();
 
 // ─── Reintento periódico de sincronizaciones Outlook fallidas ─────────────────
 // Solo si Azure está configurado. Cada 10 min reprocesa las citas con outlookSyncError.

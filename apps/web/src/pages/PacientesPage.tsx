@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { pacientesApi, paquetesApi } from '../api';
+import { pacientesApi, paquetesApi, reniecApi } from '../api';
 import { BadgeEstado } from '../components/ui/Badge';
 import { RomboAlerta } from '../components/pacientes/RomboAlerta';
 import { CuadroFamiliares } from '../components/pacientes/CuadroFamiliares';
+import { ToggleDatosPaciente } from '../components/pacientes/ToggleDatosPaciente';
+import { BotonHistorialGenexis } from '../components/pacientes/HistorialGenexis';
+import { SaldoPaquetes } from '../components/pacientes/SaldoPaquetes';
 import { Skeleton } from '../components/ui/Skeleton';
 import { cn } from '../utils/cn';
 
@@ -77,8 +80,14 @@ export function PacientesPage() {
                       <RomboAlerta alerta={p.alerta} size={12} />
                       <span>{p.nombreCompleto}</span>
                     </p>
-                    <p className="text-sm text-slate-500">
-                      {p.tipoDocumento} {p.numeroDocumento} · {p.telefono}
+                    <p className="text-sm text-slate-500 flex items-center gap-2">
+                      <span>{p.tipoDocumento} {p.numeroDocumento} · {p.telefono}</span>
+                      {/* Estado de datos (calculado server-side); compacto: el clic de la fila ya lleva a la ficha */}
+                      {p.requiereActualizacionDatos !== undefined && (
+                        <ToggleDatosPaciente encendido={p.requiereActualizacionDatos} contacto={p} compacto />
+                      )}
+                      {/* Saldo total de sesiones activas (misma queryKey compartida) */}
+                      <SaldoPaquetes pacienteId={p.id} variante="compact" />
                     </p>
                   </div>
                   <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -136,6 +145,9 @@ export function FichaPacientePage() {
     nombres: '', apellidoPaterno: '', apellidoMaterno: '', tipoDocumento: 'DNI',
     numeroDocumento: '', telefono: '', email: '', fechaNacimiento: '', sexo: '',
   });
+  // Autollenado RENIEC (no destructivo: solo rellena campos de nombre vacíos).
+  const [dniConsultando, setDniConsultando] = useState(false);
+  const dniConsultadoRef = useRef('');
 
   const abrirEdicionDatos = () => {
     if (!paciente) return;
@@ -145,8 +157,66 @@ export function FichaPacientePage() {
       numeroDocumento: paciente.numeroDocumento ?? '', telefono: paciente.telefono ?? '',
       email: paciente.email ?? '', fechaNacimiento: (paciente.fechaNacimiento ?? '').slice(0, 10), sexo: paciente.sexo ?? '',
     });
+    // Si el registro ya trae los 3 nombres completos, no re-consultamos RENIEC al
+    // abrir (solo lo hará si el usuario CAMBIA el DNI). Si faltan nombres, dejamos
+    // que el efecto los rellene automáticamente.
+    dniConsultadoRef.current =
+      paciente.nombres && paciente.apellidoPaterno && paciente.apellidoMaterno
+        ? (paciente.numeroDocumento ?? '')
+        : '';
     setEditandoDatos(true);
   };
+
+  // Autollenado RENIEC en la edición: al tener un DNI de 8 dígitos (tipo DNI) que no
+  // se haya consultado aún, rellena SOLO los campos de nombre vacíos (no destructivo).
+  useEffect(() => {
+    if (!editandoDatos || form.tipoDocumento !== 'DNI') return;
+    const dni = form.numeroDocumento.trim();
+    if (!/^\d{8}$/.test(dni) || dniConsultadoRef.current === dni) return;
+
+    dniConsultadoRef.current = dni;
+    let cancelado = false;
+    const t = setTimeout(async () => {
+      setDniConsultando(true);
+      try {
+        const d = await reniecApi.consultarDni(dni);
+        if (cancelado) return;
+        const tc = (s: string) => s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+        setForm((f) => ({
+          ...f,
+          nombres: f.nombres.trim() ? f.nombres : tc(d.nombres),
+          apellidoPaterno: f.apellidoPaterno.trim() ? f.apellidoPaterno : tc(d.apellidoPaterno),
+          apellidoMaterno: f.apellidoMaterno.trim() ? f.apellidoMaterno : tc(d.apellidoMaterno),
+        }));
+        toast.success('Datos encontrados en RENIEC');
+      } catch (e) {
+        if (cancelado) return;
+        dniConsultadoRef.current = '';
+        toast(e instanceof Error ? e.message : 'No se pudo consultar el DNI', { icon: 'ℹ️' });
+      } finally {
+        if (!cancelado) setDniConsultando(false);
+      }
+    }, 500);
+    return () => { cancelado = true; clearTimeout(t); };
+  }, [form.numeroDocumento, form.tipoDocumento, editandoDatos]);
+
+  // Llegada desde el toggle "Actualizar datos" (popover/otras vistas): ?editar=datos
+  // abre la edición una sola vez, con los campos faltantes resaltados en ámbar.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const autoEdicionAbierta = useRef(false);
+  useEffect(() => {
+    if (paciente && searchParams.get('editar') === 'datos' && !autoEdicionAbierta.current) {
+      autoEdicionAbierta.current = true;
+      abrirEdicionDatos();
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paciente, searchParams]);
+
+  // Campos faltantes según el server (resalta inputs y alimenta el tooltip del toggle).
+  const faltantes = paciente?.datosFaltantes ?? [];
+  const claseFaltante = (campo: string) =>
+    cn('input text-sm', faltantes.includes(campo) && 'border-amber-400 ring-1 ring-amber-300 bg-amber-50');
 
   const guardarDatosMutation = useMutation({
     mutationFn: () => pacientesApi.actualizar(id!, {
@@ -180,8 +250,8 @@ export function FichaPacientePage() {
 
   if (!paciente) return <div className="p-6 text-slate-500">Paciente no encontrado</div>;
 
-  const historial = (paciente as never as { historial: { id: string; fecha: string; horaInicio: string; estado: string; slotGrupoId: string | null; slotRol: 'PRINCIPAL' | 'SECUNDARIO' | null; consultorioNumero: number | null; servicio: { nombre: string; color: string }; profesional: { nombres: string; apellidos: string } | null; sede: { nombre: string }; comentarios: { id: string; texto: string }[] }[] }).historial ?? [];
-  const proximas = (paciente as never as { proximas: { id: string; fecha: string; horaInicio: string; estado: string; servicio: { nombre: string }; profesional: { nombres: string; apellidos: string } | null; sede: { nombre: string } }[] }).proximas ?? [];
+  const historial = (paciente as never as { historial: { id: string; fecha: string; horaInicio: string; estado: string; slotGrupoId: string | null; slotRol: 'PRINCIPAL' | 'SECUNDARIO' | null; consultorioNumero: number | null; sesionNumero: number | null; paquetePaciente?: { sesionesTotal: number; paquete: { nombre: string } } | null; servicio: { nombre: string; color: string }; subcategoria?: { id: string; nombre: string } | null; profesional: { nombres: string; apellidos: string } | null; sede: { nombre: string }; comentarios: { id: string; texto: string }[] }[] }).historial ?? [];
+  const proximas = (paciente as never as { proximas: { id: string; fecha: string; horaInicio: string; estado: string; servicio: { nombre: string }; subcategoria?: { id: string; nombre: string } | null; profesional: { nombres: string; apellidos: string } | null; sede: { nombre: string } }[] }).proximas ?? [];
   // Total real de atenciones (sobre todas las citas, no acotado a las 200 mostradas).
   const totalAtenciones = (paciente as never as { totalCitas?: number }).totalCitas ?? historial.length;
 
@@ -203,12 +273,24 @@ export function FichaPacientePage() {
               {paciente.alerta.frecuenteReprogramador && `⚠ Reprograma con frecuencia (${paciente.alerta.reprogramaciones} veces).`}
             </p>
           )}
-          <p className="text-sm text-slate-500">
-            {paciente.tipoDocumento} {paciente.numeroDocumento} · {paciente.telefono}
-            {paciente.email && ` · ${paciente.email}`}
+          <p className="text-sm text-slate-500 flex items-center gap-2 flex-wrap">
+            <span>
+              {paciente.tipoDocumento} {paciente.numeroDocumento} · {paciente.telefono}
+              {paciente.email && ` · ${paciente.email}`}
+            </span>
+            <ToggleDatosPaciente
+              encendido={paciente.requiereActualizacionDatos ?? faltantes.length > 0}
+              faltantes={faltantes}
+              onEditar={abrirEdicionDatos}
+            />
           </p>
         </div>
         <div className="flex-1" />
+        <BotonHistorialGenexis
+          pacienteId={paciente.id}
+          nombrePaciente={`${paciente.nombres} ${paciente.apellidoPaterno} ${paciente.apellidoMaterno}`}
+          documento={`${paciente.tipoDocumento} ${paciente.numeroDocumento}`}
+        />
         <button
           onClick={() => {
             navigate('/');
@@ -257,19 +339,34 @@ export function FichaPacientePage() {
                     </label>
                     <label className="block">
                       <span className="text-xs text-slate-400">N° documento *</span>
-                      <input className="input text-sm" value={form.numeroDocumento} onChange={e => setForm(f => ({ ...f, numeroDocumento: e.target.value }))} />
+                      <input
+                        className="input text-sm"
+                        value={form.numeroDocumento}
+                        onChange={e => setForm(f => ({ ...f, numeroDocumento: f.tipoDocumento === 'DNI' ? e.target.value.replace(/\D/g, '') : e.target.value }))}
+                        maxLength={form.tipoDocumento === 'DNI' ? 8 : 20}
+                        inputMode={form.tipoDocumento === 'DNI' ? 'numeric' : 'text'}
+                      />
+                      {form.tipoDocumento === 'DNI' && dniConsultando && (
+                        <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                          <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
+                          </svg>
+                          Consultando RENIEC…
+                        </span>
+                      )}
                     </label>
                     <label className="block">
                       <span className="text-xs text-slate-400">Teléfono *</span>
-                      <input className="input text-sm" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} />
+                      <input className={claseFaltante('teléfono')} value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} />
                     </label>
                     <label className="block">
                       <span className="text-xs text-slate-400">Email</span>
-                      <input type="email" className="input text-sm" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                      <input type="email" className={claseFaltante('correo')} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
                     </label>
                     <label className="block">
                       <span className="text-xs text-slate-400">Fecha nac.</span>
-                      <input type="date" className="input text-sm" value={form.fechaNacimiento} onChange={e => setForm(f => ({ ...f, fechaNacimiento: e.target.value }))} />
+                      <input type="date" className={claseFaltante('fecha de nacimiento')} value={form.fechaNacimiento} onChange={e => setForm(f => ({ ...f, fechaNacimiento: e.target.value }))} />
                     </label>
                     <label className="block">
                       <span className="text-xs text-slate-400">Sexo</span>
@@ -354,35 +451,13 @@ export function FichaPacientePage() {
             </div>
           </div>
 
-          {/* Paquetes activos */}
-          {paquetes && paquetes.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-sm font-semibold text-slate-700 mb-3">Paquetes activos</h2>
-              <div className="space-y-3">
-                {paquetes.map(pp => {
-                  const progreso = Math.round((pp.sesionesUsadas / pp.sesionesTotal) * 100);
-                  return (
-                    <div key={pp.id} className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium text-slate-800">{pp.paquete.nombre}</p>
-                          <p className="text-sm font-bold text-limablue-700">
-                            {pp.sesionesUsadas}/{pp.sesionesTotal} sesiones
-                          </p>
-                        </div>
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-limablue-500 rounded-full transition-all"
-                            style={{ width: `${progreso}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {/* Paquetes y membresías — componente único SaldoPaquetes (variante detalle):
+              anillo de progreso, timeline de consumos, línea de apertura Genexis,
+              consumo manual (válvula de escape) y agotados/vencidos colapsados. */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h2 className="text-sm font-semibold text-slate-700 mb-3">Paquetes y membresías</h2>
+            <SaldoPaquetes pacienteId={paciente.id} variante="detalle" nombrePaciente={`${paciente.nombres} ${paciente.apellidoPaterno} ${paciente.apellidoMaterno}`} documento={`${paciente.tipoDocumento} ${paciente.numeroDocumento}`} />
+          </div>
 
           {/* Próximas citas + Historial — lado a lado (2 columnas) para no scrollear de más */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -399,7 +474,7 @@ export function FichaPacientePage() {
                         <p className="text-xs text-limablue-600 font-medium">{c.horaInicio}</p>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-800 truncate">{c.servicio.nombre}</p>
+                        <p className="text-sm font-medium text-slate-800 truncate">{c.servicio.nombre}{c.subcategoria ? ` · ${c.subcategoria.nombre}` : ''}</p>
                         <p className="text-xs text-slate-500 truncate">
                           {c.profesional ? `${c.profesional.nombres} ${c.profesional.apellidos}` : 'Por asignar'} · {c.sede.nombre}
                         </p>
@@ -442,7 +517,16 @@ export function FichaPacientePage() {
                             <span className="text-slate-400 ml-1">{c.horaInicio}</span>
                           </td>
                           <td className="py-2">
-                            <span className="font-medium text-slate-800">{c.servicio.nombre}</span>
+                            <span className="font-medium text-slate-800">{c.servicio.nombre}{c.subcategoria ? ` · ${c.subcategoria.nombre}` : ''}</span>
+                            {/* Badge permanente de cita consumidora: Sesión x/total · paquete */}
+                            {c.sesionNumero != null && c.paquetePaciente && (
+                              <span
+                                title={c.paquetePaciente.paquete.nombre}
+                                className="ml-1.5 inline-flex items-center px-1.5 py-0.5 bg-limablue-50 text-limablue-700 border border-limablue-200 rounded-full text-[10px] font-bold align-middle"
+                              >
+                                Sesión {c.sesionNumero}/{c.paquetePaciente.sesionesTotal}
+                              </span>
+                            )}
                             {c.slotGrupoId && (
                               <span
                                 title={`Turno combinado · ${c.slotRol === 'PRINCIPAL' ? 'profilaxis (ancla)' : 'servicio extra'} — agendada junto a otra cita en la misma hora`}

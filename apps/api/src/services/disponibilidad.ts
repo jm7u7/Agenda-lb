@@ -225,12 +225,12 @@ export async function calcularDisponibilidad(params: DisponibilidadParams): Prom
     }
 
     for (const bloqueo of bloqueos) {
-      const bStart = timeToMinutes(
-        `${bloqueo.fechaInicio.getHours().toString().padStart(2, '0')}:${bloqueo.fechaInicio.getMinutes().toString().padStart(2, '0')}`
-      );
-      const bEnd = timeToMinutes(
-        `${bloqueo.fechaFin.getHours().toString().padStart(2, '0')}:${bloqueo.fechaFin.getMinutes().toString().padStart(2, '0')}`
-      );
+      // Hora civil desde los strings `horaInicio`/`horaFin` (TZ-safe); fallback a la hora
+      // LOCAL del DateTime para filas legacy sin string.
+      const bStart = bloqueo.horaInicio ? timeToMinutes(bloqueo.horaInicio)
+        : timeToMinutes(`${bloqueo.fechaInicio.getHours().toString().padStart(2, '0')}:${bloqueo.fechaInicio.getMinutes().toString().padStart(2, '0')}`);
+      const bEnd = bloqueo.horaFin ? timeToMinutes(bloqueo.horaFin)
+        : timeToMinutes(`${bloqueo.fechaFin.getHours().toString().padStart(2, '0')}:${bloqueo.fechaFin.getMinutes().toString().padStart(2, '0')}`);
       for (let m = bStart; m < bEnd; m += 30) {
         ocupados.add(m);
       }
@@ -363,11 +363,12 @@ export async function seleccionarProfesionalOptimo(
     // Verificar que el slot cabe en el horario
     if (slotStart < horaInicioHorario || slotEnd > horaFinHorario) continue;
 
-    // Verificar bloqueos puntuales
+    // Verificar bloqueos puntuales. Hora tomada de los campos STRING `horaInicio`/`horaFin`
+    // (hora civil, TZ-safe); fallback a la hora LOCAL del DateTime para filas legacy sin string.
     let bloqueado = false;
     for (const bloqueo of prof.bloqueos) {
-      const bStart = bloqueo.fechaInicio.getHours() * 60 + bloqueo.fechaInicio.getMinutes();
-      const bEnd = bloqueo.fechaFin.getHours() * 60 + bloqueo.fechaFin.getMinutes();
+      const bStart = bloqueo.horaInicio ? timeToMinutes(bloqueo.horaInicio) : bloqueo.fechaInicio.getHours() * 60 + bloqueo.fechaInicio.getMinutes();
+      const bEnd = bloqueo.horaFin ? timeToMinutes(bloqueo.horaFin) : bloqueo.fechaFin.getHours() * 60 + bloqueo.fechaFin.getMinutes();
       if (slotStart < bEnd && slotEnd > bStart) { bloqueado = true; break; }
     }
     if (bloqueado) continue;

@@ -13,13 +13,15 @@ import { requireAuth, requireScope, requireRol } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { agregarRango } from '../services/agregacion';
 import { uploadComprobante } from '../middleware/uploadComprobante';
-import { construirIcsDeCita } from '../services/mailService';
+import { construirIcsDeCita, logoAdjunto } from '../services/emailTemplates';
 import { sincronizarCitaOutlook, reintentarOutlookFallidos } from '../services/outlookCalendarService';
 import { alertasDePacientes } from '../services/alertaPaciente';
 import { familiaresDePacientes } from '../services/familiaresPaciente';
 import { programarRecordatoriosDeCita, cancelarRecordatoriosDeCita, reprogramarRecordatorioDeCita, forzarEnvioRecordatorioAhora } from '../services/recordatorioService';
+import { sincronizarVideosDeCita, cancelarVideosDeCita } from '../services/videoEnvioService';
 import { consumirTokenAccion } from '../services/tokenAccionCita';
 import { sincronizarSesionPaquete } from '../services/paqueteSesionService';
+import { recalcularPaquete } from '../services/consumoService';
 import { getServicioAnclaId, esCombinacionPermitida } from '../services/combinacionService';
 import { verificarTokenConfirmacion } from '../utils/confirmToken';
 import { fechaDb } from '../utils/fechaLima';
@@ -34,17 +36,38 @@ async function validarCanal(valor: string): Promise<string> {
   return canal.valor;
 }
 
+// Resuelve/valida la subcategoría de una cita según su servicio. Si el servicio TIENE
+// subcategorías activas, elegir una es OBLIGATORIO y debe pertenecer a ese servicio y
+// estar activa. Si NO tiene, se ignora cualquier valor (devuelve null). Ver
+// `SubcategoriaServicio` (ej. Profilaxis → Regular/Premium/Infantil/Adulto mayor).
+async function resolverSubcategoria(servicioId: string, subcategoriaId?: string | null): Promise<string | null> {
+  const activas = await prisma.subcategoriaServicio.findMany({
+    where: { servicioId, deletedAt: null, activo: true },
+    select: { id: true },
+  });
+  if (activas.length === 0) return null; // servicio sin subcategorías
+  if (!subcategoriaId) throw new AppError('Este servicio requiere elegir una subcategoría', 400, 'SUBCATEGORIA_REQUERIDA');
+  if (!activas.some((s) => s.id === subcategoriaId)) {
+    throw new AppError('La subcategoría no corresponde a este servicio o está inactiva', 400, 'SUBCATEGORIA_INVALIDA');
+  }
+  return subcategoriaId;
+}
+
 const crearCitaSchema = z.object({
   pacienteId: z.string().uuid(),
   profesionalId: z.string().uuid().nullable().optional(),
   sedeId: z.string().uuid(),
   unidadNegocioId: z.string().uuid(),
   servicioId: z.string().uuid(),
+  subcategoriaId: z.string().uuid().nullable().optional(), // obligatoria si el servicio tiene subcategorías
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   horaInicio: z.string().regex(/^\d{2}:\d{2}$/),
   canal: z.string().default('recepcion'),
   comentarioRecepcion: z.string().optional(),
   paquetePacienteId: z.string().uuid().optional(),
+  // Adjudicación MANUAL del número de sesión (SOLO paquetes origen GENEXIS_APERTURA):
+  // recepción/contact mira el visor Genexis y elige del desplegable qué sesión toca.
+  sesionNumeroManual: z.number().int().min(1).max(99).optional(),
   promocionId: z.string().uuid().nullable().optional(),
   comprobanteUrl: z.string().optional(),
   comprobanteNombre: z.string().optional(),
@@ -60,6 +83,7 @@ const crearCombinadaSchema = z.object({
   sedeId: z.string().uuid(),
   unidadNegocioId: z.string().uuid(),
   servicioId: z.string().uuid(), // debe coincidir con el ancla configurada
+  subcategoriaId: z.string().uuid().nullable().optional(), // subcategoría del ancla (profilaxis)
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   horaInicio: z.string().regex(/^\d{2}:\d{2}$/),
   canal: z.string().default('recepcion'),
@@ -112,14 +136,17 @@ async function validarSinBloqueo(profesionalId: string, fecha: string, horaInici
   const dayEnd = new Date(`${fecha}T23:59:59.999Z`);
   const fechaPunto = fechaDb(fecha);
 
-  // Bloqueos puntuales (permisos, etc.): usan fechaInicio/fechaFin como horas exactas.
+  // Bloqueos puntuales (permisos, reuniones, ausencias). La hora del bloqueo se toma de los
+  // campos STRING `horaInicio`/`horaFin` (hora civil "HH:mm", fuente confiable e independiente
+  // de la TZ). Fallback a la hora LOCAL del DateTime (así se creó el bloqueo) para filas legacy
+  // sin string. NUNCA `getUTCHours` (en TZ ≠ UTC corría el bloqueo y no detectaba el solape).
   const puntuales = await prisma.bloqueoAgenda.findMany({
     where: { profesionalId, deletedAt: null, esRecurrente: false, fechaInicio: { lt: dayEnd }, fechaFin: { gt: dayStart } },
-    select: { fechaInicio: true, fechaFin: true, motivo: true },
+    select: { fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, motivo: true },
   });
   for (const b of puntuales) {
-    const bStart = b.fechaInicio.getUTCHours() * 60 + b.fechaInicio.getUTCMinutes();
-    const bEnd = b.fechaFin.getUTCHours() * 60 + b.fechaFin.getUTCMinutes();
+    const bStart = b.horaInicio ? timeToMinutes(b.horaInicio) : b.fechaInicio.getHours() * 60 + b.fechaInicio.getMinutes();
+    const bEnd = b.horaFin ? timeToMinutes(b.horaFin) : b.fechaFin.getHours() * 60 + b.fechaFin.getMinutes();
     if (slotStart < bEnd && slotEnd > bStart) {
       throw new AppError(`El profesional tiene un bloqueo en ese horario (${b.motivo})`, 409, 'SLOT_BLOQUEADO');
     }
@@ -224,6 +251,7 @@ async function getCitaCompleta(id: string) {
       sede: true,
       unidadNegocio: true,
       servicio: true,
+      subcategoria: { select: { id: true, nombre: true } },
       paquetePaciente: { include: { paquete: true } },
       promocion: { select: promoCitaSelect },
       creadoPorUsuario: { select: { id: true, nombre: true } },
@@ -301,12 +329,15 @@ router.get('/', requireAuth, async (req, res) => {
   const citas = await prisma.cita.findMany({
     where,
     include: {
-      paciente: { select: { id: true, nombres: true, apellidoPaterno: true, apellidoMaterno: true, telefono: true } },
+      // email/fechaNacimiento/requiereActualizacionDatos alimentan el toggle
+      // "Actualizar datos" del PopoverCita (la bandera es la calculada server-side).
+      paciente: { select: { id: true, nombres: true, apellidoPaterno: true, apellidoMaterno: true, tipoDocumento: true, numeroDocumento: true, telefono: true, email: true, fechaNacimiento: true, requiereActualizacionDatos: true } },
       profesional: { select: { id: true, nombres: true, apellidos: true, colorAvatar: true } },
       solicitadoProfesional: { select: { id: true, nombres: true, apellidos: true, tipo: true } },
       sede: { select: { id: true, nombre: true, color: true } },
       unidadNegocio: { select: { id: true, nombre: true, color: true } },
       servicio: { select: { id: true, nombre: true, duracionMinutos: true, color: true } },
+      subcategoria: { select: { id: true, nombre: true } },
       paquetePaciente: { select: { id: true, sesionesTotal: true, sesionesUsadas: true, paquete: { select: { nombre: true } } } },
       promocion: { select: promoCitaSelect },
       comentarios: comentariosInclude,
@@ -348,14 +379,21 @@ function paginaPublica(opts: { ok: boolean; titulo: string; mensaje: string; det
   const bloqueDetalle = opts.detalle
     ? `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;margin:0 0 20px;color:#334155;font-size:14px;line-height:1.6;">${opts.detalle}</div>`
     : '';
+  // Mismo logo que el correo (assets/correo/logo-correo.png) incrustado como data-URI.
+  // La página web no puede usar `cid:`, así que se embebe en base64. Si no hay archivo,
+  // cae al recuadro "LB" + nombre (comportamiento previo).
+  const logo = logoAdjunto();
+  const cabecera = logo
+    ? `<img src="data:${logo.mime};base64,${logo.base64}" alt="Limablue · Salud del pie" width="160" style="display:inline-block;max-width:75%;height:auto;">`
+    : `<span style="display:inline-block;background:#fff;color:#1e40af;font-weight:800;font-size:16px;width:38px;height:38px;line-height:38px;border-radius:10px;">LB</span>
+      <div style="color:#fff;font-weight:700;font-size:16px;margin-top:8px;">Limablue · Salud del pie</div>`;
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Limablue · ${opts.titulo}</title></head>
 <body style="font-family:Arial,Helvetica,sans-serif;background:#eef2f7;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;">
   <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;overflow:hidden;box-shadow:0 2px 10px rgba(15,23,42,.1);">
     <div style="background:#1e3a8a;padding:22px;text-align:center;">
-      <span style="display:inline-block;background:#fff;color:#1e40af;font-weight:800;font-size:16px;width:38px;height:38px;line-height:38px;border-radius:10px;">LB</span>
-      <div style="color:#fff;font-weight:700;font-size:16px;margin-top:8px;">Limablue · Salud del pie</div>
+      ${cabecera}
     </div>
     <div style="padding:32px;text-align:center;">
       <div style="font-size:46px;margin-bottom:10px;">${icono}</div>
@@ -482,6 +520,9 @@ router.get('/confirmar', async (req, res) => {
     where: { id: cita.id },
     data: { estadoConfirmacion: 'confirmada', confirmadaEn: new Date(), estado: nuevoEstado as never },
   });
+  // Ya confirmó: detener el recordatorio pendiente y su job para no reenviar
+  // "confirma tu asistencia" después de que el paciente ya confirmó.
+  void cancelarRecordatoriosDeCita(cita.id);
 
   // Refrescar agenda en vivo (best effort).
   try {
@@ -593,6 +634,8 @@ router.get('/confirmar/:token', async (req, res) => {
     where: { citaId: cita.id, tipo: 'RECORDATORIO', deletedAt: null },
     data: { clickConfirmarAt: ahora, confirmadoAt: ahora },
   });
+  // Ya confirmó: detener el recordatorio pendiente y su job (no reenviar tras confirmar).
+  void cancelarRecordatoriosDeCita(cita.id);
 
   try {
     const fechaStr = cita.fecha.toISOString().split('T')[0]!;
@@ -607,7 +650,7 @@ router.get('/confirmar/:token', async (req, res) => {
 // ─── GET /citas/reprogramar/:token ─── (público; registra y redirige a WhatsApp) ─
 router.get('/reprogramar/:token', async (req, res) => {
   const numero = (process.env.WHATSAPP_NUMERO || '').replace(/\D/g, '');
-  const texto = encodeURIComponent('Hola Limablue, deseo reprogramar una cita por favor.');
+  const texto = encodeURIComponent('Hola, deseo reprogramar mi cita, por favor.');
   const waUrl = `https://wa.me/${numero}?text=${texto}`;
 
   const r = await consumirTokenAccion(req.params.token, 'reprogramar');
@@ -666,6 +709,9 @@ router.post('/', requireAuth, requireScope('appointments:write'), async (req: Re
   if (!horaInicioValidaParaDuracion(data.horaInicio, servicio.duracionMinutos)) {
     throw new AppError('Los servicios de 1 hora solo pueden iniciarse en hora entera (08:00, 09:00, …)', 400, 'SLOT_HORA_INVALIDA');
   }
+
+  // Subcategoría (ej. Profilaxis → Regular/Premium/…): obligatoria si el servicio la tiene.
+  const subcategoriaId = await resolverSubcategoria(data.servicioId, data.subcategoriaId);
 
   // Obtener unidad de negocio
   const unidad = await prisma.unidadNegocio.findUnique({ where: { id: data.unidadNegocioId } });
@@ -786,9 +832,19 @@ router.post('/', requireAuth, requireScope('appointments:write'), async (req: Re
     // citasProgramadas = citas activas (aún no completadas) que ya reservaron una sesión.
     // La nueva cita toma el siguiente número disponible.
     let sesionNumero: number | null = null;
+    let reanclajeGenexis: { paqueteId: string; objetivoApertura: number; sesionElegida: number } | null = null;
     if (data.paquetePacienteId) {
       const paquetePac = await prisma.paquetePaciente.findUnique({ where: { id: data.paquetePacienteId } });
       if (paquetePac) {
+        // Candado de sede TAMBIÉN al agendar: el paquete se atiende donde se compró.
+        if (paquetePac.sedeId && paquetePac.sedeId !== data.sedeId) {
+          const sedePaquete = await prisma.sede.findUnique({ where: { id: paquetePac.sedeId }, select: { nombre: true } });
+          throw new AppError(
+            `El paquete de este paciente pertenece a ${sedePaquete?.nombre ?? 'otra sede'} — agenda la sesión allá o usa consumo manual auditado.`,
+            409,
+            'PAQUETE_OTRA_SEDE',
+          );
+        }
         const citasProgramadas = await prisma.cita.count({
           where: {
             paquetePacienteId: data.paquetePacienteId,
@@ -796,20 +852,91 @@ router.post('/', requireAuth, requireScope('appointments:write'), async (req: Re
             deletedAt: null,
           },
         });
-        // No permitir reservar más allá del total de sesiones del paquete.
-        if (paquetePac.sesionesUsadas + citasProgramadas >= paquetePac.sesionesTotal) {
-          throw new AppError(
-            `El paquete ya no tiene sesiones disponibles (${paquetePac.sesionesTotal}/${paquetePac.sesionesTotal} usadas o agendadas). Active un paquete nuevo si el paciente lo requiere.`,
-            409,
-            'PAQUETE_SIN_SESIONES',
-          );
+        const citasVivasPaquete = await prisma.cita.count({
+          where: { paquetePacienteId: data.paquetePacienteId, deletedAt: null, estado: { notIn: ['cancelada', 'no_show', 'reprogramada'] } },
+        });
+        const esGenexisSinAnclar = paquetePac.origen === 'GENEXIS_APERTURA' && citasVivasPaquete === 0;
+        if (esGenexisSinAnclar) {
+          // MIGRACIÓN GENEXIS — ADJUDICACIÓN MANUAL CON REANCLAJE: la primera cita
+          // del paquete en la Agenda nueva la numera RECEPCIÓN mirando el visor
+          // Genexis (desplegable con TODAS las sesiones). Su elección re-ancla el
+          // paquete: sesiones previas = tomadas en Genexis (se ajusta la apertura),
+          // y DESDE LA SIGUIENTE la numeración es automática (como paquete nativo).
+          if (!data.sesionNumeroManual) {
+            throw new AppError(
+              'Este paquete viene de Genexis: elige del desplegable qué sesión corresponde (revisa el Historial Genexis).',
+              400,
+              'SESION_MANUAL_REQUERIDA',
+            );
+          }
+          if (data.sesionNumeroManual > paquetePac.sesionesTotal) {
+            throw new AppError(`La sesión ${data.sesionNumeroManual} excede el paquete (${paquetePac.sesionesTotal})`, 400, 'SESION_FUERA_DE_RANGO');
+          }
+          const otrosVivos = await prisma.consumoSesion.count({
+            where: { paqueteId: data.paquetePacienteId, deletedAt: null, origen: { not: 'APERTURA' } },
+          });
+          const objetivoApertura = data.sesionNumeroManual - 1 - otrosVivos;
+          if (objetivoApertura < 0) {
+            throw new AppError(
+              `Ya hay ${otrosVivos} sesión(es) consumidas en la Agenda — la sesión ${data.sesionNumeroManual} no es posible`,
+              409,
+              'SESION_INCOMPATIBLE',
+            );
+          }
+          sesionNumero = data.sesionNumeroManual;
+          reanclajeGenexis = { paqueteId: data.paquetePacienteId, objetivoApertura, sesionElegida: data.sesionNumeroManual };
+        } else {
+          // Numeración AUTOMÁTICA: paquetes nacidos en la Agenda y paquetes Genexis
+          // YA ANCLADOS por una primera adjudicación manual.
+          if (paquetePac.sesionesUsadas + citasProgramadas >= paquetePac.sesionesTotal) {
+            throw new AppError(
+              `El paquete ya no tiene sesiones disponibles (${paquetePac.sesionesTotal}/${paquetePac.sesionesTotal} usadas o agendadas). Active un paquete nuevo si el paciente lo requiere.`,
+              409,
+              'PAQUETE_SIN_SESIONES',
+            );
+          }
+          sesionNumero = paquetePac.sesionesUsadas + citasProgramadas + 1;
         }
-        sesionNumero = paquetePac.sesionesUsadas + citasProgramadas + 1;
       }
     }
 
     // Creación + audit en la MISMA transacción (historial inmutable y atómico).
     const cita = await prisma.$transaction(async (tx) => {
+      // REANCLAJE GENEXIS: ajustar la apertura para que las sesiones previas a la
+      // elegida queden como tomadas en Genexis (recepción manda sobre la conciliación).
+      if (reanclajeGenexis) {
+        const aperturaVivos = await tx.consumoSesion.findMany({
+          where: { paqueteId: reanclajeGenexis.paqueteId, origen: 'APERTURA', deletedAt: null },
+          orderBy: { creadoEn: 'desc' },
+          select: { id: true },
+        });
+        const diff = aperturaVivos.length - reanclajeGenexis.objetivoApertura;
+        if (diff > 0) {
+          await tx.consumoSesion.updateMany({
+            where: { id: { in: aperturaVivos.slice(0, diff).map((k) => k.id) } },
+            data: { deletedAt: new Date(), anuladoMotivo: `Reanclaje: recepción adjudicó la sesión ${reanclajeGenexis.sesionElegida} (visor Genexis)` },
+          });
+        } else if (diff < 0) {
+          await tx.consumoSesion.createMany({
+            data: Array.from({ length: -diff }, () => ({
+              paqueteId: reanclajeGenexis!.paqueteId,
+              fecha: new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Lima' })).toISOString().slice(0, 10),
+              origen: 'APERTURA',
+              registradoPor: `Reanclaje: recepción adjudicó la sesión ${reanclajeGenexis.sesionElegida} (visor Genexis)`,
+              registradoPorId: usuarioId ?? null,
+            })),
+          });
+        }
+        await recalcularPaquete(tx, reanclajeGenexis.paqueteId);
+        await auditEnTx(tx, {
+          usuarioId,
+          accion: 'reanclar_apertura_genexis',
+          entidad: 'paquete_paciente',
+          entidadId: reanclajeGenexis.paqueteId,
+          antes: { aperturaConsumidas: aperturaVivos.length },
+          despues: { aperturaConsumidas: reanclajeGenexis.objetivoApertura, sesionAdjudicada: reanclajeGenexis.sesionElegida },
+        });
+      }
       const c = await tx.cita.create({
         data: {
           pacienteId: data.pacienteId,
@@ -818,6 +945,7 @@ router.post('/', requireAuth, requireScope('appointments:write'), async (req: Re
           sedeId: data.sedeId,
           unidadNegocioId: data.unidadNegocioId,
           servicioId: data.servicioId,
+          subcategoriaId,
           fecha: fechaDate,
           horaInicio: data.horaInicio,
           duracionMinutos: servicio.duracionMinutos,
@@ -873,6 +1001,8 @@ router.post('/', requireAuth, requireScope('appointments:write'), async (req: Re
     // RECORDATORIOS: Correo 1 (reserva, inmediato) + programa Correo 2
     // (recordatorio con acciones) según las reglas de tiempo. Fire-and-forget.
     void programarRecordatoriosDeCita(cita.id);
+    // VIDEOS POR SERVICIO: registra los envíos programados de los videos del servicio.
+    void sincronizarVideosDeCita(cita.id);
     // Replica en Outlook si la cita es de Yasica/Daniel Doy (no bloqueante).
     void sincronizarCitaOutlook('crear', cita.id);
 
@@ -973,6 +1103,9 @@ router.post('/combinada', requireAuth, requireScope('appointments:write'), async
     throw new AppError('Los bloques combinados solo pueden iniciarse en hora entera (08:00, 09:00, …)', 400, 'SLOT_HORA_INVALIDA');
   }
 
+  // Subcategoría del ANCLA (profilaxis → Regular/Premium/…): obligatoria si la tiene.
+  const subcategoriaAncla = await resolverSubcategoria(data.servicioId, data.subcategoriaId);
+
   // Profesional del ANCLA: si la recepción no eligió una, se asigna automáticamente
   // (igual que una profilaxis normal "Sin preferencia"). El extra usa la suya o, por
   // defecto, la misma del ancla.
@@ -1028,7 +1161,7 @@ router.post('/combinada', requireAuth, requireScope('appointments:write'), async
         const ancla = await tx.cita.create({
           data: {
             pacienteId: data.pacienteId, profesionalId: anclaProfesionalId, sedeId: data.sedeId,
-            unidadNegocioId: data.unidadNegocioId, servicioId: data.servicioId, fecha: fechaDate,
+            unidadNegocioId: data.unidadNegocioId, servicioId: data.servicioId, subcategoriaId: subcategoriaAncla, fecha: fechaDate,
             horaInicio: data.horaInicio, duracionMinutos: duracionSlot, estado: 'agendada',
             canal: data.canal, origenAsignacion: origenAncla, creadoPorUsuarioId: usuarioId ?? null,
             paquetePacienteId: data.paquetePacienteId, sesionNumero: sesionAncla,
@@ -1084,6 +1217,8 @@ router.post('/combinada', requireAuth, requireScope('appointments:write'), async
     }
     void programarRecordatoriosDeCita(citas.anclaId);
     void programarRecordatoriosDeCita(citas.extraId);
+    void sincronizarVideosDeCita(citas.anclaId);
+    void sincronizarVideosDeCita(citas.extraId);
     void sincronizarCitaOutlook('crear', citas.anclaId);
     void sincronizarCitaOutlook('crear', citas.extraId);
 
@@ -1196,12 +1331,13 @@ router.patch('/:id/estado', requireAuth, async (req, res) => {
     if (esCancelacion) {
       void sincronizarCitaOutlook('cancelar', h.id);
       void cancelarRecordatoriosDeCita(h.id);
+      void cancelarVideosDeCita(h.id);
       emitirEventoCita({
         tipo: 'cita:cancelada', sedeId: h.sedeId, fecha: h.fecha.toISOString().split('T')[0]!,
         cita: { id: h.id, estado: 'cancelada' } as never, cambiadoPor: usuarioId ?? 'sistema',
       });
     } else {
-      if (['no_show', 'reprogramada'].includes(estado)) void cancelarRecordatoriosDeCita(h.id);
+      if (['no_show', 'reprogramada'].includes(estado)) { void cancelarRecordatoriosDeCita(h.id); void cancelarVideosDeCita(h.id); }
       emitirEventoCita({
         tipo: 'cita:estadoCambiado', sedeId: h.sedeId, fecha: h.fecha.toISOString().split('T')[0]!,
         cita: await getCitaCompleta(h.id) as never, cambiadoPor: usuarioId ?? 'sistema',
@@ -1232,7 +1368,7 @@ router.patch('/:id/estado', requireAuth, async (req, res) => {
   else if (estado === 'confirmada') void sincronizarCitaOutlook('crear', cita.id);
 
   // Recordatorio: si la cita pasa a un estado inactivo, cancelar el envío programado.
-  if (['cancelada', 'no_show', 'reprogramada'].includes(estado)) void cancelarRecordatoriosDeCita(cita.id);
+  if (['cancelada', 'no_show', 'reprogramada'].includes(estado)) { void cancelarRecordatoriosDeCita(cita.id); void cancelarVideosDeCita(cita.id); }
 
   // Reagregar en background sin bloquear la respuesta
   const fechaCita = cita.fecha;
@@ -1424,6 +1560,8 @@ router.patch('/:id/mover', requireAuth, async (req, res) => {
 
     // Recordatorio: reagendar el envío a la nueva fecha/hora (si aún no se envió).
     void reprogramarRecordatorioDeCita(cita.id);
+    // VIDEOS: recalcula los envíos no enviados a la nueva fecha/hora (R2).
+    void sincronizarVideosDeCita(cita.id);
 
     res.json(citaCompleta);
   } finally {
@@ -1511,6 +1649,7 @@ router.patch('/grupo/:slotGrupoId/mover', requireAuth, async (req, res) => {
       emitirEventoCita({ tipo: 'cita:movida', sedeId, fecha: data.fecha, cita: completa as never, cambiadoPor: usuarioId ?? 'sistema' });
       void sincronizarCitaOutlook('actualizar', c.id);
       void reprogramarRecordatorioDeCita(c.id);
+      void sincronizarVideosDeCita(c.id);
     }
 
     res.json(await getCitaCompleta(ancla.id));
@@ -1559,6 +1698,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     void sincronizarSesionPaquete(c.id);
     void sincronizarCitaOutlook('cancelar', c.id);
     void cancelarRecordatoriosDeCita(c.id);
+    void cancelarVideosDeCita(c.id);
     emitirEventoCita({
       tipo: 'cita:cancelada',
       sedeId: c.sedeId,

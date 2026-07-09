@@ -217,6 +217,11 @@ export function ColumnaAgenda({ profesional, citas, bloqueos = [], permisos = []
       motivoLabel ? `Motivo: ${motivoLabel}` : null,
     ].filter(Boolean).join(' · ');
 
+    // PRÉSTAMO (cobertura de un día de OTRA sede): el badge dice de qué sede viene,
+    // no "hasta cuándo" — es solo por ese día.
+    if (asg.esPrestamo) {
+      return { label: `Préstamo ${asg.sedeOrigen ?? 'otra sede'}`, tooltip: `En préstamo desde ${asg.sedeOrigen ?? 'otra sede'} solo este día` };
+    }
     if (asg.fechaFin) {
       const diasRestantes = differenceInCalendarDays(parseISO(asg.fechaFin), new Date());
       if (diasRestantes < 0) return null;
@@ -232,7 +237,9 @@ export function ColumnaAgenda({ profesional, citas, bloqueos = [], permisos = []
   return (
     <div className="w-44 shrink-0 flex flex-col border-r border-slate-100 last:border-r-0">
       {/* Cabecera */}
-      <div className={cn('flex flex-col items-center justify-center gap-0.5 px-2 bg-white border-b border-slate-200 sticky top-0 z-10', badgeVencimiento ? 'h-16 pt-1' : 'h-14')}>
+      {/* Altura FIJA (h-16) siempre — con o sin badge — para que TODAS las columnas y el
+          eje de horas queden alineados y el badge no descuadre ni "coma" el slot de las 8am. */}
+      <div className="flex flex-col items-center justify-center gap-0.5 px-2 h-16 bg-white border-b border-slate-200 sticky top-0 z-10">
         <Avatar iniciales={iniciales} color={profesional.colorAvatar} size="sm" />
         <p className="text-xxs font-semibold text-slate-700 text-center leading-tight truncate w-full text-center">
           {profesional.nombres.split(' ')[0]} {profesional.apellidos.split(' ')[0]}

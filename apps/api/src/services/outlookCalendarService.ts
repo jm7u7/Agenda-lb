@@ -14,7 +14,7 @@
  * Si faltan, el canal Outlook queda inerte (no rompe nada).
  */
 import { prisma } from '../db';
-import { gmailDeProfesional, notificarCitaGmailProfesional, notificarReunionGmailProfesional } from './agendaGmailProfesional';
+import { notificarCitaGmailProfesional, notificarReunionGmailProfesional } from './agendaGmailProfesional';
 
 const TZ = 'America/Lima';
 const tenantId = () => process.env.AZURE_TENANT_ID;
@@ -123,11 +123,12 @@ export async function sincronizarCitaOutlook(accion: Accion, citaId: string): Pr
     // persona. Sin esto, las baro "Solo Daniel/Yasica" nunca llegaban a su celular.
     const persona = cita.solicitadoProfesional ?? cita.profesional;
 
-    // Yasica Doy → su Gmail personal por correo con invitación (.ics). Graph no
-    // puede escribir en un buzón externo, así que se notifica por email.
-    const gmailDestino = gmailDeProfesional(persona.nombres, persona.apellidos);
-    if (gmailDestino) {
-      await notificarCitaGmailProfesional(accion, cita, gmailDestino);
+    // Profesional cuyo buzón NO es accesible por Graph (p. ej. Yasica Doy) → se
+    // notifica por correo con invitación (.ics) a su dirección configurada en BD
+    // (Profesional.emailAgenda). Graph no puede escribir en un buzón externo.
+    const destinoAgenda = persona.emailAgenda;
+    if (destinoAgenda) {
+      await notificarCitaGmailProfesional(accion, cita, destinoAgenda);
       return;
     }
 
@@ -202,10 +203,10 @@ export async function sincronizarReunionOutlook(accion: Accion, bloqueoId: strin
     if (!b || !b.profesional || !b.esReunion || !b.horaInicio || !b.horaFin) return;
     const fecha = b.fechaInicio.toISOString().slice(0, 10);
 
-    // Yasica Doy → Gmail personal por invitación .ics.
-    const gmailDestino = gmailDeProfesional(b.profesional.nombres, b.profesional.apellidos);
-    if (gmailDestino) {
-      await notificarReunionGmailProfesional(accion, { id: b.id, fechaInicio: b.fechaInicio, horaInicio: b.horaInicio, horaFin: b.horaFin, motivo: b.motivo }, gmailDestino);
+    // Profesional notificado por correo + .ics (Profesional.emailAgenda en BD).
+    const destinoAgenda = b.profesional.emailAgenda;
+    if (destinoAgenda) {
+      await notificarReunionGmailProfesional(accion, { id: b.id, fechaInicio: b.fechaInicio, horaInicio: b.horaInicio, horaFin: b.horaFin, motivo: b.motivo }, destinoAgenda);
       return;
     }
 

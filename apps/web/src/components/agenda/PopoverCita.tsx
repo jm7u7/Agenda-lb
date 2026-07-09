@@ -13,7 +13,13 @@ import { usePromociones } from '../../hooks/usePromociones';
 import { formatPromoValor } from '../../api/promociones';
 import { RomboAlerta } from '../pacientes/RomboAlerta';
 import { CuadroFamiliares } from '../pacientes/CuadroFamiliares';
+import { ToggleDatosPaciente } from '../pacientes/ToggleDatosPaciente';
+import { BadgeAsistencia } from '../pacientes/BadgeAsistencia';
+import { BotonHistorialGenexis } from '../pacientes/HistorialGenexis';
+import { SaldoPaquetes, DialogoConsumo } from '../pacientes/SaldoPaquetes';
+import { usePaquetesPaciente, paquetesElegibles, paquetesOtraSede } from '../../api/paquetesSesiones';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAgendaStore } from '../../stores/agendaStore';
 import { generarSlotsDelDia, horaInicioValidaParaDuracion } from '@limablue/shared';
 
@@ -41,6 +47,7 @@ function formatFechaCorta(d: Date) {
 
 export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { sedeId, unidadNegocioId } = useAgendaStore();
 
   const comentarios = cita.comentarios ?? [];
@@ -85,13 +92,29 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
     staleTime: 60_000,
   });
 
+  // Saldos de paquetes/membresías (queryKey compartida con ficha y búsqueda).
+  const { data: paquetesPac } = usePaquetesPaciente(cita.paciente.id);
+  // Diálogo automático SOLO para paquetes nacidos en la Agenda: los de origen
+  // GENEXIS no cuentan sesiones en automático — la sesión se ADJUDICA a mano en
+  // el desplegable de Nueva Cita (la cita ya viene numerada y consume al llegar).
+  const elegiblesConsumo = paquetesElegibles(paquetesPac, cita.servicioId, cita.sedeId, cita.subcategoriaId ?? null, cita.fecha?.slice(0, 10) ?? null)
+    .filter((p) => p.origen !== 'GENEXIS_APERTURA');
+  const paquetesOtras = paquetesOtraSede(paquetesPac, cita.servicioId, cita.sedeId, cita.subcategoriaId ?? null, cita.fecha?.slice(0, 10) ?? null);
+  const [dialogoConsumo, setDialogoConsumo] = useState(false);
+
   const estadoMutation = useMutation({
     mutationFn: ({ estado, comentario }: { estado: string; comentario?: string }) =>
       citasApi.cambiarEstado(cita.id, estado, comentario, motivoCancelacion || undefined),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['citas'] });
       toast.success('Estado actualizado');
-      onClose();
+      // Al marcar LLEGADA con paquete elegible: diálogo de consumo de un clic
+      // (numeración continua, FIFO). Si no hay elegibles, se cierra normal.
+      if (variables.estado === 'llego' && elegiblesConsumo.length > 0) {
+        setDialogoConsumo(true);
+      } else {
+        onClose();
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -204,9 +227,19 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
               <RomboAlerta alerta={cita.paciente.alerta ?? datosPaciente?.alerta} size={13} />
               <span className="truncate">{nombrePaciente}</span>
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">{cita.paciente.telefono}</p>
+            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+              <span>{cita.paciente.telefono}</span>
+              {/* Toggle "actualizar datos": estado server-side; clic → edición en la ficha */}
+              <ToggleDatosPaciente
+                encendido={cita.paciente.requiereActualizacionDatos ?? false}
+                contacto={cita.paciente}
+                onEditar={() => navigate(`/pacientes/${cita.paciente.id}?editar=datos`)}
+              />
+            </p>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <BadgeEstado estado={cita.estado as never} />
+              {/* Asistencia histórica SOLO Limablue — precaución al dar horarios */}
+              <BadgeAsistencia alerta={cita.paciente.alerta ?? datosPaciente?.alerta} />
               {cita.paquetePaciente && cita.sesionNumero && (
                 <BadgeSesion numero={cita.sesionNumero} total={cita.paquetePaciente.sesionesTotal} />
               )}
@@ -229,6 +262,25 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-0.5">✕</button>
         </div>
+
+        {/* Paquetes y membresías activos (chips con semáforo; resaltado = esta cita puede consumir) */}
+        {paquetesPac && paquetesPac.some(p => p.estado === 'ACTIVO') && (
+          <div className="px-5 py-2 border-b border-slate-100 space-y-1">
+            <SaldoPaquetes
+              pacienteId={cita.paciente.id}
+              variante="chip"
+              servicioActualId={cita.servicioId}
+              sedeActualId={cita.sedeId}
+              onChipClick={() => navigate(`/pacientes/${cita.paciente.id}`)}
+            />
+            {/* Candado de sede: mismo servicio pero el paquete pertenece a otra sede */}
+            {elegiblesConsumo.length === 0 && paquetesOtras.length > 0 && (
+              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
+                ⚠ El paquete de este paciente pertenece a <b>{paquetesOtras[0].sede?.nombre}</b> — aquí no consume.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Alerta de paciente de atención (no-show / reprogramador frecuente) */}
         {(() => {
@@ -265,6 +317,9 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
             <div className="flex items-center gap-2 text-sm">
               <span className="text-slate-400 w-20 text-xs">Servicio</span>
               <span className="font-medium text-slate-800">{cita.servicio.nombre}</span>
+              {cita.subcategoria && (
+                <span className="px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 text-xxs font-semibold">{cita.subcategoria.nombre}</span>
+              )}
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-slate-400 w-20 text-xs">Hora</span>
@@ -662,6 +717,15 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
             )}
           </div>
 
+          {/* Historial Genexis (sistema anterior) — solo se muestra si el paciente tiene historia vieja */}
+          <div className="px-5 py-2 border-b border-slate-100 empty:hidden">
+            <BotonHistorialGenexis
+              pacienteId={cita.paciente.id}
+              nombrePaciente={nombrePaciente}
+              documento={`${cita.paciente.tipoDocumento ?? ''} ${cita.paciente.numeroDocumento ?? ''}`.trim()}
+            />
+          </div>
+
           {/* Historial del paciente */}
           <div className="px-5 py-3 border-b border-slate-100">
             <button
@@ -850,6 +914,16 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
           {cita.creadoPorUsuario && <> · por <span className="text-slate-500 font-medium">{cita.creadoPorUsuario.nombre}</span></>}
         </div>
       </div>
+
+      {/* Diálogo de consumo de un clic (tras marcar llegada) */}
+      {dialogoConsumo && (
+        <DialogoConsumo
+          citaId={cita.id}
+          pacienteId={cita.paciente.id}
+          elegibles={elegiblesConsumo}
+          onCerrar={() => { setDialogoConsumo(false); onClose(); }}
+        />
+      )}
     </>
   );
 }

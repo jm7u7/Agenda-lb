@@ -42,6 +42,7 @@ enum TipoPromocion {
   PRECIO_FIJO
   PORCENTAJE
   OTRO
+  MEMBRESIA // membresía con contabilidad de sesiones (constructor en Herramientas)
 }
 
 // Canal de reserva configurable (de dónde viene el cliente). Administrable desde Herramientas:
@@ -75,6 +76,8 @@ model Promocion {
   actualizadoEn DateTime      @updatedAt
 
   citas Cita[]
+  // Membresías (tipo=MEMBRESIA): plantilla de contabilidad de sesiones vinculada.
+  paquetesPlantilla Paquete[]
 
   // Único por nombre mientras viva: índice único PARCIAL (WHERE deletedAt IS NULL) en la
   // migración — `promociones_nombre_unico`.
@@ -119,6 +122,7 @@ enum TipoDocumento {
   CE
   PASAPORTE
   RUC
+  OTRO // documentos no estándar del import Genexis (incl. "SIN INFORMACIÓN" → OTRO)
 }
 
 enum Sexo {
@@ -151,6 +155,8 @@ model Sede {
   direccion String
   color     String    @default("#3B82F6")
   activa    Boolean   @default(true)
+  // Orden manual de las pestañas de sede en la agenda (0 = sin orden → alfabético).
+  orden     Int       @default(0)
   deletedAt DateTime?
 
   // Horario por día de semana (JSON: {lunes: {apertura: "08:00", cierre: "20:00"}, ...})
@@ -166,6 +172,7 @@ model Sede {
   agregados       AgregadoDiario[]
   notificaciones  NotificacionSede[]
   bloqueos        BloqueoAgenda[]
+  paquetesPaciente PaquetePaciente[]
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -239,6 +246,13 @@ model Profesional {
   // solo es seleccionable al reservar (médicos de baropodometría y Daniel Doy) y su columna
   // aparece únicamente el día que tiene citas. Puede atender en cualquier sede.
   soloPorSolicitud Boolean         @default(false)
+  // Meta mensual de días de presencia para el reporte de bonos de RRHH (null = usar el
+  // valor global del filtro). Solo se usa en Reportes RRHH; no afecta la operación.
+  metaDiasMes      Int?
+  // Correo de notificación de agenda (canal correo + .ics) cuando el buzón NO es
+  // accesible por Graph. Configurable en BD (antes hardcodeado). Yasica Doy →
+  // yasicadoy@limablue.com. Daniel Doy se sincroniza por Graph y queda null.
+  emailAgenda      String?
   deletedAt        DateTime?
 
   unidadNegocio    UnidadNegocio            @relation(fields: [unidadNegocioId], references: [id])
@@ -393,12 +407,43 @@ model Servicio {
   agregados     AgregadoDiario[]
   combinaciones CombinacionPermitida[]
   anclaDe       ConfiguracionSistema[]
+  subcategorias SubcategoriaServicio[]
+  paquetesComoServicioNuevo PaquetePaciente[] @relation("PaqueteServicioNuevo")
+  videos        ServicioVideo[]
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
   @@index([unidadNegocioId, activo])
   @@map("servicios")
+}
+
+// ─── SubcategoriaServicio ─────────────────────────────────────────────────────
+// Subcategorías/variantes de un Servicio (ej. Profilaxis → Regular, Premium,
+// Infantil, Adulto mayor). Misma duración que el servicio padre; PRECIO propio.
+// Cuando un servicio tiene subcategorías ACTIVAS, elegir una es OBLIGATORIO al
+// agendar y al vender/consumir membresías (la subcategoría se FIJA al vender).
+// Soft-delete + AuditLog. Configurable desde Administración (NO hardcodear).
+model SubcategoriaServicio {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  servicioId        String    @db.Uuid
+  nombre            String
+  precioReferencial Decimal?  @db.Decimal(10, 2)
+  orden             Int       @default(0)
+  activo            Boolean   @default(true)
+  deletedAt         DateTime?
+
+  servicio Servicio @relation(fields: [servicioId], references: [id])
+  citas    Cita[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // Único por (servicio, nombre) mientras no esté borrado: índice único PARCIAL
+  // `subcategorias_servicio_nombre_unico` (WHERE deletedAt IS NULL) — SQL crudo
+  // en la migración `20260706160000_subcategorias_servicio`.
+  @@index([servicioId, activo])
+  @@map("subcategorias_servicio")
 }
 
 // ─── CombinacionPermitida ─────────────────────────────────────────────────────
@@ -476,11 +521,23 @@ model Paciente {
   sexo            Sexo?
   telefono        String
   email           String?
+  // Soft: correo rebotado/quejado (bounce/complaint vía webhook de Resend). Se
+  // EXCLUYE de futuros envíos sin borrar el email. Se limpia si el correo se corrige.
+  emailInvalido   Boolean       @default(false)
   notas           String?
   deletedAt       DateTime?
 
-  citas    Cita[]
-  paquetes PaquetePaciente[]
+  // ─── Import Genexis (migración del sistema antiguo) ──────────────────────────
+  // origenImportacion = "GENEXIS" cuando el paciente fue CREADO por el import.
+  // requiereActualizacionDatos es CALCULADA server-side (falta correo/teléfono/
+  // fechaNacimiento) — nunca se setea manualmente desde el cliente.
+  origenImportacion          String?
+  loteImportacionId          String?   @db.Uuid
+  requiereActualizacionDatos Boolean   @default(false)
+
+  citas          Cita[]
+  paquetes       PaquetePaciente[]
+  conciliaciones ConciliacionApertura[]
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -512,6 +569,10 @@ model Cita {
   canal                   String            @default("recepcion") // valor de un Canal configurable
   origenAsignacion        OrigenAsignacion?
   paquetePacienteId       String?           @db.Uuid
+  // Subcategoría del servicio (ej. Profilaxis → Regular/Premium/Infantil/Adulto mayor).
+  // Obligatoria a nivel de aplicación cuando el servicio tiene subcategorías activas;
+  // nullable en DB por additive-only (citas viejas y servicios sin subcategorías = null).
+  subcategoriaId          String?           @db.Uuid
   sesionNumero            Int?
   // Marca si ESTA cita ya descontó una sesión del paquete. Hace idempotente el
   // descuento/reembolso: una cita consume a lo sumo 1 sesión, sin importar
@@ -563,6 +624,7 @@ model Cita {
   sede                  Sede               @relation(fields: [sedeId], references: [id])
   unidadNegocio         UnidadNegocio      @relation(fields: [unidadNegocioId], references: [id])
   servicio              Servicio           @relation(fields: [servicioId], references: [id])
+  subcategoria          SubcategoriaServicio? @relation(fields: [subcategoriaId], references: [id])
   paquetePaciente       PaquetePaciente?   @relation(fields: [paquetePacienteId], references: [id])
   promocion             Promocion?         @relation(fields: [promocionId], references: [id], onDelete: Restrict)
   citaOriginal          Cita?              @relation("Reprogramacion", fields: [citaOriginalId], references: [id])
@@ -571,14 +633,21 @@ model Cita {
   recordatorios         RecordatorioCita[]
   tokensAccion          TokenAccionCita[]
   comentarios           ComentarioCita[]
+  consumosSesion        ConsumoSesion[]
+  videoEnvios           VideoEnvioLog[]
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  // Anti double-booking: índice único PARCIAL (solo citas activas) creado vía SQL
-  // crudo en una migración/seed — ver `citas_slot_activo_unique`. Excluye estados
-  // cancelada/no_show/reprogramada y soft-deleted, para que al cancelar una cita su
-  // slot quede libre para reservar de nuevo (sin perder la cita del historial).
+  // Anti double-booking: DOS índices únicos PARCIALES (solo citas activas) creados vía
+  // SQL crudo en la migración `20260624120000_bloques_combinados`:
+  //  • `citas_slot_primario_unique`  : slotRol NULL (cita suelta) o PRINCIPAL (ancla de
+  //    bloque) — máx 1 por (profesionalId, fecha, horaInicio).
+  //  • `citas_slot_secundario_unique`: slotRol SECUNDARIO (extra del bloque) — máx 1
+  //    por (profesionalId, fecha, horaInicio).
+  // Ambos excluyen estados cancelada/no_show/reprogramada y soft-deleted, para que al
+  // cancelar una cita su slot quede libre para reservar de nuevo (sin perder la cita
+  // del historial). Reemplazan al antiguo `citas_slot_activo_unique` (ya no existe).
   @@index([idempotencyKey])
   @@index([sedeId, fecha])
   @@index([profesionalId, fecha])
@@ -587,6 +656,7 @@ model Cita {
   @@index([estado])
   @@index([unidadNegocioId, fecha])
   @@index([slotGrupoId])
+  @@index([subcategoriaId])
   // Desempeño de Agentes: consultas por autor de la reserva en un rango de fechas.
   @@index([creadoPorUsuarioId, fecha])
   @@map("citas")
@@ -626,7 +696,19 @@ model Paquete {
   activo        Boolean   @default(true)
   deletedAt     DateTime?
 
+  // ─── Módulo Sesiones/Membresías (additive) ────────────────────────────────
+  // tipo PAQUETE | MEMBRESIA | UNITARIA. `activo=false` desactiva la VENTA
+  // (jamás se borra: instancias existentes/migradas siguen consumibles).
+  tipo             String  @default("PAQUETE")
+  // Membresías: composición vigente [{servicioId, cantidad, etiqueta}] — al VENDER
+  // se copia como snapshot al PaquetePaciente (editar aquí NO toca lo vendido).
+  composicion      Json?
+  duracionMeses    Int?
+  sedesHabilitadas Json? // lista de sedeIds donde se vende (null = todas)
+  promocionId      String? @db.Uuid // membresías viven en el módulo Promociones
+
   servicio   Servicio          @relation(fields: [servicioId], references: [id])
+  promocion  Promocion?        @relation(fields: [promocionId], references: [id])
   instancias PaquetePaciente[]
 
   creadoEn      DateTime @default(now())
@@ -643,20 +725,160 @@ model PaquetePaciente {
   paqueteId      String    @db.Uuid
   fechaCompra    DateTime  @db.Date
   sesionesTotal  Int
+  // CONTADOR LEGACY (write-through): se mantiene sincronizado con el conteo de
+  // ConsumoSesion vivos, que es LA fuente de verdad del saldo. Invariante
+  // verificada en tests: sesionesUsadas == count(consumos vivos).
   sesionesUsadas Int       @default(0)
   activo         Boolean   @default(true)
   notas          String?
   deletedAt      DateTime?
 
-  paciente Paciente @relation(fields: [pacienteId], references: [id])
-  paquete  Paquete  @relation(fields: [paqueteId], references: [id])
-  citas    Cita[]
+  // ─── Módulo Sesiones/Membresías (additive) ────────────────────────────────
+  // Candado de sede: el paquete se atiende donde se compró. Obligatorio a nivel
+  // de aplicación para todo paquete nuevo (nullable en DB por additive-only;
+  // los 9 legacy se backfillean).
+  sedeId          String? @db.Uuid
+  // Servicio RESUELTO del catálogo nuevo (gancho de la continuidad Genexis→Agenda;
+  // en familias con mapeo porSede se resuelve con la sede del paquete).
+  servicioNuevoId String? @db.Uuid
+  tipo            String  @default("PAQUETE") // PAQUETE | MEMBRESIA | UNITARIA
+  // Snapshot de composición al VENDER una membresía (regla de versionado:
+  // editar el constructor no altera lo vendido).
+  composicion     Json?
+  vigenciaInicio  String? // "YYYY-MM-DD" — solo membresías
+  vigenciaFin     String? // "YYYY-MM-DD" — solo membresías; null en paquetes = sin vencimiento
+  origen          String  @default("AGENDA") // AGENDA | GENEXIS_APERTURA
+  promocionId     String? @db.Uuid // membresía de la que nace (módulo Promociones)
+  familiaId       String? @db.Uuid // FamiliaPaqueteGenexis de la apertura
+  // Recalculado SIEMPRE server-side (ACTIVO | AGOTADO | VENCIDO | ANULADO) —
+  // nunca aceptado del cliente.
+  estado          String  @default("ACTIVO")
+
+  paciente       Paciente               @relation(fields: [pacienteId], references: [id])
+  paquete        Paquete                @relation(fields: [paqueteId], references: [id])
+  sede           Sede?                  @relation(fields: [sedeId], references: [id])
+  servicioNuevo  Servicio?              @relation("PaqueteServicioNuevo", fields: [servicioNuevoId], references: [id])
+  familia        FamiliaPaqueteGenexis? @relation(fields: [familiaId], references: [id])
+  citas          Cita[]
+  consumos       ConsumoSesion[]
+  conciliaciones ConciliacionApertura[]
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
   @@index([pacienteId, activo])
+  @@index([pacienteId, servicioNuevoId, sedeId, estado])
   @@map("paquetes_paciente")
+}
+
+// ─── Módulo Sesiones: FamiliaPaqueteGenexis ──────────────────────────────────
+// Tabla de equivalencias APROBADA (solo para la migración): familia de nombres
+// del sistema viejo → servicio del catálogo nuevo. `mapeoServicio` es
+// {default: servicioId} o {porSede: {sedeId: servicioId}} (fisio se resuelve
+// por sede). tipo SIN_SALDO (curaciones) y UNITARIA (Laser Para Hongos) NO
+// generan propuestas de saldo.
+
+model FamiliaPaqueteGenexis {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombreFamilia    String    @unique
+  patronesServicio Json // regex/strings que matchean nombres viejos de servicio
+  patronesObs      Json? // regex adicionales para la evidencia B
+  mapeoServicio    Json? // {default} | {porSede} | null = sin equivalente
+  tipo             String // PAQUETE | MEMBRESIA | UNITARIA | SIN_SALDO
+  sesionesTotales  Int?
+  composicion      Json? // membresías: [{servicioId, cantidad, etiqueta}]
+  duracionMeses    Int?
+  activa           Boolean   @default(true)
+  deletedAt        DateTime?
+
+  paquetes       PaquetePaciente[]
+  conciliaciones ConciliacionApertura[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("familias_paquete_genexis")
+}
+
+// ─── Módulo Sesiones: ConsumoSesion (FUENTE DE VERDAD del saldo) ─────────────
+// Cada uso de una sesión. Saldo = sesionesTotal − count(consumos vivos).
+// Anular la cita consumidora → soft-delete del consumo (devolución automática).
+// El saldo JAMÁS se edita: toda corrección es un consumo/anulación trazable.
+
+model ConsumoSesion {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paqueteId          String    @db.Uuid
+  // Membresías multi-ítem: servicioId del ítem del snapshot que descuenta.
+  tipoSesion         String?   @db.Uuid
+  citaId             String?   @db.Uuid // null SOLO en consumos de APERTURA
+  historialGenexisId String?   @db.Uuid // evidencia del consumo histórico (FK débil)
+  fecha              String // "YYYY-MM-DD"
+  origen             String // APERTURA | CITA | AJUSTE_MANUAL
+  motivo             String? // obligatorio si AJUSTE_MANUAL (validado en app)
+  registradoPorId    String?   @db.Uuid // FK débil a Usuario
+  registradoPor      String? // etiqueta snapshot (patrón ComentarioCita)
+  anuladoMotivo      String? // motivo de la anulación (al soft-delete manual)
+  deletedAt          DateTime?
+
+  paquete PaquetePaciente @relation(fields: [paqueteId], references: [id])
+  cita    Cita?           @relation(fields: [citaId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // Máx 1 consumo VIVO por cita: índice único PARCIAL `consumos_cita_unico`
+  // (WHERE citaId IS NOT NULL AND deletedAt IS NULL) — SQL crudo en la migración.
+  @@index([paqueteId, deletedAt])
+  @@index([citaId])
+  @@map("consumos_sesion")
+}
+
+// ─── Módulo Sesiones: ConciliacionApertura (la firma humana) ─────────────────
+// El motor propone (PENDIENTE); un humano aprueba/edita/descarta. Aprobar crea
+// el PaquetePaciente + consumos APERTURA en transacción. El motor jamás toca
+// filas decididas.
+
+model ConciliacionApertura {
+  id                 String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId         String  @db.Uuid
+  familiaId          String  @db.Uuid
+  paquetePacienteId  String? @db.Uuid // se llena al APROBAR
+  lecturaServicio    Int? // evidencia A (nombres)
+  lecturaObs         Int? // evidencia B (observaciones)
+  consumoPropuesto   Int? // null = ILEGIBLE (decisión 100% humana)
+  consumoAprobado    Int?
+  // Tamaño REAL del paquete detectado en la obs ("de paquete de N sesiones"): manda
+  // sobre el tamaño de la familia (el nombre de servicio a veces dice P12 pero el
+  // paciente compró un paquete de 4). null = usar el tamaño de la familia.
+  sesionesTotalReal  Int?
+  ajusteProCliente   Boolean @default(false)
+  confianza          String // VERDE | AMBAR | ROJO
+  sedeInferidaId     String? @db.Uuid
+  sedeAprobadaId     String? @db.Uuid
+  servicioResueltoId String? @db.Uuid // mapeo de la familia según sede inferida/aprobada
+  // Membresías: vigencia estimada (primera sesión + duración) y flag si ya
+  // venció pero hay consumo 2026 (revisión humana de vigencia).
+  vigenciaFinEstimada String?
+  flagVigencia        Boolean @default(false)
+  evidenciaIds        Json // ids de historial_genexis usados
+  estado              String  @default("PENDIENTE") // PENDIENTE|APROBADA|EDITADA|DESCARTADA
+  valoresOriginales   Json? // snapshot pre-edición (EDITADA preserva el original)
+  decididoPor         String?
+  decididoEn          DateTime?
+  notas               String?
+  deletedAt           DateTime?
+
+  paciente        Paciente              @relation(fields: [pacienteId], references: [id])
+  familia         FamiliaPaqueteGenexis @relation(fields: [familiaId], references: [id])
+  paquetePaciente PaquetePaciente?      @relation(fields: [paquetePacienteId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([estado, confianza])
+  @@index([pacienteId])
+  @@index([familiaId, estado])
+  @@map("conciliaciones_apertura")
 }
 
 // ─── Usuario ──────────────────────────────────────────────────────────────────
@@ -905,8 +1127,8 @@ model MailConfig {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   fromEmail     String // correo remitente (Gmail de prueba o @limablue)
   fromName      String   @default("Limablue Podología")
-  provider      String   @default("gmail")
-  refreshToken  String? // token OAuth de larga duración (sensible)
+  provider      String   @default("resend") // Resend (transporte actual). Gmail quedó DEPRECADO.
+  refreshToken  String? // DEPRECADO (token OAuth Gmail) — se conserva, no se usa con Resend
   isActive      Boolean  @default(true)
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -934,7 +1156,8 @@ model RecordatorioCita {
   programadoPara     DateTime
   estado             EstadoRecordatorio @default(PROGRAMADO)
   intentos           Int                @default(0)
-  gmailMessageId     String?
+  gmailMessageId     String? // DEPRECADO (transporte Gmail) — se conserva por historial
+  resendEmailId      String? // id del correo en Resend (transporte actual)
   enviadoAt          DateTime? // momento real de envío (para métricas de tiempo)
   jobId              String? // id del job en BullMQ (para cancelar/reagendar)
   clickConfirmarAt   DateTime?
@@ -956,6 +1179,69 @@ model RecordatorioCita {
   @@map("recordatorios_cita")
 }
 
+// ─── Import Genexis ───────────────────────────────────────────────────────────
+// Lote de importación del sistema antiguo Genexis (pacientes + historial congelado).
+// Cada corrida del script `import-genexis` crea un lote con sus contadores; el
+// historial insertado referencia su lote vía `loteId` (FK débil, sin constraint).
+
+model ImportGenexisLote {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombreArchivo String
+  tipo          String // "INICIAL" | "DELTA"
+  totalFilas    Int
+
+  pacientesCreados      Int @default(0)
+  pacientesActualizados Int @default(0)
+  pacientesOmitidos     Int @default(0)
+  historialInsertado    Int @default(0)
+  historialOmitido      Int @default(0)
+
+  estado       String    @default("EN_PROCESO") // EN_PROCESO | COMPLETADO | FALLIDO
+  errores      Json?
+  importadoEn  DateTime  @default(now())
+  importadoPor String
+  deletedAt    DateTime?
+
+  actualizadoEn DateTime @updatedAt
+
+  @@map("import_genexis_lotes")
+}
+
+// Historial de atenciones del sistema antiguo Genexis: CRUDO y CONGELADO.
+// Solo lectura a nivel de API (sin endpoints de escritura). Los campos podologo/
+// sede/servicio son TEXTO CRUDO — jamás FK a los catálogos actuales. No aparece
+// en KPIs ni analytics. `hashRegistro` (SHA-256 de campos normalizados) es la
+// clave de idempotencia: re-ejecuciones y deltas se omiten con skipDuplicates.
+
+model HistorialGenexis {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId        String? @db.Uuid // FK débil al Paciente real; null si no resolvió
+  tipoDocumento     String // texto crudo (incluye "OTRO", "SIN INFORMACIÓN")
+  numeroDocumento   String
+  fechaCita         String // "YYYY-MM-DD" (fecha civil como string — regla del proyecto)
+  horaCita          String? // tal cual el archivo (ej. "16")
+  podologo          String? // texto crudo, NO FK
+  sede              String? // texto crudo, NO FK (ej. "San Isidro" del sistema viejo)
+  idSucursal        String?
+  servicio          String? // texto crudo, NO FK — jamás toca el catálogo
+  obsPaciente       String?
+  obsPodologo       String?
+  consultorio       String?
+  llegoPaciente     String? // "Sí" | "No" | null
+  fechaCreacionGx   String? // "YYYY-MM-DD HH:MM"
+  usuarioCreacionGx String?
+  hashRegistro      String  @unique // clave de idempotencia
+  loteId            String  @db.Uuid
+
+  creadoEn  DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([pacienteId, fechaCita])
+  @@index([numeroDocumento])
+  @@index([loteId])
+  @@map("historial_genexis")
+}
+
 model TokenAccionCita {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   token     String    @unique
@@ -971,4 +1257,111 @@ model TokenAccionCita {
 
   @@index([citaId])
   @@map("tokens_accion_cita")
+}
+
+// ─── Módulo Videos por Servicio ───────────────────────────────────────────────
+// Videos educativos (YouTube "No listado") que se envían por correo al paciente,
+// parametrizados por servicio y por momento relativo a la cita (antes/después).
+// El transporte de correo es Resend (emailService.enviarEmail) — NO toca mail_config.
+
+enum MomentoVideo {
+  ANTES
+  DESPUES
+}
+
+enum UnidadOffset {
+  HORAS
+  DIAS
+  MESES
+  ANIOS
+}
+
+enum EstadoEnvioVideo {
+  PENDIENTE
+  ENVIADO
+  CANCELADO
+  ERROR
+}
+
+// Un video configurado para un servicio. N videos por servicio. Cada uno define su
+// momento (ANTES/DESPUES) y offset (valor + unidad) relativo a la cita. Soft-delete +
+// AuditLog en toda creación/edición/toggle/eliminación. `activo` permite pausar sin borrar.
+model ServicioVideo {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  servicioId     String       @db.Uuid
+  youtubeVideoId String // extraído de la URL (11 chars normalmente)
+  youtubeUrl     String // URL original pegada por el admin
+  asunto         String // asunto del correo (máx 120 en validación) — soporta {paciente}/{servicio}/{fecha}
+  tituloVideo    String // título mostrado en el cuerpo del correo (máx 100)
+  cuerpoTexto    String // texto corto del correo (máx 300)
+  momento        MomentoVideo
+  offsetValor    Int // > 0 (validado en la app)
+  offsetUnidad   UnidadOffset
+  orden          Int          @default(0) // orden visual en la línea de tiempo
+  activo         Boolean      @default(true) // pausar sin borrar
+  createdBy      String?      @db.Uuid // Usuario que lo creó
+  deletedAt      DateTime?
+
+  servicio Servicio        @relation(fields: [servicioId], references: [id], onDelete: Restrict)
+  envios   VideoEnvioLog[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([servicioId, activo])
+  @@map("servicio_videos")
+}
+
+// Log idempotente de envíos: 1 fila por (cita, video). Garantía anti-duplicado vía
+// índice único PARCIAL (citaId, servicioVideoId) WHERE deletedAt IS NULL, creado en la
+// migración (SQL crudo). Las transiciones de ciclo de vida ACTUALIZAN esta fila
+// (PENDIENTE↔CANCELADO, → ENVIADO); nunca insertan duplicados.
+model VideoEnvioLog {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  citaId             String           @db.Uuid
+  servicioVideoId    String           @db.Uuid
+  pacienteEmail      String // snapshot del email al momento de programar
+  scheduledFor       DateTime // UTC — calculado desde fecha/hora civil (America/Lima) ± offset
+  estado             EstadoEnvioVideo @default(PENDIENTE)
+  sentAt             DateTime? // momento real de envío
+  errorDetalle       String? // último error (reintentos/ventana expirada)
+  // Motivo cuando estado=CANCELADO: distingue "fuera_de_ventana" (reactivable al
+  // reprogramar/editar offset) de "cita_cancelada"/"video_pausado"/"video_eliminado"
+  // (no reactivables). Necesario para R2 (reactivación inversa) y R1 (revalidación).
+  motivoCancelacion  String?
+  intentos           Int              @default(0)
+  resendEmailId      String? // id del correo en Resend (trazabilidad)
+  deletedAt          DateTime?
+
+  cita          Cita          @relation(fields: [citaId], references: [id], onDelete: Restrict)
+  servicioVideo ServicioVideo @relation(fields: [servicioVideoId], references: [id], onDelete: Restrict)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([citaId])
+  @@index([servicioVideoId])
+  @@index([estado, scheduledFor])
+  // Idempotencia "1 envío por cita+video" reforzada con índice único PARCIAL
+  // (solo no borrados) creado vía SQL crudo: video_envio_log_cita_video_unico.
+  @@map("video_envio_logs")
+}
+
+// Lista de exclusión de VIDEOS EDUCATIVOS: correos que NO deben recibir los videos del
+// módulo. NO afecta los correos de confirmación/recordatorio (esos siguen enviándose).
+// `email` se guarda en minúsculas; único parcial mientras no esté borrado. Soft-delete:
+// quitar de la lista = re-habilitar futuros videos.
+model VideoSupresion {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String // normalizado a minúsculas
+  motivo        String?
+  creadoPor     String?   @db.Uuid
+  deletedAt     DateTime?
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  @@index([email])
+  // Único por email mientras esté activo: índice único PARCIAL (WHERE deletedAt IS NULL)
+  // creado vía SQL crudo en la migración: video_supresiones_email_unico.
+  @@map("video_supresiones")
 }

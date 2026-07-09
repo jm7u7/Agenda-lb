@@ -58,6 +58,9 @@ export function ModalHorario({ sedeId, sedeName, onClose }: ModalHorarioProps) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['excepciones', sedeId] });
       qc.invalidateQueries({ queryKey: ['horario', sedeId] });
+      // La excepción cambia el turno de las profesionales (horaSalida) → refrescar sus
+      // columnas, si no la agenda sigue mostrando "Fin de turno" viejo y bloquea la hora extra.
+      qc.invalidateQueries({ queryKey: ['profesionales-sede'] });
       toast.success('Excepción guardada');
       setNota('');
     },
@@ -69,6 +72,7 @@ export function ModalHorario({ sedeId, sedeName, onClose }: ModalHorarioProps) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['excepciones', sedeId] });
       qc.invalidateQueries({ queryKey: ['horario', sedeId] }); // refresca la agenda (vuelve al horario normal)
+      qc.invalidateQueries({ queryKey: ['profesionales-sede'] }); // turnos vuelven al horario normal
       toast.success('Excepción eliminada — vuelve al horario normal');
     },
     onError: (e: Error) => toast.error(e.message),

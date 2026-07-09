@@ -22,9 +22,15 @@ import { HorariosEntradaPage } from './pages/herramientas/HorariosEntradaPage';
 import { PermisosPage } from './pages/herramientas/PermisosPage';
 import { CanalesPage } from './pages/herramientas/CanalesPage';
 import { PromocionesPage } from './pages/herramientas/PromocionesPage';
+import { MembresiasPage } from './pages/herramientas/MembresiasPage';
+import { DiasEspecialesPage } from './pages/herramientas/DiasEspecialesPage';
+import { ConciliacionPage } from './pages/herramientas/ConciliacionPage';
 import { RecordatoriosPanel } from './pages/herramientas/RecordatoriosPanel';
 import { BaroSolicitudPage } from './pages/herramientas/BaroSolicitudPage';
 import { CombinacionesPage } from './pages/herramientas/CombinacionesPage';
+import { ReportesRrhhPage } from './pages/herramientas/ReportesRrhhPage';
+import { HorariosPersonalPage } from './pages/herramientas/HorariosPersonalPage';
+import { VideosServicioPage } from './pages/herramientas/VideosServicioPage';
 
 export default function App() {
   const token = useAuthStore(s => s.token);
@@ -48,9 +54,15 @@ export default function App() {
         <Route path="/herramientas/permisos" element={<PermisosPage />} />
         <Route path="/herramientas/canales" element={<CanalesPage />} />
         <Route path="/herramientas/promociones" element={<PromocionesPage />} />
+        <Route path="/herramientas/membresias" element={<MembresiasPage />} />
+        <Route path="/herramientas/dias-especiales" element={<DiasEspecialesPage />} />
+        <Route path="/herramientas/conciliacion" element={<ConciliacionPage />} />
         <Route path="/herramientas/recordatorios" element={<RecordatoriosPanel />} />
         <Route path="/herramientas/baro-solicitud" element={<BaroSolicitudPage />} />
         <Route path="/herramientas/combinaciones" element={<CombinacionesPage />} />
+        <Route path="/herramientas/videos-servicio" element={<VideosServicioPage />} />
+        <Route path="/herramientas/reportes-rrhh" element={<ReportesRrhhPage />} />
+        <Route path="/herramientas/horarios-personal" element={<HorariosPersonalPage />} />
         <Route path="/movimientos" element={<MovimientosPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/usuarios" element={<UsersPage />} />

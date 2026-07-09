@@ -70,6 +70,8 @@ export interface Profesional {
     notas: string | null;
     reemplazaProfesional: { id: string; nombres: string; apellidos: string } | null;
     esMovimiento: boolean;
+    esPrestamo?: boolean;        // cobertura de un día traída de otra sede
+    sedeOrigen?: string | null;  // sede desde la que se prestó
   } | null;
   // Turno del día mostrado (la agenda atenúa las horas fuera de jornada)
   horaEntrada?: string | null;
@@ -102,6 +104,25 @@ export interface PersonalExcepcion {
   podologas: { id: string; nombres: string; apellidos: string; colorAvatar: string; presente: boolean; horaEntrada: string }[];
 }
 
+export interface PodologaDiaEspecial {
+  id: string; nombres: string; apellidos: string; colorAvatar: string;
+  sedeBase: string | null;
+  esDeLaSede: boolean;
+  esCobertura: boolean; // traída de otra sede como cobertura
+  viene: boolean;
+  horaEntrada: string;
+}
+export interface DiaEspecial {
+  fecha: string;
+  abierto: boolean;
+  esExcepcion: boolean;
+  apertura: string | null;
+  cierre: string | null;
+  nota: string | null;
+  propias: PodologaDiaEspecial[]; // podólogas de la sede
+  otras: PodologaDiaEspecial[];   // traíbles de otras sedes
+}
+
 export const profesionalesApi = {
   listar: (params: { sedeId?: string; unidadNegocioId?: string; fecha?: string; activo?: boolean }) =>
     api.get<Profesional[]>('/profesionales', {
@@ -130,6 +151,18 @@ export const profesionalesApi = {
   setPresenciaExcepcion: (id: string, sedeId: string, fecha: string, presente: boolean, horaInicio?: '08:00' | '09:00') =>
     api.patch<{ ok: boolean; presente: boolean }>(`/profesionales/${id}/presencia-excepcion`, { sedeId, fecha, presente, horaInicio }),
 
+  // Horario semanal PERMANENTE (días + rango horario) de un trabajador — vigente hasta editarlo.
+  horarioSemanal: (id: string) =>
+    api.get<{ horarios: { id: string; diaSemana: number; horaInicio: string; horaFin: string; turno: string; activo: boolean }[] }>(`/profesionales/${id}/horario`),
+  setHorarioSemanal: (id: string, dias: { diaSemana: number; horaInicio: string; horaFin: string; turno?: string }[]) =>
+    api.put<{ ok: boolean; horarios: { diaSemana: number; horaInicio: string; horaFin: string }[] }>(`/profesionales/${id}/horario`, { dias }),
+
+  // Días especiales / excepciones — herramienta unificada (quién trabaja + traer de otra sede).
+  diaEspecial: (sedeId: string, fecha: string) =>
+    api.get<DiaEspecial>('/profesionales/dia-especial', { sedeId, fecha }),
+  setDiaEspecial: (data: { profesionalId: string; sedeId: string; fechas: string[]; viene: boolean; horaInicio?: '08:00' | '09:00' }) =>
+    api.post<{ resultados: { fecha: string; accion: string }[]; errores: { fecha: string; error: string }[] }>('/profesionales/dia-especial/set', data),
+
   crear: (data: { nombres: string; apellidos: string; tipo: string; unidadNegocioId: string; colorAvatar?: string }) =>
     api.post<Profesional>('/profesionales', data),
 
@@ -138,6 +171,16 @@ export const profesionalesApi = {
 };
 
 // ─── Servicios ────────────────────────────────────────────────────────────────
+
+// Subcategoría de un servicio (ej. Profilaxis → Regular/Premium/Infantil/Adulto mayor).
+export interface SubcategoriaServicio {
+  id: string;
+  servicioId?: string;
+  nombre: string;
+  precioReferencial: number | null;
+  orden: number;
+  activo?: boolean;
+}
 
 export interface Servicio {
   id: string;
@@ -149,6 +192,9 @@ export interface Servicio {
   unidadNegocioId: string;
   unidadNegocio: UnidadNegocio;
   activo: boolean;
+  // Subcategorías ACTIVAS (solo las trae GET /servicios). Si tiene >0, elegir una
+  // es obligatorio al agendar y se fija al vender membresías.
+  subcategorias?: SubcategoriaServicio[];
 }
 
 export const serviciosApi = {
@@ -158,11 +204,21 @@ export const serviciosApi = {
       activo: params?.activo != null ? String(params.activo) : undefined,
     } as Record<string, string>),
 
-  crear: (data: { nombre: string; codigo: string; duracionMinutos: number; color: string; precioReferencial?: number; unidadNegocioId: string }) =>
+  crear: (data: { nombre: string; codigo?: string; duracionMinutos: number; color: string; precioReferencial?: number; unidadNegocioId: string }) =>
     api.post<Servicio>('/servicios', data),
 
   editar: (id: string, data: Partial<{ nombre: string; codigo: string; duracionMinutos: number; color: string; precioReferencial: number; unidadNegocioId: string; activo: boolean }>) =>
     api.patch<Servicio>(`/servicios/${id}`, data),
+
+  // ── Subcategorías (administración) ──
+  listarSubcategorias: (servicioId: string) =>
+    api.get<SubcategoriaServicio[]>(`/servicios/${servicioId}/subcategorias`),
+  crearSubcategoria: (servicioId: string, data: { nombre: string; precioReferencial?: number | null; orden?: number }) =>
+    api.post<SubcategoriaServicio>(`/servicios/${servicioId}/subcategorias`, data),
+  editarSubcategoria: (subId: string, data: Partial<{ nombre: string; precioReferencial: number | null; orden: number; activo: boolean }>) =>
+    api.patch<SubcategoriaServicio>(`/servicios/subcategorias/${subId}`, data),
+  eliminarSubcategoria: (subId: string) =>
+    api.delete<{ ok: boolean }>(`/servicios/subcategorias/${subId}`),
 };
 
 // ─── Pacientes ────────────────────────────────────────────────────────────────
@@ -182,6 +238,11 @@ export interface Paciente {
   creadoEn: string;
   alerta?: AlertaPaciente | null;
   familiares?: FamiliarPaciente[] | null;
+  // Bandera "actualizar datos": CALCULADA server-side (falta correo / teléfono
+  // válido / fecha de nacimiento). El cliente nunca la setea.
+  requiereActualizacionDatos?: boolean;
+  // Lista server-side de lo que falta (tooltip del toggle) — la envían GET /:id y PATCH.
+  datosFaltantes?: string[];
 }
 
 export interface HistorialCita {
@@ -192,10 +253,13 @@ export interface HistorialCita {
   estado: string;
   comentarios: { id: string; texto: string; creadoEn: string; autorEtiqueta: string | null; autor: { nombre: string } | null }[];
   sesionNumero: number | null;
+  // Badge "Sesión x/total · paquete" (módulo Sesiones)
+  paquetePaciente?: { id: string; sesionesTotal: number; paquete: { nombre: string } } | null;
   // Bloque combinado: si != null, esta cita comparte turno con otra (profilaxis + extra).
   slotGrupoId: string | null;
   slotRol: 'PRINCIPAL' | 'SECUNDARIO' | null;
   servicio: { id: string; nombre: string; color: string; duracionMinutos: number };
+  subcategoria?: { id: string; nombre: string } | null;
   profesional: { id: string; nombres: string; apellidos: string } | null;
   sede: { id: string; nombre: string; color: string };
 }
@@ -206,6 +270,7 @@ export interface ProximaCita {
   horaInicio: string;
   origenAsignacion: string | null;
   servicio: { id: string; nombre: string };
+  subcategoria?: { id: string; nombre: string } | null;
   profesional: { id: string; nombres: string; apellidos: string } | null;
   sede: { id: string; nombre: string; color: string };
 }
@@ -225,11 +290,71 @@ export type PacienteDetalle = Paciente & {
   resumenServicios: ResumenServicio[];
 };
 
+// ─── RENIEC (autollenado de DNI) ──────────────────────────────────────────────
+export interface DatosReniec {
+  numeroDocumento: string;
+  nombres: string;
+  apellidoPaterno: string;
+  apellidoMaterno: string;
+  nombreCompleto: string;
+}
+
+export const reniecApi = {
+  consultarDni: (dni: string) => api.get<DatosReniec>(`/reniec/dni/${dni}`),
+};
+
 export const pacientesApi = {
   buscar: (q: string) => api.get<(Paciente & { nombreCompleto: string })[]>('/pacientes/buscar', { q }),
   obtener: (id: string) => api.get<PacienteDetalle>(`/pacientes/${id}`),
   crear: (data: Partial<Paciente>) => api.post<Paciente>('/pacientes', data),
   actualizar: (id: string, data: Partial<Paciente>) => api.patch<Paciente>(`/pacientes/${id}`, data),
+};
+
+// ─── Historial Genexis (sistema anterior — congelado, SOLO lectura) ───────────
+// Los campos sede/servicio/podologo son TEXTO CRUDO del sistema viejo, no FKs.
+
+export interface HistorialGenexisRegistro {
+  id: string;
+  fechaCita: string; // "YYYY-MM-DD"
+  horaCita: string | null; // crudo (ej. "16")
+  podologo: string | null;
+  sede: string | null;
+  servicio: string | null;
+  obsPaciente: string | null;
+  obsPodologo: string | null;
+  consultorio: string | null;
+  llegoPaciente: string | null; // "Sí" | "No" | null
+  fechaCreacionGx: string | null;
+  usuarioCreacionGx: string | null;
+}
+
+export interface HistorialGenexisResumen {
+  totalAtenciones: number;
+  primeraCita: string | null;
+  ultimaCita: string | null;
+  porcentajeAsistencia: number | null;
+  sedes: { sede: string | null; total: number }[];
+  anios: string[];
+}
+
+export interface HistorialGenexisPagina {
+  data: HistorialGenexisRegistro[];
+  page: number;
+  limit: number;
+  total: number;
+  resumen: HistorialGenexisResumen;
+}
+
+export const historialGenexisApi = {
+  existe: (pacienteId: string) =>
+    api.get<{ existe: boolean; total: number }>(`/pacientes/${pacienteId}/historial-genexis/existe`),
+  listar: (pacienteId: string, params: { sede?: string; anio?: string; page?: number; limit?: number }) =>
+    api.get<HistorialGenexisPagina>(`/pacientes/${pacienteId}/historial-genexis`, {
+      ...(params.sede ? { sede: params.sede } : {}),
+      ...(params.anio ? { anio: params.anio } : {}),
+      page: String(params.page ?? 1),
+      limit: String(params.limit ?? 50),
+    }),
 };
 
 // ─── Disponibilidad ───────────────────────────────────────────────────────────
@@ -318,6 +443,10 @@ export interface PlantillaPaquete {
   consumeNoShow: boolean;
   precio: string | null;
   activo: boolean;
+  // Las plantillas de MEMBRESÍA (tipo/promocionId) se gestionan en el bloque Membresía del
+  // drawer, NO en el selector de paquetes normal. (Viajan en el JSON de GET /paquetes.)
+  tipo?: 'PAQUETE' | 'MEMBRESIA' | 'UNITARIA';
+  promocionId?: string | null;
   servicio: PaqueteServicio;
 }
 
@@ -327,6 +456,20 @@ export interface PaquetePaciente {
   sesionesTotal: number;
   sesionesUsadas: number;
   activo: boolean;
+  // Módulo Sesiones: GENEXIS_APERTURA = la sesión se ADJUDICA a mano (desplegable);
+  // AGENDA = numeración automática (flujo original).
+  origen?: 'AGENDA' | 'GENEXIS_APERTURA';
+  aperturaConsumidas?: number;
+  numerosOcupados?: number[]; // sesiones adjudicadas a citas vivas
+  anclado?: boolean; // Genexis: ya hubo primera adjudicación → numeración automática
+  // Módulo Sesiones (viajan en el JSON; se usan para agendar membresías correctamente):
+  tipo?: 'PAQUETE' | 'MEMBRESIA' | 'UNITARIA';
+  estado?: 'ACTIVO' | 'AGOTADO' | 'VENCIDO' | 'ANULADO';
+  vigenciaInicio?: string | null; // "YYYY-MM-DD" — solo se puede agendar dentro de [inicio, fin]
+  vigenciaFin?: string | null;
+  sedeId?: string | null;
+  // Composición de una MEMBRESÍA: para saber a qué servicios (y subcategoría) aplica.
+  composicion?: { servicioId: string; cantidad: number; etiqueta?: string; subcategoriaId?: string | null; subcategoriaEtiqueta?: string }[] | null;
   paquete: { id: string; nombre: string; servicio: PaqueteServicio };
   citas: { id: string; fecha: string; horaInicio: string; estado: string; sesionNumero: number | null }[];
 }
@@ -335,7 +478,7 @@ export const paquetesApi = {
   plantillas: () => api.get<PlantillaPaquete[]>('/paquetes'),
   porPaciente: (pacienteId: string) =>
     api.get<PaquetePaciente[]>(`/paquetes/paciente/${pacienteId}`),
-  asignar: (pacienteId: string, data: { paqueteId: string; fechaCompra: string; notas?: string }) =>
+  asignar: (pacienteId: string, data: { paqueteId: string; fechaCompra: string; notas?: string; sedeId?: string; origenGenexis?: boolean }) =>
     api.post(`/paquetes/paciente/${pacienteId}`, data),
   crear: (data: { nombre: string; servicioId: string; totalSesiones: number; consumeNoShow?: boolean; precio?: number }) =>
     api.post<PlantillaPaquete>('/paquetes', data),

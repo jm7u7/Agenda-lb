@@ -200,12 +200,13 @@ async function main() {
     '0': { abierto: false },
   };
 
+  // `orden`: secuencia de las pestañas de sede en la agenda (Los Olivos, One, San Miguel, Lince, Paz Soldán).
   const sedesData = [
-    { nombre: 'Los Olivos',  direccion: 'Av. Antúnez de Mayolo 567, Los Olivos, Lima',    color: '#10B981', horario: horarioSMOlivos },
-    { nombre: 'San Miguel',  direccion: 'Av. La Marina 2000, San Miguel, Lima',             color: '#3B82F6', horario: horarioSMOlivos },
-    { nombre: 'Paz Soldán',  direccion: 'Calle Paz Soldán 890, San Isidro, Lima',           color: '#8B5CF6', horario: horarioStd },
-    { nombre: 'Lince',       direccion: 'Av. Arequipa 2340, Lince, Lima',                   color: '#F59E0B', horario: horarioStd },
-    { nombre: 'One',         direccion: 'Av. Javier Prado Este 4200, Santiago de Surco',   color: '#EF4444', horario: horarioStd },
+    { nombre: 'Los Olivos',  direccion: 'Av. Antúnez de Mayolo 567, Los Olivos, Lima',    color: '#10B981', horario: horarioSMOlivos, orden: 1 },
+    { nombre: 'San Miguel',  direccion: 'Av. La Marina 2000, San Miguel, Lima',             color: '#3B82F6', horario: horarioSMOlivos, orden: 3 },
+    { nombre: 'Paz Soldán',  direccion: 'Calle Paz Soldán 890, San Isidro, Lima',           color: '#8B5CF6', horario: horarioStd, orden: 5 },
+    { nombre: 'Lince',       direccion: 'Av. Arequipa 2340, Lince, Lima',                   color: '#F59E0B', horario: horarioStd, orden: 4 },
+    { nombre: 'One',         direccion: 'Av. Javier Prado Este 4200, Santiago de Surco',   color: '#EF4444', horario: horarioStd, orden: 2 },
   ];
 
   const sedesCreadas: Record<string, { id: string; nombre: string }> = {};
@@ -266,6 +267,19 @@ async function main() {
   console.log('  → Combinaciones de bloque (profilaxis + extra)...');
   const profilaxis = srvPod[2]!; // POD-PRO
   await prisma.configuracionSistema.create({ data: { servicioAnclaId: profilaxis.id } });
+
+  // ── Subcategorías de Profilaxis (Regular/Premium/Infantil/Adulto mayor) ──────
+  // Misma duración (60 min); precio propio. Elegir una es obligatorio al agendar y
+  // se fija al vender membresías. Ajustables desde Administración.
+  console.log('  → Subcategorías de Profilaxis...');
+  await prisma.subcategoriaServicio.createMany({
+    data: [
+      { servicioId: profilaxis.id, nombre: 'Regular',       precioReferencial: 90,  orden: 1 },
+      { servicioId: profilaxis.id, nombre: 'Premium',       precioReferencial: 130, orden: 2 },
+      { servicioId: profilaxis.id, nombre: 'Infantil',      precioReferencial: 80,  orden: 3 },
+      { servicioId: profilaxis.id, nombre: 'Adulto mayor',  precioReferencial: 85,  orden: 4 },
+    ],
+  });
 
   const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const nombresCaptura = [

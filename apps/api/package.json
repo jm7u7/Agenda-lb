@@ -13,7 +13,9 @@
     "db:seed": "ts-node --transpile-only prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && npm run db:seed",
     "db:generate": "prisma generate",
-    "test": "jest --runInBand"
+    "import:genexis": "ts-node --transpile-only scripts/import-genexis.ts",
+    "test": "jest --runInBand",
+    "proponer:aperturas": "ts-node --transpile-only scripts/proponer-aperturas.ts"
   },
   "dependencies": {
     "@limablue/shared": "*",
@@ -24,6 +26,7 @@
     "bullmq": "^5.79.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
+    "csv-parse": "^7.0.1",
     "date-fns": "^3.6.0",
     "date-fns-tz": "^3.1.3",
     "dotenv": "^16.4.5",
@@ -38,7 +41,9 @@
     "multer": "^2.2.0",
     "node-fetch": "^2.7.0",
     "pdfkit": "^0.19.1",
+    "resend": "^6.17.1",
     "socket.io": "^4.7.5",
+    "svix": "^1.96.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
     "uuid": "^10.0.0",

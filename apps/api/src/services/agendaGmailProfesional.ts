@@ -14,18 +14,12 @@
 import { prisma } from '../db';
 import { redis } from '../redis';
 import { citaInicioUtc } from '../utils/fechaLima';
-import { enviarCorreo, estaConectado, getFromEmail, construirIcsAvanzado } from './mailService';
+import { enviarEmail, resendConfigurado, getRemitenteEmail } from './emailService';
+import { construirIcsAvanzado } from './emailTemplates';
 
-const norm = (s: string) =>
-  s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
-
-// ── Mapeo profesional → Gmail personal (solo Yasica Doy) ──────────────────────
-// Daniel Doy se sincroniza por Outlook (ver outlookCalendarService).
-export function gmailDeProfesional(nombres: string, apellidos: string): string | null {
-  const n = norm(`${nombres} ${apellidos}`);
-  if (n.includes('doy') && n.includes('yasica')) return 'yasicadoy@gmail.com';
-  return null;
-}
+// El destino de la invitación .ics (antes hardcodeado a un Gmail) ahora se lee de
+// Profesional.emailAgenda en BD (ver outlookCalendarService). Yasica Doy →
+// yasicadoy@limablue.com (Microsoft 365). Daniel Doy se sincroniza por Graph.
 
 export type AccionCita = 'crear' | 'actualizar' | 'cancelar';
 
@@ -112,12 +106,15 @@ export async function notificarCitaGmailProfesional(
   cita: CitaParaGmailProf,
   gmailDestino: string,
 ): Promise<void> {
-  if (!(await estaConectado())) return; // sin Gmail conectado: inerte (igual que Outlook sin Azure)
+  if (!resendConfigurado()) {
+    console.warn('[agenda .ics] RESEND_API_KEY ausente — invitación de cita omitida (Yasica Doy). El flujo continúa.');
+    return; // sin Resend configurado: inerte (igual que Outlook sin Azure)
+  }
 
   const cancelar = accion === 'cancelar';
   const d = datosEvento(cita);
   const sequence = await siguienteSequence(cita.id);
-  const fromEmail = await getFromEmail();
+  const fromEmail = await getRemitenteEmail();
 
   const ics = construirIcsAvanzado(
     { uid: d.uid, inicioUtc: d.inicioUtc, finUtc: d.finUtc, titulo: d.titulo, descripcion: d.descripcion, ubicacion: d.ubicacion },
@@ -131,7 +128,7 @@ export async function notificarCitaGmailProfesional(
   );
 
   const { subject, html } = asuntoYHtml(accion, d);
-  await enviarCorreo({ to: gmailDestino, subject, html, ics: { filename: 'cita-limablue.ics', contenido: ics, method: cancelar ? 'CANCEL' : 'REQUEST' } });
+  await enviarEmail({ to: gmailDestino, subject, html, ics: { filename: 'cita-limablue.ics', contenido: ics, method: cancelar ? 'CANCEL' : 'REQUEST' } });
 
   // Éxito: limpiar marca de error para que el reintentador no lo repita.
   await prisma.cita.update({ where: { id: cita.id }, data: { outlookSyncError: null } }).catch(() => { /* noop */ });
@@ -154,7 +151,10 @@ export async function notificarReunionGmailProfesional(
   bloqueo: ReunionParaGmailProf,
   gmailDestino: string,
 ): Promise<void> {
-  if (!(await estaConectado())) return; // sin Gmail conectado: inerte
+  if (!resendConfigurado()) {
+    console.warn('[agenda .ics] RESEND_API_KEY ausente — invitación de reunión omitida (Yasica Doy). El flujo continúa.');
+    return; // sin Resend configurado: inerte
+  }
 
   const cancelar = accion === 'cancelar';
   const inicioUtc = citaInicioUtc(bloqueo.fechaInicio, bloqueo.horaInicio);
@@ -163,7 +163,7 @@ export async function notificarReunionGmailProfesional(
   const titulo = `Reunión: ${bloqueo.motivo}`;
   const descripcion = `Reunión administrativa Limablue\n${bloqueo.motivo}`;
   const sequence = await siguienteSequence(`reunion-${bloqueo.id}`);
-  const fromEmail = await getFromEmail();
+  const fromEmail = await getRemitenteEmail();
 
   const ics = construirIcsAvanzado(
     { uid, inicioUtc, finUtc, titulo, descripcion, ubicacion: 'Limablue' },
@@ -196,6 +196,6 @@ export async function notificarReunionGmailProfesional(
   </table>
 </body></html>`;
 
-  await enviarCorreo({ to: gmailDestino, subject, html, ics: { filename: 'reunion-limablue.ics', contenido: ics, method: cancelar ? 'CANCEL' : 'REQUEST' } });
+  await enviarEmail({ to: gmailDestino, subject, html, ics: { filename: 'reunion-limablue.ics', contenido: ics, method: cancelar ? 'CANCEL' : 'REQUEST' } });
   await prisma.bloqueoAgenda.update({ where: { id: bloqueo.id }, data: { outlookSyncError: null } }).catch(() => { /* noop */ });
 }

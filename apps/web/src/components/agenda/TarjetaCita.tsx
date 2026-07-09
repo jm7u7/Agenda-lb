@@ -166,7 +166,7 @@ export function TarjetaCita({ cita, onClick, slotHeight = 40 }: TarjetaCitaProps
             className="truncate leading-tight"
             style={{ fontSize: '9px', color: textMuted, marginTop: '1px' }}
           >
-            {cita.servicio.nombre}
+            {cita.servicio.nombre}{cita.subcategoria ? ` · ${cita.subcategoria.nombre}` : ''}
           </p>
         )}
 
@@ -224,10 +224,10 @@ function MitadCita({ cita, onClick, top }: { cita: CitaResumen; onClick: (c: Cit
         backgroundColor: bg,
         borderTop: top ? undefined : '1px dashed rgba(255,255,255,0.55)',
       }}
-      title={`${top ? 'Profilaxis' : 'Extra'}: ${cita.servicio.nombre}${tieneSesion ? ` · sesión ${cita.sesionNumero}/${cita.paquetePaciente!.sesionesTotal}` : ''}`}
+      title={`${top ? 'Profilaxis' : 'Extra'}: ${cita.servicio.nombre}${cita.subcategoria ? ` (${cita.subcategoria.nombre})` : ''}${tieneSesion ? ` · sesión ${cita.sesionNumero}/${cita.paquetePaciente!.sesionesTotal}` : ''}`}
     >
       <span className="truncate flex-1 min-w-0" style={{ fontSize: '10px', fontWeight: 600, color: '#fff', lineHeight: 1.1 }}>
-        {cita.servicio.nombre}
+        {cita.servicio.nombre}{cita.subcategoria ? ` · ${cita.subcategoria.nombre}` : ''}
       </span>
       {tieneSesion && (
         <span

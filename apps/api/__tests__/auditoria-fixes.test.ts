@@ -5,13 +5,18 @@
  */
 import { fechaDb, fechaAStr, citaInicioUtc, LIMA_OFFSET_H } from '../src/utils/fechaLima';
 
-// ─── Mock de prisma para el service de sesiones ───────────────────────────────
-jest.mock('../src/db', () => ({
-  prisma: {
-    cita: { findUnique: jest.fn(), updateMany: jest.fn() },
+// ─── Mock de prisma para el service de sesiones (fuente de verdad: ConsumoSesion) ──
+jest.mock('../src/db', () => {
+  const mock = {
+    cita: { findUnique: jest.fn(), update: jest.fn() },
     paquetePaciente: { findUnique: jest.fn(), update: jest.fn() },
-  },
-}));
+    consumoSesion: { findFirst: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
+    auditLog: { create: jest.fn() },
+    $transaction: jest.fn(),
+  };
+  mock.$transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(mock));
+  return { prisma: mock };
+});
 const { prisma } = require('../src/db');
 import { sincronizarSesionPaquete } from '../src/services/paqueteSesionService';
 
@@ -40,59 +45,98 @@ describe('Timezone central (fechaLima)', () => {
   });
 });
 
-describe('Conteo de sesiones de paquete (idempotente)', () => {
+describe('Conteo de sesiones de paquete (fuente de verdad: ConsumoSesion)', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('completada y no consumida → descuenta 1 (incrementa + marca bandera)', async () => {
-    prisma.cita.findUnique.mockResolvedValue({ paquetePacienteId: 'p1', estado: 'completada', sesionConsumida: false });
-    prisma.cita.updateMany.mockResolvedValue({ count: 1 });
+  const CITA = { id: 'c1', paquetePacienteId: 'p1', sesionConsumida: false, servicioId: 's1', fecha: new Date('2026-07-05T12:00:00Z') };
+
+  it('completada sin consumo vivo → crea ConsumoSesion (origen CITA) y sincroniza contador', async () => {
+    prisma.cita.findUnique.mockResolvedValue({ ...CITA, estado: 'completada' });
+    prisma.consumoSesion.findFirst.mockResolvedValue(null);
+    prisma.paquetePaciente.findUnique
+      .mockResolvedValueOnce({ sesionesTotal: 12, composicion: null }) // chequeo de cupo
+      .mockResolvedValueOnce({ sesionesTotal: 12, vigenciaFin: null, estado: 'ACTIVO' }); // recalcular
+    prisma.consumoSesion.count
+      .mockResolvedValueOnce(2) // vivos antes de crear
+      .mockResolvedValueOnce(3); // vivos al recalcular
     const r = await sincronizarSesionPaquete('c1');
     expect(r).toBe('consumida');
-    expect(prisma.cita.updateMany).toHaveBeenCalledWith({ where: { id: 'c1', sesionConsumida: false }, data: { sesionConsumida: true } });
-    expect(prisma.paquetePaciente.update).toHaveBeenCalledWith({ where: { id: 'p1' }, data: { sesionesUsadas: { increment: 1 } } });
+    expect(prisma.consumoSesion.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ paqueteId: 'p1', citaId: 'c1', origen: 'CITA' }) })
+    );
+    // write-through: contador legacy = count(consumos vivos)
+    expect(prisma.paquetePaciente.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ sesionesUsadas: 3 }) })
+    );
   });
 
-  it('IDEMPOTENTE: completada pero YA consumida → no vuelve a descontar', async () => {
-    prisma.cita.findUnique.mockResolvedValue({ paquetePacienteId: 'p1', estado: 'completada', sesionConsumida: true });
-    const r = await sincronizarSesionPaquete('c1');
-    expect(r).toBe('sin_cambio');
-    expect(prisma.paquetePaciente.update).not.toHaveBeenCalled();
+  it('IDEMPOTENTE: completada con consumo vivo ya registrado → sin cambio', async () => {
+    prisma.cita.findUnique.mockResolvedValue({ ...CITA, estado: 'completada', sesionConsumida: true });
+    prisma.consumoSesion.findFirst.mockResolvedValue({ id: 'k1', paqueteId: 'p1' });
+    expect(await sincronizarSesionPaquete('c1')).toBe('sin_cambio');
+    expect(prisma.consumoSesion.create).not.toHaveBeenCalled();
   });
 
   it('NO_SHOW no consume sesión', async () => {
-    prisma.cita.findUnique.mockResolvedValue({ paquetePacienteId: 'p1', estado: 'no_show', sesionConsumida: false });
-    const r = await sincronizarSesionPaquete('c1');
-    expect(r).toBe('sin_cambio');
-    expect(prisma.paquetePaciente.update).not.toHaveBeenCalled();
+    prisma.cita.findUnique.mockResolvedValue({ ...CITA, estado: 'no_show' });
+    prisma.consumoSesion.findFirst.mockResolvedValue(null);
+    expect(await sincronizarSesionPaquete('c1')).toBe('sin_cambio');
+    expect(prisma.consumoSesion.create).not.toHaveBeenCalled();
   });
 
   it('CANCELADA no consume sesión', async () => {
-    prisma.cita.findUnique.mockResolvedValue({ paquetePacienteId: 'p1', estado: 'cancelada', sesionConsumida: false });
+    prisma.cita.findUnique.mockResolvedValue({ ...CITA, estado: 'cancelada' });
+    prisma.consumoSesion.findFirst.mockResolvedValue(null);
     expect(await sincronizarSesionPaquete('c1')).toBe('sin_cambio');
-    expect(prisma.paquetePaciente.update).not.toHaveBeenCalled();
+    expect(prisma.consumoSesion.create).not.toHaveBeenCalled();
   });
 
-  it('REVERTIR ATENDIDA: ya no está completada pero había consumido → reembolsa 1', async () => {
-    prisma.cita.findUnique.mockResolvedValue({ paquetePacienteId: 'p1', estado: 'en_atencion', sesionConsumida: true });
-    prisma.cita.updateMany.mockResolvedValue({ count: 1 });
-    prisma.paquetePaciente.findUnique.mockResolvedValue({ sesionesUsadas: 2 });
+  it('ANULAR la cita consumidora → devolución automática (soft-delete del consumo)', async () => {
+    prisma.cita.findUnique.mockResolvedValue({ ...CITA, estado: 'cancelada', sesionConsumida: true });
+    prisma.consumoSesion.findFirst.mockResolvedValue({ id: 'k1', paqueteId: 'p1' });
+    prisma.paquetePaciente.findUnique.mockResolvedValue({ sesionesTotal: 12, vigenciaFin: null, estado: 'AGOTADO' });
+    prisma.consumoSesion.count.mockResolvedValue(11); // vivos tras la devolución
     const r = await sincronizarSesionPaquete('c1');
     expect(r).toBe('reembolsada');
-    expect(prisma.paquetePaciente.update).toHaveBeenCalledWith({ where: { id: 'p1' }, data: { sesionesUsadas: { decrement: 1 } } });
+    expect(prisma.consumoSesion.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'k1' }, data: expect.objectContaining({ deletedAt: expect.any(Date) }) })
+    );
+    // El paquete vuelve a ACTIVO con el contador sincronizado — jamás editando números.
+    expect(prisma.paquetePaciente.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ sesionesUsadas: 11, estado: 'ACTIVO' }) })
+    );
   });
 
-  it('reembolso nunca baja de 0', async () => {
-    prisma.cita.findUnique.mockResolvedValue({ paquetePacienteId: 'p1', estado: 'en_atencion', sesionConsumida: true });
-    prisma.cita.updateMany.mockResolvedValue({ count: 1 });
-    prisma.paquetePaciente.findUnique.mockResolvedValue({ sesionesUsadas: 0 });
-    const r = await sincronizarSesionPaquete('c1');
-    expect(r).toBe('reembolsada');
-    expect(prisma.paquetePaciente.update).not.toHaveBeenCalled(); // no decrementa si ya está en 0
+  it('REVERTIR a en_atencion NO reembolsa (el paciente SÍ llegó — regla llego=Sí)', async () => {
+    prisma.cita.findUnique.mockResolvedValue({ ...CITA, estado: 'en_atencion', sesionConsumida: true });
+    prisma.consumoSesion.findFirst.mockResolvedValue({ id: 'k1', paqueteId: 'p1' });
+    expect(await sincronizarSesionPaquete('c1')).toBe('sin_cambio');
+    expect(prisma.consumoSesion.update).not.toHaveBeenCalled();
+  });
+
+  it('el contador nunca baja de 0 (write-through = count de vivos, ≥0 por construcción)', async () => {
+    prisma.cita.findUnique.mockResolvedValue({ ...CITA, estado: 'cancelada', sesionConsumida: true });
+    prisma.consumoSesion.findFirst.mockResolvedValue({ id: 'k1', paqueteId: 'p1' });
+    prisma.paquetePaciente.findUnique.mockResolvedValue({ sesionesTotal: 12, vigenciaFin: null, estado: 'ACTIVO' });
+    prisma.consumoSesion.count.mockResolvedValue(0);
+    await sincronizarSesionPaquete('c1');
+    expect(prisma.paquetePaciente.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ sesionesUsadas: 0 }) })
+    );
+  });
+
+  it('paquete lleno: completada extra NO sobre-consume', async () => {
+    prisma.cita.findUnique.mockResolvedValue({ ...CITA, estado: 'completada' });
+    prisma.consumoSesion.findFirst.mockResolvedValue(null);
+    prisma.paquetePaciente.findUnique.mockResolvedValue({ sesionesTotal: 12, composicion: null });
+    prisma.consumoSesion.count.mockResolvedValue(12); // ya lleno
+    expect(await sincronizarSesionPaquete('c1')).toBe('sin_cambio');
+    expect(prisma.consumoSesion.create).not.toHaveBeenCalled();
   });
 
   it('cita SIN paquete → no toca nada', async () => {
-    prisma.cita.findUnique.mockResolvedValue({ paquetePacienteId: null, estado: 'completada', sesionConsumida: false });
+    prisma.cita.findUnique.mockResolvedValue({ ...CITA, paquetePacienteId: null, estado: 'completada' });
     expect(await sincronizarSesionPaquete('c1')).toBe('sin_cambio');
-    expect(prisma.cita.updateMany).not.toHaveBeenCalled();
+    expect(prisma.consumoSesion.findFirst).not.toHaveBeenCalled();
   });
 });

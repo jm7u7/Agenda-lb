@@ -13,7 +13,8 @@ router.get('/', requireAuth, async (_req, res) => {
         include: { unidadNegocio: { select: { id: true, nombre: true, modoReserva: true, color: true } } },
       },
     },
-    orderBy: { nombre: 'asc' },
+    // `orden` manual primero (pestañas de agenda en secuencia elegida); orden=0 → alfabético.
+    orderBy: [{ orden: 'asc' }, { nombre: 'asc' }],
   });
 
   res.json(sedes.map((s: typeof sedes[number]) => ({

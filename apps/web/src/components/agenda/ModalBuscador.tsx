@@ -199,7 +199,7 @@ export function ModalBuscador({ modoInicial, fechaHoy, onClose, onIrAFecha, onVe
                   {cita.slotRol === 'PRINCIPAL' ? 'Profilaxis' : 'Extra'}
                 </span>
               )}
-              {cita.servicio.nombre}
+              {cita.servicio.nombre}{cita.subcategoria ? ` · ${cita.subcategoria.nombre}` : ''}
             </p>
             <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium shrink-0', estadoClase)}>
               {LABELS_ESTADO[cita.estado] ?? cita.estado}

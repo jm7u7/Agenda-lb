@@ -1009,6 +1009,7 @@ function GestionServicios() {
   const qc = useQueryClient();
   const [creando, setCreando] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [subcatDe, setSubcatDe] = useState<string | null>(null); // servicioId con panel de subcategorías abierto
   const [mostrarInactivos, setMostrarInactivos] = useState(false);
 
   const { data: servicios, isLoading } = useQuery({
@@ -1024,11 +1025,14 @@ function GestionServicios() {
   const crearMut = useMutation({
     mutationFn: (data: FormServicio) => serviciosApi.crear({
       nombre: data.nombre,
-      codigo: data.codigo,
+      // El código lo genera el backend (POD-/BAR-/FIS-NN). Solo se envía si el
+      // usuario escribió uno; vacío → se omite (el esquema pide min 2).
+      ...(data.codigo.trim() ? { codigo: data.codigo.trim() } : {}),
       duracionMinutos: parseInt(data.duracionMinutos),
       color: data.color,
       unidadNegocioId: data.unidadNegocioId,
-      ...(data.precioReferencial ? { precioReferencial: parseFloat(data.precioReferencial) } : {}),
+      // Precio opcional: 0 / vacío = sin precio → se omite (el esquema pide > 0).
+      ...(parseFloat(data.precioReferencial) > 0 ? { precioReferencial: parseFloat(data.precioReferencial) } : {}),
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['servicios'] });
@@ -1043,11 +1047,11 @@ function GestionServicios() {
   const editarMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: FormServicio }) => serviciosApi.editar(id, {
       nombre: data.nombre,
-      codigo: data.codigo,
+      ...(data.codigo.trim() ? { codigo: data.codigo.trim() } : {}),
       duracionMinutos: parseInt(data.duracionMinutos),
       color: data.color,
       unidadNegocioId: data.unidadNegocioId,
-      ...(data.precioReferencial ? { precioReferencial: parseFloat(data.precioReferencial) } : {}),
+      ...(parseFloat(data.precioReferencial) > 0 ? { precioReferencial: parseFloat(data.precioReferencial) } : {}),
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['servicios'] });
@@ -1167,6 +1171,14 @@ function GestionServicios() {
                             Editar
                           </button>
                           <button
+                            onClick={() => setSubcatDe(prev => prev === s.id ? null : s.id)}
+                            className={cn('text-xs px-2.5 py-1 rounded-lg border transition-colors',
+                              subcatDe === s.id ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50')}
+                            title="Subcategorías (ej. Profilaxis → Regular/Premium/…)"
+                          >
+                            Tipos{(s.subcategorias?.length ?? 0) > 0 ? ` (${s.subcategorias!.length})` : ''}
+                          </button>
+                          <button
                             onClick={() => toggleActivoMut.mutate({ id: s.id, activo: !s.activo })}
                             disabled={toggleActivoMut.isPending}
                             className={cn(
@@ -1201,6 +1213,13 @@ function GestionServicios() {
                         </td>
                       </tr>
                     )}
+                    {subcatDe === s.id && (
+                      <tr key={`${s.id}-subcat`} className="bg-violet-50/40">
+                        <td colSpan={5} className="px-5 py-4">
+                          <GestionSubcategorias servicioId={s.id} servicioNombre={s.nombre} />
+                        </td>
+                      </tr>
+                    )}
                   </>
                 ))}
               </tbody>
@@ -1208,6 +1227,116 @@ function GestionServicios() {
           </div>
         ))
       )}
+    </div>
+  );
+}
+
+// ─── Gestión de subcategorías de un servicio (ej. Profilaxis → Regular/Premium/…) ──
+// Precio propio por subcategoría; misma duración que el servicio. Elegir una es
+// obligatorio al agendar y se fija al vender membresías. Soft-delete (desactivar).
+
+function GestionSubcategorias({ servicioId, servicioNombre }: { servicioId: string; servicioNombre: string }) {
+  const qc = useQueryClient();
+  const KEY = ['subcategorias', servicioId];
+  const invalidarTodo = () => {
+    qc.invalidateQueries({ queryKey: KEY });
+    qc.invalidateQueries({ queryKey: ['servicios'] });
+    qc.invalidateQueries({ queryKey: ['servicios-admin'] });
+    qc.invalidateQueries({ queryKey: ['servicios-todos'] });
+    qc.invalidateQueries({ queryKey: ['servicios-all'] });
+  };
+  const { data: subs, isLoading } = useQuery({ queryKey: KEY, queryFn: () => serviciosApi.listarSubcategorias(servicioId) });
+
+  const [nuevoNombre, setNuevoNombre] = useState('');
+  const [nuevoPrecio, setNuevoPrecio] = useState('');
+
+  const crearMut = useMutation({
+    mutationFn: () => serviciosApi.crearSubcategoria(servicioId, {
+      nombre: nuevoNombre.trim(),
+      ...(parseFloat(nuevoPrecio) > 0 ? { precioReferencial: parseFloat(nuevoPrecio) } : {}),
+      orden: (subs?.length ?? 0) + 1,
+    }),
+    onSuccess: () => { invalidarTodo(); setNuevoNombre(''); setNuevoPrecio(''); toast.success('Subcategoría creada'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const editarMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { nombre?: string; precioReferencial?: number | null; activo?: boolean } }) => serviciosApi.editarSubcategoria(id, data),
+    onSuccess: () => { invalidarTodo(); toast.success('Subcategoría actualizada'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const eliminarMut = useMutation({
+    mutationFn: (id: string) => serviciosApi.eliminarSubcategoria(id),
+    onSuccess: () => { invalidarTodo(); toast.success('Subcategoría eliminada'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-semibold text-violet-800">Subcategorías de {servicioNombre}</p>
+      {isLoading ? (
+        <p className="text-xs text-slate-400">Cargando…</p>
+      ) : (
+        <div className="space-y-1.5">
+          {(subs ?? []).map(sc => (
+            <FilaSubcategoria
+              key={sc.id}
+              sub={sc}
+              onGuardar={(data) => editarMut.mutate({ id: sc.id, data })}
+              onToggle={() => editarMut.mutate({ id: sc.id, data: { activo: !sc.activo } })}
+              onEliminar={() => { if (confirm(`¿Eliminar la subcategoría "${sc.nombre}"?`)) eliminarMut.mutate(sc.id); }}
+              guardando={editarMut.isPending}
+            />
+          ))}
+          {(subs ?? []).length === 0 && <p className="text-xs text-slate-400">Sin subcategorías. Agrega la primera abajo.</p>}
+        </div>
+      )}
+      {/* Alta */}
+      <div className="flex items-center gap-2 pt-1">
+        <input className="input text-xs flex-1" placeholder="Nombre (ej. Premium)" value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} />
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-slate-400">S/</span>
+          <input className="input text-xs w-20" type="number" min="0" step="0.5" placeholder="Precio" value={nuevoPrecio} onChange={e => setNuevoPrecio(e.target.value)} />
+        </div>
+        <button
+          onClick={() => crearMut.mutate()}
+          disabled={crearMut.isPending || nuevoNombre.trim().length < 2}
+          className="btn btn-primary btn-sm disabled:opacity-50"
+        >
+          + Agregar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FilaSubcategoria({ sub, onGuardar, onToggle, onEliminar, guardando }: {
+  sub: { id: string; nombre: string; precioReferencial: number | null; activo?: boolean };
+  onGuardar: (data: { nombre?: string; precioReferencial?: number | null }) => void;
+  onToggle: () => void;
+  onEliminar: () => void;
+  guardando: boolean;
+}) {
+  const [nombre, setNombre] = useState(sub.nombre);
+  const [precio, setPrecio] = useState(sub.precioReferencial != null ? String(Number(sub.precioReferencial)) : '');
+  const cambiado = nombre.trim() !== sub.nombre || precio !== (sub.precioReferencial != null ? String(Number(sub.precioReferencial)) : '');
+  return (
+    <div className={cn('flex items-center gap-2 rounded-lg border px-2 py-1.5 bg-white', sub.activo === false ? 'opacity-50 border-slate-200' : 'border-violet-200')}>
+      <input className="input text-xs flex-1" value={nombre} onChange={e => setNombre(e.target.value)} />
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-slate-400">S/</span>
+        <input className="input text-xs w-20" type="number" min="0" step="0.5" value={precio} onChange={e => setPrecio(e.target.value)} />
+      </div>
+      <button
+        onClick={() => onGuardar({ nombre: nombre.trim(), precioReferencial: parseFloat(precio) > 0 ? parseFloat(precio) : null })}
+        disabled={guardando || !cambiado || nombre.trim().length < 2}
+        className="text-xs px-2.5 py-1 rounded-lg border border-limablue-200 text-limablue-600 hover:bg-limablue-50 disabled:opacity-40"
+      >
+        Guardar
+      </button>
+      <button onClick={onToggle} className={cn('text-xs px-2.5 py-1 rounded-lg border', sub.activo === false ? 'border-green-200 text-green-600 hover:bg-green-50' : 'border-amber-200 text-amber-600 hover:bg-amber-50')}>
+        {sub.activo === false ? 'Activar' : 'Desactivar'}
+      </button>
+      <button onClick={onEliminar} className="text-xs px-2.5 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">Eliminar</button>
     </div>
   );
 }

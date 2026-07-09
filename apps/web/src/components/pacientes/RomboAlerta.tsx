@@ -6,6 +6,10 @@
 export interface AlertaPaciente {
   noShows: number;
   reprogramaciones: number;
+  // Asistencia histórica SOLO de Limablue Agenda (no Genexis).
+  asistidas?: number;
+  totalResueltas?: number;
+  porcentajeAsistencia?: number | null;
   frecuenteInasistente: boolean;
   frecuenteReprogramador: boolean;
   alerta: boolean;

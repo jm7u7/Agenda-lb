@@ -26,7 +26,8 @@ async function citasEnConflicto(profesionalId: string, sedeId: string, fecha: st
   const dayStart = new Date(`${fecha}T00:00:00`), dayEnd = new Date(`${fecha}T23:59:59`);
   const citas = await prisma.cita.findMany({
     where: {
-      profesionalId, sedeId,
+      OR: [{ profesionalId }, { solicitadoProfesionalId: profesionalId }],
+      sedeId,
       fecha: { gte: dayStart, lte: dayEnd },
       deletedAt: null,
       estado: { notIn: ['cancelada', 'no_show', 'reprogramada', 'completada'] },
@@ -120,8 +121,10 @@ router.post('/', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (
     select: { tipo: true, activo: true, deletedAt: true },
   });
   if (!prof || !prof.activo || prof.deletedAt) throw new AppError('Profesional no encontrado', 404);
-  if (prof.tipo !== 'podologa' && prof.tipo !== 'fisioterapeuta') {
-    throw new AppError('Los permisos aplican solo a podólogas y fisioterapeutas', 400);
+  // Podólogas, fisioterapeutas y baro (médico/máquina "Baro N"): se pueden bloquear
+  // en un rango (ej. reunión de médicos → no atienden baro durante ese rato).
+  if (prof.tipo !== 'podologa' && prof.tipo !== 'fisioterapeuta' && prof.tipo !== 'medico') {
+    throw new AppError('Los permisos aplican a podólogas, fisioterapeutas y baropodometría', 400);
   }
 
   // No permitir bloquear sobre citas activas: rechazar y avisar (hay que reprogramar/cancelar primero).
@@ -133,7 +136,9 @@ router.post('/', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (
   const dayEnd = new Date(`${data.fecha}T23:59:59`);
   const citasDelDia = await prisma.cita.findMany({
     where: {
-      profesionalId: data.profesionalId,
+      // Baro "Solo X": la cita ocupa una MÁQUINA (profesionalId) pero pide a un médico
+      // (solicitadoProfesionalId). Bloquear a cualquiera de los dos cuenta como conflicto.
+      OR: [{ profesionalId: data.profesionalId }, { solicitadoProfesionalId: data.profesionalId }],
       sedeId: data.sedeId,
       fecha: { gte: dayStart, lte: dayEnd },
       deletedAt: null,
@@ -193,6 +198,64 @@ router.post('/', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (
 
   await invalidateDisponibilidadCache(data.sedeId, data.fecha);
   res.status(201).json(permiso);
+});
+
+// ─── POST /permisos/multiple — bloquear VARIOS profesionales a la vez ─────────
+// Por cada profesional: si tiene pacientes en el rango, NO se bloquea y se reporta;
+// los libres se bloquean. Resultado: { creados, conflictos } para que el frontend
+// muestre a quiénes sí y a quiénes no (y por qué). Regla dura: nunca se bloquea a
+// alguien con pacientes agendados.
+router.post('/multiple', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
+  const data = z.object({
+    profesionalIds: z.array(z.string().uuid()).min(1).max(60),
+    sedeId: z.string().uuid(),
+    fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    horaInicio: z.string().regex(/^\d{2}:\d{2}$/),
+    horaFin: z.string().regex(/^\d{2}:\d{2}$/),
+    motivo: z.string().min(3).max(200),
+  }).parse(req.body);
+  if (data.horaFin <= data.horaInicio) throw new AppError('La hora de fin debe ser mayor que la de inicio', 400);
+
+  const ids = [...new Set(data.profesionalIds)];
+  const profs = await prisma.profesional.findMany({
+    where: { id: { in: ids }, activo: true, deletedAt: null },
+    select: { id: true, nombres: true, apellidos: true, tipo: true },
+  });
+  const profPorId = new Map(profs.map((p) => [p.id, p]));
+
+  const fechaInicio = new Date(`${data.fecha}T${data.horaInicio}:00`);
+  const fechaFin = new Date(`${data.fecha}T${data.horaFin}:00`);
+
+  const creados: { id: string; profesionalId: string; nombre: string }[] = [];
+  const conflictos: { profesionalId: string; nombre: string; citas: Awaited<ReturnType<typeof citasEnConflicto>> }[] = [];
+  const invalidos: { profesionalId: string; motivo: string }[] = [];
+
+  for (const id of ids) {
+    const prof = profPorId.get(id);
+    if (!prof) { invalidos.push({ profesionalId: id, motivo: 'no encontrado' }); continue; }
+    if (prof.tipo !== 'podologa' && prof.tipo !== 'fisioterapeuta' && prof.tipo !== 'medico') {
+      invalidos.push({ profesionalId: id, motivo: 'tipo no bloqueable' });
+      continue;
+    }
+    const nombre = `${prof.nombres.split(' ')[0]} ${prof.apellidos.split(' ')[0]}`.trim();
+    const citas = await citasEnConflicto(id, data.sedeId, data.fecha, data.horaInicio, data.horaFin);
+    if (citas.length > 0) { conflictos.push({ profesionalId: id, nombre, citas }); continue; }
+    const permiso = await prisma.bloqueoAgenda.create({
+      data: {
+        profesionalId: id, sedeId: data.sedeId, tipo: 'PERMISO', esRecurrente: false,
+        fechaInicio, fechaFin, horaInicio: data.horaInicio, horaFin: data.horaFin,
+        motivo: data.motivo, creadoPor: req.user?.userId,
+      },
+    });
+    creados.push({ id: permiso.id, profesionalId: id, nombre });
+  }
+
+  if (creados.length > 0) await invalidateDisponibilidadCache(data.sedeId, data.fecha);
+  // SIEMPRE 2xx: es una operación por lotes con resultado PARCIAL (algunos bloqueados,
+  // otros con pacientes en el rango). El frontend lee `conflictos` y muestra la lista; si
+  // devolviéramos 409, el cliente lo trataría como error HTTP genérico ("Error desconocido")
+  // y se perdería el detalle de quién tiene pacientes agendados.
+  res.status(creados.length > 0 ? 201 : 200).json({ creados, conflictos, invalidos });
 });
 
 // ─── POST /permisos/reunion ───────────────────────────────────────────────────

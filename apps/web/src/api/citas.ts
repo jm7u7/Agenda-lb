@@ -14,7 +14,14 @@ export interface ComentarioCita {
 export interface CitaResumen {
   id: string;
   pacienteId: string;
-  paciente: { id: string; nombres: string; apellidoPaterno: string; apellidoMaterno: string; telefono: string; alerta?: AlertaPaciente | null; familiares?: FamiliarPaciente[] | null };
+  paciente: {
+    id: string; nombres: string; apellidoPaterno: string; apellidoMaterno: string;
+    tipoDocumento?: string; numeroDocumento?: string; telefono: string;
+    email?: string | null; fechaNacimiento?: string | null;
+    // Bandera "actualizar datos" calculada server-side (toggle del popover).
+    requiereActualizacionDatos?: boolean;
+    alerta?: AlertaPaciente | null; familiares?: FamiliarPaciente[] | null;
+  };
   profesionalId: string | null;
   profesional: { id: string; nombres: string; apellidos: string; colorAvatar: string } | null;
   solicitadoProfesional?: { id: string; nombres: string; apellidos: string; tipo: string } | null;
@@ -24,6 +31,9 @@ export interface CitaResumen {
   unidadNegocio: { id: string; nombre: string; color: string };
   servicioId: string;
   servicio: { id: string; nombre: string; duracionMinutos: number; color: string };
+  // Subcategoría elegida (ej. Profilaxis → Regular/Premium/…). null si el servicio no tiene.
+  subcategoriaId?: string | null;
+  subcategoria?: { id: string; nombre: string } | null;
   fecha: string;
   horaInicio: string;
   duracionMinutos: number;
@@ -60,11 +70,14 @@ export interface CrearCitaInput {
   sedeId: string;
   unidadNegocioId: string;
   servicioId: string;
+  subcategoriaId?: string | null; // obligatoria si el servicio tiene subcategorías
   fecha: string;
   horaInicio: string;
   canal?: string;
   comentarioRecepcion?: string;
   paquetePacienteId?: string;
+  // Adjudicación manual de sesión (solo paquetes de origen Genexis)
+  sesionNumeroManual?: number;
   promocionId?: string | null;
   comprobanteUrl?: string;
   comprobanteNombre?: string;
@@ -78,6 +91,7 @@ export interface CrearCitaCombinadaInput {
   sedeId: string;
   unidadNegocioId: string;
   servicioId: string; // el ancla configurada (profilaxis)
+  subcategoriaId?: string | null; // subcategoría del ancla (profilaxis)
   fecha: string;
   horaInicio: string;
   canal?: string;

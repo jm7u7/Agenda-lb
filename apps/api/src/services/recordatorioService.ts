@@ -1,5 +1,5 @@
 import { prisma } from '../db';
-import { enviarCorreoReserva, enviarCorreoRecordatorio, estaConectado } from './mailService';
+import { enviarCorreoReserva, enviarCorreoRecordatorio, resendConfigurado } from './emailService';
 import { crearTokenAccion } from './tokenAccionCita';
 import { programarJobRecordatorio, cancelarJobRecordatorio, programarJobReserva } from '../queue/recordatorioQueue';
 import { registrarAudit } from './audit';
@@ -89,7 +89,10 @@ export async function procesarEnvioReserva(citaId: string): Promise<'enviado' | 
     await prisma.recordatorioCita.update({ where: { id: rec.id }, data: { estado: 'CANCELADO' } });
     return 'omitido';
   }
-  if (!(await estaConectado())) return 'omitido'; // sin Gmail aún: queda PROGRAMADO
+  if (!resendConfigurado()) {
+    console.warn(`[recordatorio] RESEND_API_KEY ausente — envío omitido (cita ${citaId}); el recordatorio de reserva queda PROGRAMADO.`);
+    return 'omitido';
+  }
 
   // Cuota diaria: si se alcanzó, diferir al día siguiente.
   try { await asegurarCupoEnvio(); }
@@ -104,9 +107,9 @@ export async function procesarEnvioReserva(citaId: string): Promise<'enviado' | 
   }
 
   try {
-    const { gmailMessageId } = await enviarCorreoReserva(citaId);
-    await prisma.recordatorioCita.update({ where: { id: rec.id }, data: { estado: 'ENVIADO', gmailMessageId, enviadoAt: new Date(), intentos: { increment: 1 } } });
-    await registrarAudit({ citaId, accion: 'recordatorio_reserva_enviado', entidad: 'cita', entidadId: citaId, sedeId: cita.sedeId, despues: { gmailMessageId } });
+    const { to, id } = await enviarCorreoReserva(citaId);
+    await prisma.recordatorioCita.update({ where: { id: rec.id }, data: { estado: 'ENVIADO', resendEmailId: id, enviadoAt: new Date(), intentos: { increment: 1 } } });
+    await registrarAudit({ citaId, accion: 'recordatorio_reserva_enviado', entidad: 'cita', entidadId: citaId, sedeId: cita.sedeId, despues: { tipo: 'reserva', destinatario: to, resendEmailId: id } });
     return 'enviado';
   } catch (err) {
     const intentos = rec.intentos + 1;
@@ -136,7 +139,10 @@ export async function procesarEnvioRecordatorio(citaId: string): Promise<'enviad
     await prisma.recordatorioCita.update({ where: { id: rec.id }, data: { estado: 'CANCELADO' } });
     return 'cancelado';
   }
-  if (!(await estaConectado())) return 'omitido';
+  if (!resendConfigurado()) {
+    console.warn(`[recordatorio] RESEND_API_KEY ausente — envío omitido (cita ${citaId}); el recordatorio queda PROGRAMADO.`);
+    return 'omitido';
+  }
 
   // Cuota diaria: diferir antes de generar tokens (evita tokens huérfanos).
   try { await asegurarCupoEnvio(); }
@@ -157,13 +163,13 @@ export async function procesarEnvioRecordatorio(citaId: string): Promise<'enviad
   const tokenReprogramar = await crearTokenAccion(citaId, 'reprogramar', expiraEn);
 
   try {
-    const { gmailMessageId } = await enviarCorreoRecordatorio({
+    const { to, id } = await enviarCorreoRecordatorio({
       citaId,
       urlConfirmar: `${apiBase()}/api/v1/citas/confirmar/${tokenConfirmar}`,
       urlReprogramar: `${apiBase()}/api/v1/citas/reprogramar/${tokenReprogramar}`,
     });
-    await prisma.recordatorioCita.update({ where: { id: rec.id }, data: { estado: 'ENVIADO', gmailMessageId, enviadoAt: new Date(), intentos: { increment: 1 } } });
-    await registrarAudit({ citaId, accion: 'recordatorio_enviado', entidad: 'cita', entidadId: citaId, sedeId: cita.sedeId, despues: { gmailMessageId } });
+    await prisma.recordatorioCita.update({ where: { id: rec.id }, data: { estado: 'ENVIADO', resendEmailId: id, enviadoAt: new Date(), intentos: { increment: 1 } } });
+    await registrarAudit({ citaId, accion: 'recordatorio_enviado', entidad: 'cita', entidadId: citaId, sedeId: cita.sedeId, despues: { tipo: 'recordatorio', destinatario: to, resendEmailId: id } });
     return 'enviado';
   } catch (err) {
     const intentos = rec.intentos + 1;

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "sedes" ADD COLUMN "orden" INTEGER NOT NULL DEFAULT 0;

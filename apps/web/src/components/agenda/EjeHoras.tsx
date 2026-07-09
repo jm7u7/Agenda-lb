@@ -13,7 +13,7 @@ export function EjeHoras({ apertura = '08:00', cierre = '20:00' }: EjeHorasProps
   const horas = generarSlotsDelDia(apertura, cierre, 30);
   return (
     <div className="w-12 flex-shrink-0 bg-white border-r border-slate-200">
-      <div className="h-14 border-b border-slate-200" /> {/* Espacio para cabecera */}
+      <div className="h-16 border-b border-slate-200" /> {/* Espacio para cabecera (alineado con columnas) */}
       {horas.map(hora => (
         <div key={hora} className="hora-label" style={{ height: SLOT_HEIGHT }}>
           {hora.endsWith(':00') ? hora : ''}

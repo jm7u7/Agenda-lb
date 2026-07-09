@@ -2,8 +2,20 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db';
 import { requireAuth, requireRol } from '../middleware/auth';
+import { AppError } from '../middleware/errorHandler';
+import { auditEnTx } from '../services/audit';
 
 const router = Router();
+
+// Include de subcategorías ACTIVAS ordenadas — se adjunta a cada servicio para que
+// la agenda/membresías sepan si hay que elegir una (Profilaxis → Regular/Premium/…).
+const subcategoriasInclude = {
+  subcategorias: {
+    where: { deletedAt: null, activo: true },
+    orderBy: [{ orden: 'asc' as const }, { nombre: 'asc' as const }],
+    select: { id: true, nombre: true, precioReferencial: true, orden: true },
+  },
+};
 
 router.get('/', requireAuth, async (req, res) => {
   const { unidadNegocioId, activo } = req.query as Record<string, string>;
@@ -15,7 +27,7 @@ router.get('/', requireAuth, async (req, res) => {
 
   const servicios = await prisma.servicio.findMany({
     where,
-    include: { unidadNegocio: { select: { id: true, nombre: true, color: true } } },
+    include: { unidadNegocio: { select: { id: true, nombre: true, color: true } }, ...subcategoriasInclude },
     // `orden` manual primero (Promociones mantiene su secuencia); el resto (orden=0) alfabético.
     orderBy: [{ orden: 'asc' }, { nombre: 'asc' }],
   });
@@ -78,6 +90,107 @@ router.patch('/:id', requireAuth, requireRol('admin', 'coordinadora_sedes'), asy
     data: { ...data, precioReferencial: data.precioReferencial as never },
   });
   res.json(servicio);
+});
+
+// ─── Subcategorías de un servicio (ej. Profilaxis → Regular/Premium/…) ────────
+// Al agendar o vender/consumir membresías de un servicio con subcategorías activas,
+// elegir una es obligatorio (validado en citas.ts / membresias.ts). Soft-delete.
+const subcategoriaSchema = z.object({
+  nombre: z.string().trim().min(2).max(80),
+  precioReferencial: z.number().positive().nullable().optional(),
+  orden: z.number().int().min(0).optional(),
+});
+
+// GET /servicios/:id/subcategorias — lista (incluye inactivas para administración).
+router.get('/:id/subcategorias', requireAuth, async (req, res) => {
+  const subs = await prisma.subcategoriaServicio.findMany({
+    where: { servicioId: req.params.id, deletedAt: null },
+    orderBy: [{ activo: 'desc' }, { orden: 'asc' }, { nombre: 'asc' }],
+  });
+  res.json(subs);
+});
+
+// POST /servicios/:id/subcategorias — crear (admin).
+router.post('/:id/subcategorias', requireAuth, requireRol('admin'), async (req, res) => {
+  const data = subcategoriaSchema.parse(req.body);
+  const servicio = await prisma.servicio.findFirst({ where: { id: req.params.id, deletedAt: null }, select: { id: true } });
+  if (!servicio) throw new AppError('Servicio no encontrado', 404);
+  const existe = await prisma.subcategoriaServicio.findFirst({
+    where: { servicioId: servicio.id, nombre: data.nombre, deletedAt: null },
+    select: { id: true },
+  });
+  if (existe) throw new AppError('Ya existe una subcategoría con ese nombre', 409, 'SUBCATEGORIA_DUPLICADA');
+  const sub = await prisma.$transaction(async (tx) => {
+    const creada = await tx.subcategoriaServicio.create({
+      data: { servicioId: servicio.id, nombre: data.nombre, precioReferencial: data.precioReferencial as never, orden: data.orden ?? 0 },
+    });
+    await auditEnTx(tx, {
+      usuarioId: req.user?.userId,
+      accion: 'crear_subcategoria_servicio',
+      entidad: 'subcategoria_servicio',
+      entidadId: creada.id,
+      despues: { servicioId: servicio.id, nombre: data.nombre, precioReferencial: data.precioReferencial ?? null },
+      ip: req.ip,
+    });
+    return creada;
+  });
+  res.status(201).json(sub);
+});
+
+// PATCH /servicios/subcategorias/:subId — editar (admin/coordinadora).
+router.patch('/subcategorias/:subId', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
+  const data = subcategoriaSchema.partial().extend({ activo: z.boolean().optional() }).parse(req.body);
+  const actual = await prisma.subcategoriaServicio.findFirst({ where: { id: req.params.subId, deletedAt: null } });
+  if (!actual) throw new AppError('Subcategoría no encontrada', 404);
+  if (data.nombre && data.nombre !== actual.nombre) {
+    const dup = await prisma.subcategoriaServicio.findFirst({
+      where: { servicioId: actual.servicioId, nombre: data.nombre, deletedAt: null, NOT: { id: actual.id } },
+      select: { id: true },
+    });
+    if (dup) throw new AppError('Ya existe una subcategoría con ese nombre', 409, 'SUBCATEGORIA_DUPLICADA');
+  }
+  const sub = await prisma.$transaction(async (tx) => {
+    const upd = await tx.subcategoriaServicio.update({
+      where: { id: actual.id },
+      data: {
+        ...(data.nombre !== undefined ? { nombre: data.nombre } : {}),
+        ...(data.precioReferencial !== undefined ? { precioReferencial: data.precioReferencial as never } : {}),
+        ...(data.orden !== undefined ? { orden: data.orden } : {}),
+        ...(data.activo !== undefined ? { activo: data.activo } : {}),
+      },
+    });
+    await auditEnTx(tx, {
+      usuarioId: req.user?.userId,
+      accion: 'editar_subcategoria_servicio',
+      entidad: 'subcategoria_servicio',
+      entidadId: actual.id,
+      antes: { nombre: actual.nombre, precioReferencial: actual.precioReferencial, orden: actual.orden, activo: actual.activo },
+      despues: data,
+      ip: req.ip,
+    });
+    return upd;
+  });
+  res.json(sub);
+});
+
+// DELETE /servicios/subcategorias/:subId — desactivar (soft, admin). Las citas
+// históricas conservan su subcategoriaId (FK ON DELETE SET NULL nunca se dispara).
+router.delete('/subcategorias/:subId', requireAuth, requireRol('admin'), async (req, res) => {
+  const actual = await prisma.subcategoriaServicio.findFirst({ where: { id: req.params.subId, deletedAt: null } });
+  if (!actual) throw new AppError('Subcategoría no encontrada', 404);
+  await prisma.$transaction(async (tx) => {
+    await tx.subcategoriaServicio.update({ where: { id: actual.id }, data: { deletedAt: new Date(), activo: false } });
+    await auditEnTx(tx, {
+      usuarioId: req.user?.userId,
+      accion: 'eliminar_subcategoria_servicio',
+      entidad: 'subcategoria_servicio',
+      entidadId: actual.id,
+      antes: { nombre: actual.nombre, activo: actual.activo },
+      despues: { deletedAt: new Date().toISOString() },
+      ip: req.ip,
+    });
+  });
+  res.json({ ok: true });
 });
 
 export default router;

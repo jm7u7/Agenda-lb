@@ -10,6 +10,8 @@ import { movimientosApi, MOTIVO_LABELS, type MotivoMovimiento, type Movimiento, 
 interface Props {
   onClose: () => void;
   movimientoEditar?: Movimiento | null;
+  /** Sede preseleccionada al crear (ej. desde el botón "+" de una columna del tablero). */
+  prefillSedeId?: string;
 }
 
 const MOTIVOS = Object.entries(MOTIVO_LABELS) as [MotivoMovimiento, string][];
@@ -236,12 +238,12 @@ function FilaCita({
 
 // ─── Modal principal ──────────────────────────────────────────────────────────
 
-export function MovimientoModal({ onClose, movimientoEditar }: Props) {
+export function MovimientoModal({ onClose, movimientoEditar, prefillSedeId }: Props) {
   const qc = useQueryClient();
   const esEdicion = !!movimientoEditar;
 
   const [profesionalId, setProfesionalId] = useState(movimientoEditar?.profesionalId ?? '');
-  const [sedeId, setSedeId] = useState(movimientoEditar?.sedeId ?? '');
+  const [sedeId, setSedeId] = useState(movimientoEditar?.sedeId ?? prefillSedeId ?? '');
   const [fechaInicio, setFechaInicio] = useState(movimientoEditar?.fechaInicio?.slice(0, 10) ?? '');
   const [fechaFin, setFechaFin] = useState(movimientoEditar?.fechaFin?.slice(0, 10) ?? '');
   const [sinFechaFin, setSinFechaFin] = useState(!movimientoEditar?.fechaFin);

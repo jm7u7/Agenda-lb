@@ -5,6 +5,8 @@ import { requireAuth, requireRol } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { turnosDelDia } from '../services/disponibilidad';
 import { fechaDb } from '../utils/fechaLima';
+import { auditEnTx } from '../services/audit';
+import { redis } from '../redis';
 
 const router = Router();
 
@@ -90,7 +92,7 @@ router.get('/', requireAuth, async (req, res) => {
           reemplazaProfesional: { select: { id: true, nombres: true, apellidos: true } },
         },
         orderBy: { fechaInicio: 'desc' },
-        take: 1,
+        take: 5, // varias para detectar préstamo (cobertura aquí + su sede base)
       },
       horarios: { where: { activo: true }, select: { diaSemana: true, horaInicio: true, horaFin: true } },
     },
@@ -134,26 +136,46 @@ router.get('/', requireAuth, async (req, res) => {
     colorAvatar: p.colorAvatar,
     activo: p.activo,
     unidadNegocio: p.unidadNegocio,
-    sedeActual: p.asignaciones[0]?.sede ?? null,
-    asignacionActual: p.asignaciones[0]
-      ? {
-          id: p.asignaciones[0].id,
-          fechaFin: p.asignaciones[0].fechaFin?.toISOString().slice(0, 10) ?? null,
-          motivo: p.asignaciones[0].motivo,
-          notas: p.asignaciones[0].notas,
-          reemplazaProfesional: p.asignaciones[0].reemplazaProfesional ?? null,
-          // Es un MOVIMIENTO (no la asignación base de la sede) si lo creó un usuario
-          // o cerró una asignación previa. Sirve para mostrar el badge aunque sea indefinido.
-          esMovimiento: !!(p.asignaciones[0].creadoPor || p.asignaciones[0].cierraAsignacionId),
-        }
-      : null,
+    ...(() => {
+      // Asignación relevante para ESTA sede+fecha: la que apunta a la sede vista (si hay).
+      // Para una podóloga en PRÉSTAMO (cobertura de un día) esa es la cobertura; su sede
+      // ORIGEN es su asignación base (a otra sede, no cobertura).
+      const asg = (sedeId ? p.asignaciones.find((a) => a.sedeId === sedeId) : undefined) ?? p.asignaciones[0];
+      const esPrestamo = !!asg && esCoberturaUnDia(asg);
+      const sedeOrigen = esPrestamo
+        ? (p.asignaciones.find((a) => a.sedeId !== asg!.sedeId && !esCoberturaUnDia(a))?.sede.nombre ?? null)
+        : null;
+      return {
+        sedeActual: asg?.sede ?? null,
+        asignacionActual: asg
+          ? {
+              id: asg.id,
+              fechaFin: asg.fechaFin?.toISOString().slice(0, 10) ?? null,
+              motivo: asg.motivo,
+              notas: asg.notas,
+              reemplazaProfesional: asg.reemplazaProfesional ?? null,
+              // Es un MOVIMIENTO real SOLO si reemplaza/cubre a alguien (`reemplazaA`) o si
+              // cerró una asignación previa de ESTE profesional (transferencia entre sedes).
+              // Un FICHAJE nuevo (inicio de labores) NO es movimiento.
+              esMovimiento: !!(asg.reemplazaA || asg.cierraAsignacionId),
+              // Préstamo = cobertura de un día traída de otra sede; se muestra "Préstamo {sedeOrigen}".
+              esPrestamo,
+              sedeOrigen,
+            }
+          : null,
+      };
+    })(),
     iniciales: `${p.nombres[0] ?? ''}${p.apellidos[0] ?? ''}`.toUpperCase(),
     // Turno del día mostrado (para que la agenda atenúe las horas fuera de jornada).
     // Sábado (diaSemana 6): la entrada es SIEMPRE 08:00. Lun-Vie: override ?? base.
-    // Domingo habilitado: el turno excepcional trae entrada (elegida) y salida (cierre sede).
+    // La entrada mostrada NUNCA es antes de que ABRA la sede ese día: se recorta a
+    // `turno.horaInicio` (que ya respeta la apertura de la excepción, ej. domingo 09:00).
+    // El override (elección 8/9) solo la RETRASA cuando es más tarde que la apertura.
     horaEntrada: diaSemAgenda === 6
       ? (turno ? '08:00' : null)
-      : (overrideMap.get(p.id) ?? turno?.horaInicio ?? null),
+      : (turno
+          ? ((() => { const ov = overrideMap.get(p.id); return ov && ov > turno.horaInicio ? ov : turno.horaInicio; })())
+          : (overrideMap.get(p.id) ?? null)),
     horaSalida: turno?.horaFin ?? null,
     };
   });
@@ -421,6 +443,136 @@ router.patch('/:id/presencia-excepcion', requireAuth, requireRol('admin', 'coord
   res.json({ ok: true, id: prof.id, fecha, presente });
 });
 
+// ─── DÍAS ESPECIALES / EXCEPCIONES — herramienta unificada ───────────────────
+// Una "cobertura de día especial" es una AsignacionSede de UN día
+// (fechaInicio == fechaFin, motivo COBERTURA_EMERGENCIA): trae a una podóloga de
+// OTRA sede a trabajar aquí solo esa fecha, SIN tocar su sede base (su asignación
+// normal sigue intacta). Aparece como columna porque el agenda filtra por
+// AsignacionSede que cubra la fecha. Presencia de las propias = EntradaPodologa.
+function esCoberturaUnDia(a: { fechaInicio: Date; fechaFin: Date | null; motivo: string }): boolean {
+  return a.motivo === 'COBERTURA_EMERGENCIA' && !!a.fechaFin && a.fechaInicio.getTime() === a.fechaFin.getTime();
+}
+
+// GET /profesionales/dia-especial?sedeId&fecha → quién trabaja en la sede esa fecha,
+// con TODAS las podólogas (las de la sede + las traíbles de otras) y su estado.
+router.get('/dia-especial', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
+  const { sedeId, fecha } = req.query as { sedeId?: string; fecha?: string };
+  if (!sedeId || !fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) throw new AppError('sedeId y fecha (YYYY-MM-DD) requeridos', 400);
+  const fechaPunto = fechaDb(fecha);
+
+  const exc = await prisma.excepcionHorario.findUnique({ where: { sedeId_fecha: { sedeId, fecha: fechaPunto } } });
+  const abierto = !!(exc && exc.abierto && exc.horaApertura && exc.horaCierre);
+
+  const podologas = await prisma.profesional.findMany({
+    where: { tipo: 'podologa', activo: true, deletedAt: null },
+    select: {
+      id: true, nombres: true, apellidos: true, colorAvatar: true,
+      asignaciones: {
+        where: { fechaInicio: { lte: fechaPunto }, OR: [{ fechaFin: null }, { fechaFin: { gte: fechaPunto } }] },
+        select: { sedeId: true, fechaInicio: true, fechaFin: true, motivo: true, sede: { select: { nombre: true } } },
+      },
+    },
+    orderBy: [{ apellidos: 'asc' }, { nombres: 'asc' }],
+  });
+  const entradas = await prisma.entradaPodologa.findMany({ where: { profesionalId: { in: podologas.map((p) => p.id) }, fecha: fechaPunto }, select: { profesionalId: true, horaInicio: true } });
+  const entMap = new Map(entradas.map((e) => [e.profesionalId, e.horaInicio]));
+
+  const filas = podologas.map((p) => {
+    const base = p.asignaciones.find((a) => !esCoberturaUnDia(a)); // asignación normal (no cobertura de un día)
+    const coberturaAqui = p.asignaciones.some((a) => a.sedeId === sedeId && esCoberturaUnDia(a));
+    const esDeLaSede = base?.sedeId === sedeId;
+    return {
+      id: p.id, nombres: p.nombres, apellidos: p.apellidos, colorAvatar: p.colorAvatar,
+      sedeBase: base?.sede.nombre ?? null,
+      esDeLaSede,
+      esCobertura: coberturaAqui,
+      viene: esDeLaSede ? entMap.has(p.id) : coberturaAqui,
+      horaEntrada: entMap.get(p.id) ?? '08:00',
+    };
+  }).filter((f) => f.esDeLaSede || f.sedeBase); // debe tener sede base para poder traerla
+
+  res.json({
+    fecha, abierto, esExcepcion: !!exc,
+    apertura: exc?.horaApertura ?? null, cierre: exc?.horaCierre ?? null, nota: exc?.nota ?? null,
+    propias: filas.filter((f) => f.esDeLaSede),
+    otras: filas.filter((f) => !f.esDeLaSede),
+  });
+});
+
+// POST /profesionales/dia-especial/set { profesionalId, sedeId, fechas: string[], viene, horaInicio? }
+// Aplica a CADA fecha del array (una fecha o un rango). Propia → EntradaPodologa;
+// otra sede → cobertura de un día (asignación + entrada). Todo idempotente y auditado.
+router.post('/dia-especial/set', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
+  const { profesionalId, sedeId, fechas, viene, horaInicio } = z.object({
+    profesionalId: z.string().uuid(),
+    sedeId: z.string().uuid(),
+    fechas: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1).max(31),
+    viene: z.boolean(),
+    horaInicio: z.enum(HORAS_ENTRADA).optional(),
+  }).parse(req.body);
+
+  const prof = await prisma.profesional.findFirst({ where: { id: profesionalId, tipo: 'podologa', activo: true, deletedAt: null }, select: { id: true } });
+  if (!prof) throw new AppError('Podóloga no encontrada', 404);
+
+  const resultados: { fecha: string; accion: string }[] = [];
+  const errores: { fecha: string; error: string }[] = [];
+
+  for (const fecha of [...new Set(fechas)]) {
+    try {
+      const fechaPunto = fechaDb(fecha);
+      const exc = await prisma.excepcionHorario.findUnique({ where: { sedeId_fecha: { sedeId, fecha: fechaPunto } } });
+      if (!(exc && exc.abierto && exc.horaApertura && exc.horaCierre)) {
+        errores.push({ fecha, error: 'Día no habilitado (abre la excepción en Horarios primero)' });
+        continue;
+      }
+      // ¿Es de la sede? (tiene asignación normal a esta sede que cubre la fecha)
+      const base = await prisma.asignacionSede.findFirst({
+        where: { profesionalId, sedeId, fechaInicio: { lte: fechaPunto }, OR: [{ fechaFin: null }, { fechaFin: { gte: fechaPunto } }], NOT: { motivo: 'COBERTURA_EMERGENCIA', fechaFin: fechaPunto } },
+      });
+      const esDeLaSede = !!base;
+
+      await prisma.$transaction(async (tx) => {
+        if (esDeLaSede) {
+          if (viene) {
+            await tx.entradaPodologa.upsert({
+              where: { profesionalId_fecha: { profesionalId, fecha: fechaPunto } },
+              create: { profesionalId, fecha: fechaPunto, horaInicio: horaInicio ?? '08:00', creadoPor: req.user?.userId },
+              update: { horaInicio: horaInicio ?? '08:00', creadoPor: req.user?.userId },
+            });
+          } else {
+            await tx.entradaPodologa.deleteMany({ where: { profesionalId, fecha: fechaPunto } });
+          }
+        } else if (viene) {
+          // Traer de otra sede: cobertura de un día (no toca su sede base) + entrada.
+          const yaCobertura = await tx.asignacionSede.findFirst({ where: { profesionalId, sedeId, fechaInicio: fechaPunto, fechaFin: fechaPunto, motivo: 'COBERTURA_EMERGENCIA' } });
+          if (!yaCobertura) {
+            await tx.asignacionSede.create({ data: { profesionalId, sedeId, fechaInicio: fechaPunto, fechaFin: fechaPunto, motivo: 'COBERTURA_EMERGENCIA', creadoPor: req.user?.userId, notas: `Cobertura día especial ${fecha}` } });
+          }
+          await tx.entradaPodologa.upsert({
+            where: { profesionalId_fecha: { profesionalId, fecha: fechaPunto } },
+            create: { profesionalId, fecha: fechaPunto, horaInicio: horaInicio ?? '08:00', creadoPor: req.user?.userId },
+            update: { horaInicio: horaInicio ?? '08:00', creadoPor: req.user?.userId },
+          });
+        } else {
+          // Quitar cobertura: borra la asignación de un día + su entrada.
+          await tx.asignacionSede.deleteMany({ where: { profesionalId, sedeId, fechaInicio: fechaPunto, fechaFin: fechaPunto, motivo: 'COBERTURA_EMERGENCIA' } });
+          await tx.entradaPodologa.deleteMany({ where: { profesionalId, fecha: fechaPunto } });
+        }
+        await tx.auditLog.create({
+          data: {
+            usuarioId: req.user?.userId, accion: 'dia_especial_personal', entidad: 'profesional', entidadId: profesionalId,
+            despues: { sedeId, fecha, viene, esDeLaSede, horaInicio: horaInicio ?? '08:00' } as never,
+          },
+        });
+      });
+      resultados.push({ fecha, accion: esDeLaSede ? (viene ? 'presente' : 'ausente') : (viene ? 'cobertura' : 'quitada') });
+    } catch (e) {
+      errores.push({ fecha, error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  res.json({ resultados, errores });
+});
+
 router.get('/:id', requireAuth, async (req, res) => {
   const prof = await prisma.profesional.findUnique({
     where: { id: req.params.id, deletedAt: null },
@@ -459,6 +611,72 @@ router.get('/:id/horario', requireAuth, async (req, res) => {
   });
 
   res.json({ horarios, bloqueos });
+});
+
+// ─── PUT /profesionales/:id/horario ───────────────────────────────────────────
+// Define el HORARIO SEMANAL PERMANENTE (días + rango horario) de un trabajador —
+// vigente hasta que se vuelva a editar. `dias` es la lista COMPLETA de días que
+// trabaja; los días que NO estén en la lista quedan desactivados (no atiende).
+// Additive: reusa el modelo existente `HorarioProfesional` (no cambia la BD).
+// Distinto de Permisos/Bloqueos (excepciones puntuales) y de Días especiales.
+const horarioDiaSchema = z.object({
+  diaSemana: z.number().int().min(0).max(6),
+  horaInicio: z.string().regex(/^\d{2}:\d{2}$/),
+  horaFin: z.string().regex(/^\d{2}:\d{2}$/),
+  turno: z.enum(['manana', 'tarde', 'completo']).optional(),
+});
+router.put('/:id/horario', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
+  const data = z.object({ dias: z.array(horarioDiaSchema).max(7) }).parse(req.body);
+  const prof = await prisma.profesional.findFirst({ where: { id: req.params.id, deletedAt: null }, select: { id: true, nombres: true, apellidos: true } });
+  if (!prof) throw new AppError('Profesional no encontrado', 404);
+
+  const vistos = new Set<number>();
+  for (const d of data.dias) {
+    if (vistos.has(d.diaSemana)) throw new AppError('Hay un día repetido en el horario', 400, 'DIA_DUPLICADO');
+    vistos.add(d.diaSemana);
+    if (d.horaFin <= d.horaInicio) throw new AppError('La hora de fin debe ser mayor que la de inicio', 400, 'RANGO_INVALIDO');
+  }
+
+  const antes = await prisma.horarioProfesional.findMany({
+    where: { profesionalId: prof.id, activo: true },
+    select: { diaSemana: true, horaInicio: true, horaFin: true },
+    orderBy: { diaSemana: 'asc' },
+  });
+
+  await prisma.$transaction(async (tx) => {
+    for (let dia = 0; dia <= 6; dia++) {
+      const d = data.dias.find((x) => x.diaSemana === dia);
+      if (d) {
+        await tx.horarioProfesional.upsert({
+          where: { profesionalId_diaSemana: { profesionalId: prof.id, diaSemana: dia } },
+          create: { profesionalId: prof.id, diaSemana: dia, horaInicio: d.horaInicio, horaFin: d.horaFin, turno: (d.turno ?? 'completo') as never, activo: true },
+          update: { horaInicio: d.horaInicio, horaFin: d.horaFin, turno: (d.turno ?? 'completo') as never, activo: true },
+        });
+      } else {
+        // Día sin trabajar: desactiva la fila si existía (no atiende ese día).
+        await tx.horarioProfesional.updateMany({ where: { profesionalId: prof.id, diaSemana: dia }, data: { activo: false } });
+      }
+    }
+    await auditEnTx(tx, {
+      usuarioId: req.user?.userId,
+      accion: 'editar_horario_semanal',
+      entidad: 'profesional',
+      entidadId: prof.id,
+      antes: { dias: antes },
+      despues: { dias: data.dias },
+      ip: req.ip,
+    });
+  });
+
+  // El horario semanal afecta la disponibilidad de MUCHAS fechas futuras (no una sola),
+  // así que se limpia toda la caché de disponibilidad (acción admin poco frecuente).
+  try {
+    const keys = await redis.keys('cache:disponibilidad:*');
+    if (keys.length > 0) await redis.del(...keys);
+  } catch { /* la caché tiene TTL; no es crítico */ }
+
+  const horarios = await prisma.horarioProfesional.findMany({ where: { profesionalId: prof.id, activo: true }, orderBy: { diaSemana: 'asc' } });
+  res.json({ ok: true, horarios });
 });
 
 // Crear bloqueo de agenda

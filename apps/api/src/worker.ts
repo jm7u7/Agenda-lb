@@ -10,18 +10,22 @@ process.env.TZ = 'UTC';
 
 import { iniciarRecordatorioWorker, detenerRecordatorioWorker } from './queue/recordatorioWorker';
 import { RECORDATORIOS_ACTIVOS } from './queue/recordatorioQueue';
+import { iniciarVideoWorker, detenerVideoWorker, programarBarridoVideos } from './queue/videoQueue';
 
 if (!RECORDATORIOS_ACTIVOS) {
   console.log('⏸  RECORDATORIOS_ACTIVOS="false": el worker no se inicia.');
   process.exit(0);
 }
 
-console.log('🔧 Worker de recordatorios (proceso separado) iniciando…');
+console.log('🔧 Worker (proceso separado) iniciando…');
 iniciarRecordatorioWorker();
+iniciarVideoWorker();
+void programarBarridoVideos();
 
 async function apagar(): Promise<void> {
-  console.log('🛑 Cerrando worker de recordatorios…');
+  console.log('🛑 Cerrando workers…');
   await detenerRecordatorioWorker();
+  await detenerVideoWorker();
   process.exit(0);
 }
 process.on('SIGTERM', apagar);
