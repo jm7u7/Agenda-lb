@@ -30,6 +30,7 @@ import { BaroSolicitudPage } from './pages/herramientas/BaroSolicitudPage';
 import { CombinacionesPage } from './pages/herramientas/CombinacionesPage';
 import { ReportesRrhhPage } from './pages/herramientas/ReportesRrhhPage';
 import { ComposicionSedePage } from './pages/herramientas/ComposicionSedePage';
+import { ComposicionImprimirPage } from './pages/herramientas/ComposicionImprimirPage';
 import { VideosServicioPage } from './pages/herramientas/VideosServicioPage';
 
 export default function App() {
@@ -43,6 +44,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/" replace /> : <LoginPage />} />
+      {/* Vista de impresión (sin Layout/sidebar) — matriz A4 horizontal para PDF */}
+      <Route path="/imprimir/composicion-sede" element={<ComposicionImprimirPage />} />
       <Route element={<Layout />}>
         <Route path="/" element={<AgendaPage />} />
         <Route path="/pacientes" element={<PacientesPage />} />

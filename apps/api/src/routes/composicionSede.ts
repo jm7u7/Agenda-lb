@@ -57,7 +57,7 @@ async function construirComposicion(mes: string) {
       },
     },
     select: {
-      sedeId: true, fechaInicio: true, fechaFin: true,
+      sedeId: true, fechaInicio: true, fechaFin: true, motivo: true,
       profesional: { select: { id: true, nombres: true, apellidos: true, tipo: true } },
     },
   });
@@ -87,6 +87,11 @@ async function construirComposicion(mes: string) {
     const comp: SedeComposicion = { sedeId: s.id, nombre: s.nombre, podologas: [], fisioterapeutas: [], doctores: [], recepcionistas: [] };
     for (const a of asigSede) {
       if (a.sedeId !== s.id) continue;
+      // Excluir COBERTURAS DE UN DÍA (préstamo "día especial", motivo COBERTURA_EMERGENCIA con
+      // fechaInicio==fechaFin): no son la distribución del mes. Si no se excluyen, duplican a quien
+      // ya está en su sede base (Erika) y hacen aparecer a alguien en una sede que no es la suya
+      // (Ivonne, cuya base es Lince, cubrió Los Olivos un día). Igual criterio que esCoberturaUnDia.
+      if (a.fechaFin && +a.fechaInicio === +a.fechaFin && a.motivo === 'COBERTURA_EMERGENCIA') continue;
       const persona: PersonaRoster = { id: a.profesional.id, nombre: nombreCompleto(a.profesional.nombres, a.profesional.apellidos), ...clamp(a.fechaInicio, a.fechaFin) };
       (a.profesional.tipo === 'podologa' ? comp.podologas : comp.fisioterapeutas).push(persona);
     }

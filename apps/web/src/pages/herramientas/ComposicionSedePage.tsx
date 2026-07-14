@@ -48,7 +48,6 @@ export function ComposicionSedePage() {
 
   const [mes, setMes] = useState(mesActualISO());
   const [tab, setTab] = useState<'ver' | 'roster'>('ver');
-  const [descargando, setDescargando] = useState(false);
 
   // ── Datos de composición (vista + PDF) ──
   const { data: comp, isLoading } = useQuery({
@@ -115,12 +114,8 @@ export function ComposicionSedePage() {
 
   const asignacionValida = !!sedeAsig && !!personaId && !!desde && (!hasta || hasta >= desde);
 
-  const descargarPdf = async () => {
-    setDescargando(true);
-    try { await composicionSedeApi.descargarPDF(mes); toast.success('PDF descargado'); }
-    catch (e) { toast.error(e instanceof Error ? e.message : 'Error al generar el PDF'); }
-    finally { setDescargando(false); }
-  };
+  // Abre la vista de impresión (matriz A4 horizontal) en una pestaña nueva; el usuario imprime → PDF.
+  const abrirImprimible = () => window.open(`/imprimir/composicion-sede?mes=${mes}`, '_blank', 'noopener');
 
   const totalPersonas = useMemo(
     () => (comp?.sedes ?? []).reduce((s, x) => s + x.podologas.length + x.fisioterapeutas.length + x.doctores.length + x.recepcionistas.length, 0),
@@ -149,10 +144,10 @@ export function ComposicionSedePage() {
         </div>
         {/* Mes + PDF */}
         <input type="month" value={mes} onChange={e => e.target.value && setMes(e.target.value)} className="input text-sm" data-testid="comp-mes-input" />
-        <button onClick={descargarPdf} disabled={descargando || !comp}
+        <button onClick={abrirImprimible} disabled={!comp}
           className="px-3 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors whitespace-nowrap"
           data-testid="comp-btn-pdf">
-          {descargando ? 'Generando…' : '📄 PDF'}
+          📄 PDF
         </button>
       </div>
 

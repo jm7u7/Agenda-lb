@@ -165,6 +165,15 @@ export function AgendaPage() {
     staleTime: 60 * 1000,
   });
 
+  // Orden de columnas (SOLO front): quien HOY no atiende (sin turno) o está de vacaciones todo el
+  // día se va al FINAL, a la derecha. Sort estable → conserva el orden previo dentro de cada grupo.
+  const columnasOrdenadas = useMemo(() => {
+    const lista = profesionales ?? [];
+    const enVacaciones = (id: string) => permisosAgenda.some(p => p.profesionalId === id && p.esVacaciones);
+    const inactivoHoy = (p: (typeof lista)[number]) => (!p.horaEntrada && !p.horaSalida) || enVacaciones(p.id);
+    return [...lista].sort((a, b) => Number(inactivoHoy(a)) - Number(inactivoHoy(b)));
+  }, [profesionales, permisosAgenda]);
+
   // Stats del día
   const { data: stats } = useQuery({
     queryKey: ['stats', sedeId, fechaStr()],
@@ -443,9 +452,10 @@ export function AgendaPage() {
                     </div>
                   );
                 })()}
-                {/* Columnas de profesionales — ancho natural, permiten scroll */}
+                {/* Columnas de profesionales — ancho natural, permiten scroll.
+                    Orden: activos primero; los que no atienden hoy o están de vacaciones, al final. */}
                 <div className="flex">
-                  {profesionales.map(prof => {
+                  {columnasOrdenadas.map(prof => {
                     const citasProf = citas?.filter(c => c.profesionalId === prof.id) ?? [];
                     const bloqueosProf = bloqueosAgenda.filter(b => b.profesionalId === prof.id);
                     const permisosProf = permisosAgenda.filter(p => p.profesionalId === prof.id);
