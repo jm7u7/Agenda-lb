@@ -8,6 +8,7 @@ export interface Permiso {
   horaFin: string | null;    // "HH:mm"
   motivo: string;
   esReunion?: boolean; // true = reunión administrativa (Daniel/Yasica) → verde; false = permiso → rojo
+  esVacaciones?: boolean; // true = vacaciones planificadas → franja 🌴 (día completo)
   creadoEn: string;
   profesional: { id: string; nombres: string; apellidos: string; tipo: string; colorAvatar: string };
   creadoPorUsuario: { id: string; nombre: string } | null;
@@ -30,4 +31,20 @@ export const permisosApi = {
     api.post<{ ok: boolean; creados: Permiso[]; profesionales: string[] }>('/permisos/reunion', data),
   eliminar: (id: string) =>
     api.delete<{ ok: boolean }>(`/permisos/${id}`),
+  // Vacaciones: preview (dry-run rojo/verde) y creación en bloque (día completo por cada día del rango).
+  previewVacaciones: (data: { profesionalIds: string[]; sedeId: string; fechaInicio: string; fechaFin: string }) =>
+    api.post<VacacionesPreview>('/permisos/vacaciones/preview', data),
+  crearVacaciones: (data: { profesionalIds: string[]; sedeId: string; fechaInicio: string; fechaFin: string; motivo: string }) =>
+    api.post<{ ok: boolean; creados: number; dias: number; profesionales: string[]; invalidos: { profesionalId: string; motivo: string }[] }>('/permisos/vacaciones', data),
 };
+
+export interface VacacionesConflictoCita { fecha: string; horaInicio: string; paciente: string; telefono: string; servicio: string; estado: string }
+export interface VacacionesProfReporte { profesionalId: string; nombre: string; bloqueable: boolean; conflictos: VacacionesConflictoCita[] }
+export interface VacacionesPreview {
+  ok: boolean;
+  dias: number;
+  totalConflictos: number;
+  totalBloqueos: number;
+  profesionales: VacacionesProfReporte[];
+  invalidos: { profesionalId: string; motivo: string }[];
+}

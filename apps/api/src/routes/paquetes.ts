@@ -61,6 +61,13 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // Instancias de paquete por paciente
+// ⚠ EXISTEN DOS VISTAS de los paquetes de un paciente — NO son duplicación, miden cosas
+// DISTINTAS y deben mantenerse coherentes entre sí:
+//  · ESTA (/paquetes/paciente/:id): vista de AGENDAMIENTO — cupo = usadas + citas vivas
+//    programadas, numeración/anclaje Genexis. La consume el drawer de Nueva Cita.
+//  · /pacientes/:id/paquetes: vista de SALDO — consumos REALES (ConsumoSesion al llegar),
+//    sede, composición y vigencia. La consumen SaldoPaquetes y el flujo de membresías.
+// Si cambias una regla de conteo aquí, revisa si la otra vista necesita el espejo.
 router.get('/paciente/:pacienteId', requireAuth, async (req, res) => {
   const paquetes = await prisma.paquetePaciente.findMany({
     where: { pacienteId: req.params.pacienteId, deletedAt: null },

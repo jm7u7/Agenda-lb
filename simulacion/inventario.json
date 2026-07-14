@@ -1,0 +1,1989 @@
+{
+ "endpoints": [
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/asignaciones",
+   "auth": "requireAuth",
+   "modulo": "asignaciones.ts",
+   "descripcion": "Lista asignaciones profesional↔sede con filtros opcionales (sedeId, profesionalId, activa), incluyendo datos de profesional y sede, ordenadas por fechaInicio desc."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/asignaciones",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "asignaciones.ts",
+   "descripcion": "Crea una nueva asignación de profesional a sede (valida que fisioterapeutas solo vayan a Paz Soldán), cierra la asignación activa anterior y registra audit log."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/audit",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "audit.ts",
+   "descripcion": "Lista paginada de logs de auditoría con filtros (sedeId, usuarioId, pacienteId, entidad, desde, hasta), incluyendo usuario y paciente de la cita asociada."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/auth/login",
+   "auth": "público",
+   "modulo": "auth.ts",
+   "descripcion": "Autentica por email/password (bcrypt), valida usuario activo/no eliminado y devuelve JWT firmado más datos del usuario (rol, permisos, sedes)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/auth/me",
+   "auth": "requireAuth",
+   "modulo": "auth.ts",
+   "descripcion": "Devuelve el perfil del usuario autenticado (id, nombre, email, rol, permisos y sedes con color) a partir del JWT."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/consumos/cita/:citaId",
+   "auth": "requireAuth",
+   "modulo": "consumos.ts",
+   "descripcion": "Registra el consumo de una sesión de paquete confirmado desde el diálogo de llegada de la cita (body: paquetePacienteId)."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/consumos/manual",
+   "auth": "requireAuth",
+   "modulo": "consumos.ts",
+   "descripcion": "Consumo manual de sesión como válvula de escape para recepción (citaId y motivo opcionales), auditado; pasa esAdmin al servicio según el rol."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/consumos/:id/anular",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "consumos.ts",
+   "descripcion": "Anula (reversa) un consumo de sesión existente; solo admin y con motivo obligatorio (3-500 caracteres)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/disponibilidad",
+   "auth": "requireAuth, requireScope('availability:read')",
+   "modulo": "disponibilidad.ts",
+   "descripcion": "Consulta slots disponibles por sede+unidadNegocio+servicio+fecha (profesional opcional); valida que la unidad opere en la sede y devuelve slots libres y todos; endpoint principal para el agente de WhatsApp (GoHighLevel, acepta JWT o API key)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/exportar/citas",
+   "auth": "requireAuth",
+   "modulo": "exportar.ts",
+   "descripcion": "Exporta CSV (separador ';', BOM UTF-8) de las citas activas de una fecha (query fecha=YYYY-MM-DD, sedeId opcional) con columnas Numero/NOMBRE/DIA/HORA/SEDE/DIRECCION y teléfonos normalizados a +51."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/exportar/reactivacion",
+   "auth": "requireAuth",
+   "modulo": "exportar.ts",
+   "descripcion": "Genera Excel (.xlsx) de pacientes para reactivación según última visita completada, con 3 modos de filtro (fechaDesde+fechaHasta, fechaCorte, o diasSinVisitar default 90) y filtros sedeId/servicioId/minVisitas."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/exportar/historial/:pacienteId",
+   "auth": "requireAuth",
+   "modulo": "exportar.ts",
+   "descripcion": "Genera PDF (pdfkit) con la historia de atenciones de un paciente: datos personales, tarjetas de métricas (total, completadas, no-show, canceladas, pendientes, % asistencia) y tabla paginada de citas."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/herramientas/mail-config",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "herramientas.ts",
+   "descripcion": "Devuelve la config pública del remitente de correo (fromEmail, fromName, provider, estado conectado con Resend) sin exponer API keys."
+  },
+  {
+   "metodo": "PUT",
+   "ruta": "/api/v1/herramientas/mail-config",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "herramientas.ts",
+   "descripcion": "Guarda correo y nombre del remitente (From de Resend); valida que el email pertenezca al dominio verificado DOMINIO_ENVIO."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/herramientas/mail-config/dominio",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "herramientas.ts",
+   "descripcion": "Consulta en Resend el estado del dominio de envío (verified/pending/failed) y región, con caché en memoria de 5 min."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/herramientas/mail-config/oauth/url",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "herramientas.ts",
+   "descripcion": "DEPRECADO (migrado a Resend 2026-07-07): siempre lanza 410 GMAIL_DEPRECADO; el flujo OAuth de Gmail ya no existe."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/herramientas/mail-config/oauth/callback",
+   "auth": "público (sin middleware)",
+   "modulo": "herramientas.ts",
+   "descripcion": "DEPRECADO: página HTML inerte con status 410 por si Google aún redirige al callback OAuth antiguo; es la única ruta pública de estos tres módulos."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/herramientas/mail-config/test",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "herramientas.ts",
+   "descripcion": "Envía un correo de prueba vía Resend al destinatario indicado en body.to; falla 400 si RESEND_API_KEY no está configurada."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/horarios/:sedeId",
+   "auth": "requireAuth",
+   "modulo": "horarios.ts",
+   "descripcion": "Devuelve el horario efectivo de la sede para ?fecha=YYYY-MM-DD (excepción si existe, si no el turno default por día de semana); sin fecha devuelve solo el horario default."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/horarios/:sedeId/excepciones",
+   "auth": "requireAuth",
+   "modulo": "horarios.ts",
+   "descripcion": "Lista las excepciones de horario de la sede, filtrables por rango ?desde/?hasta, ordenadas por fecha ascendente."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/horarios/:sedeId/excepciones",
+   "auth": "requireAuth",
+   "modulo": "horarios.ts",
+   "descripcion": "Crea o actualiza (upsert) la excepción de horario para una fecha; si abierto=true exige apertura<cierre para no dejar la grilla vacía."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/horarios/:sedeId/excepciones/:fecha",
+   "auth": "requireAuth",
+   "modulo": "horarios.ts",
+   "descripcion": "Elimina la excepción de horario de esa fecha (la sede vuelve a su horario default)."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/horarios/:sedeId",
+   "auth": "requireAuth",
+   "modulo": "horarios.ts",
+   "descripcion": "Actualiza el horario default semanal (JSON por día 0-6 con apertura/cierre/abierto) de la sede."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/membresias",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "membresias.ts",
+   "descripcion": "Lista todas las membresías (promociones tipo MEMBRESIA, incluidas inactivas) para el constructor, con composición, duración, sedes habilitadas y conteo de ventas."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/membresias",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "membresias.ts",
+   "descripcion": "Crea una membresía: Promocion tipo MEMBRESIA + Paquete plantilla vinculado con la composición etiquetada, en una transacción con auditoría."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/membresias/:id",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "membresias.ts",
+   "descripcion": "Edita la membresía (promoción + plantilla); NO altera las ya vendidas porque cada venta guarda un snapshot de composición."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/membresias/:id",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "membresias.ts",
+   "descripcion": "Desactiva la membresía (soft: activo=false en promoción y plantilla); las ventas existentes siguen vivas."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/membresias/vendibles",
+   "auth": "requireAuth (cualquier usuario autenticado, sin restricción de rol)",
+   "modulo": "membresias.ts",
+   "descripcion": "Lista solo las membresías activas con su composición vigente, para que recepción las active/agende desde el drawer de la agenda."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/membresias/:id/activar",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "membresias.ts",
+   "descripcion": "Reactiva una membresía desactivada (activo=true en promoción y plantilla), espejo del DELETE, con auditoría."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/membresias/:id/vender",
+   "auth": "requireAuth (cualquier usuario autenticado, sin restricción de rol)",
+   "modulo": "membresias.ts",
+   "descripcion": "Vende la membresía a un paciente: crea PaquetePaciente con SNAPSHOT de composición, fija subcategorías obligatorias, valida sede habilitada y calcula vigencia inicio/fin."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/combinaciones/config",
+   "auth": "requireAuth",
+   "modulo": "combinaciones.ts",
+   "descripcion": "Devuelve el servicio ancla configurado y los servicios extras combinables ACTIVOS, para el popover de bloques combinados en el frontend."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/combinaciones/admin",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "combinaciones.ts",
+   "descripcion": "Lista todas las combinaciones permitidas no eliminadas (incluye inactivas) para la sección de gestión en Herramientas."
+  },
+  {
+   "metodo": "PUT",
+   "ruta": "/api/v1/combinaciones/ancla",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "combinaciones.ts",
+   "descripcion": "Define o limpia (null) el servicio ancla en la fila única de ConfiguracionSistema, con registro de auditoría en transacción."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/combinaciones",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "combinaciones.ts",
+   "descripcion": "Agrega un servicio extra combinable (o reactiva uno soft-deleteado); rechaza duplicados activos (409) y que el ancla sea su propio extra (400)."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/combinaciones/:id",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "combinaciones.ts",
+   "descripcion": "Activa o desactiva un servicio combinable (campo booleano activo) sin quitarlo de la lista, con auditoría."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/combinaciones/:id",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "combinaciones.ts",
+   "descripcion": "Soft-delete de una combinación permitida (activo=false + deletedAt); no afecta bloques combinados ya creados."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/competencias",
+   "auth": "requireAuth",
+   "modulo": "competencias.ts",
+   "descripcion": "Devuelve la matriz completa de competencias activas profesional↔servicio, con filtro opcional ?unidadNegocioId."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/competencias/profesional/:profesionalId",
+   "auth": "requireAuth",
+   "modulo": "competencias.ts",
+   "descripcion": "Lista todas las competencias (activas e inactivas) de un profesional, con el servicio incluido."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/competencias/servicio/:servicioId",
+   "auth": "requireAuth",
+   "modulo": "competencias.ts",
+   "descripcion": "Lista los profesionales habilitados (competencia activa) para un servicio, incluyendo su asignación de sede activa."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/competencias/toggle",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "competencias.ts",
+   "descripcion": "Activa/desactiva (upsert) la competencia de un profesional para un servicio, creándola si no existe, con auditoría."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/conciliacion/pendientes-paciente/:pacienteId",
+   "auth": "requireAuth",
+   "modulo": "conciliacion.ts",
+   "descripcion": "Consulta liviana para recepción: cuántas aperturas Genexis PENDIENTES de conciliar tiene un paciente y de qué familias/confianza."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/conciliacion/aperturas",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "conciliacion.ts",
+   "descripcion": "Tabla maestra paginada de propuestas de conciliación con filtros (estado, confianza, familia, sede), contadores agregados y catálogos."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/conciliacion/aperturas/:id/evidencia",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "conciliacion.ts",
+   "descripcion": "Devuelve las citas-evidencia del historial Genexis (evidenciaIds) que sustentan una propuesta, más las lecturas de servicio/observaciones."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/conciliacion/aperturas/:id/aprobar",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "conciliacion.ts",
+   "descripcion": "Aprueba (firma humana) una propuesta de apertura, con ediciones opcionales (consumo, sedeId, vigenciaFin, notas), vía aprobarApertura."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/conciliacion/aperturas/aprobar-bloque",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "conciliacion.ts",
+   "descripcion": "Aprueba en lote todas las propuestas PENDIENTES de una confianza (VERDE o AMBAR, nunca ROJO), reportando fallidas por motivo y auditando el lote."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/conciliacion/aperturas/:id/descartar",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "conciliacion.ts",
+   "descripcion": "Descarta una propuesta PENDIENTE con motivo obligatorio (3-500 chars), marcándola DESCARTADA con firma y auditoría; 409 si ya fue decidida."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/conciliacion/cerrar",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "conciliacion.ts",
+   "descripcion": "Cierre formal del proceso de conciliación: bloquea con 409 si quedan pendientes salvo confirmarPendientes=true, y sella el cierre en AuditLog."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/almuerzos",
+   "auth": "requireAuth",
+   "modulo": "almuerzos.ts",
+   "descripcion": "Lista bloqueos recurrentes de tipo ALMUERZO vigentes en una sede (sedeId requerido; filtro opcional por fecha dentro de fechaInicio..fechaFin)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/almuerzos/profesional/:profesionalId",
+   "auth": "requireAuth",
+   "modulo": "almuerzos.ts",
+   "descripcion": "Devuelve el bloqueo de almuerzo activo de un profesional en una sede (o null si no tiene)."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/almuerzos",
+   "auth": "requireAuth",
+   "modulo": "almuerzos.ts",
+   "descripcion": "Crea un almuerzo recurrente (horaInicio 12:00/13:00/14:00) para podóloga o fisioterapeuta (fisios solo en sede Paz Soldán); 409 si ya tiene horario."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/almuerzos/:id",
+   "auth": "requireAuth",
+   "modulo": "almuerzos.ts",
+   "descripcion": "Soft-delete de un bloqueo de tipo ALMUERZO (solo ese tipo) y registra ALMUERZO_ELIMINADO en AuditLog."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/analytics/recalcular",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Recalcula los agregados diarios (AgregadoDiario) para el rango desde..hasta indicado en el body."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/analytics/recalcular/hoy",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Recalcula los agregados diarios solo para el día de hoy (agregarHoy)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/kpis",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "KPIs globales del rango (totales, tasas de completadas/no-show/canceladas/propios, horas atendidas) con variación vs. período anterior."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/profesionales",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Ranking de profesionales por citas completadas con totales, minutos atendidos y tasas (completadas/no-show/propios)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/servicios",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Ranking de servicios por total de citas con completadas, no-show, minutos y tasa de completadas, incluyendo unidad de negocio."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/sedes",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Comparativa por sede: totales, completadas, no-show, canceladas, minutos y tasas por cada sede del rango."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/heatmap",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Heatmap día (0-6) × hora (8-19) de demanda de citas sobre la tabla citas (excluye canceladas/reprogramadas y slots SECUNDARIOS de bloques combinados)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/unidades",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Lista las unidades de negocio disponibles (id, nombre, color) para poblar filtros del dashboard."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/canales",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Distribución de citas por canal de reserva (directo sobre citas) con completadas y porcentaje del total."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/promociones",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Rendimiento de cada promoción usada: usos, completadas y % de completadas sobre el total de esa promo (directo sobre citas)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/tendencia",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Serie de tiempo de citas con granularidad dia/semana/mes (auto: ≤31d diaria, ≤93d semanal, más → mensual)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/noshow",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "No-shows y cancelaciones: top 10 profesionales por no-show y desglose por sede con tasas."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/caseload",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "analytics.ts",
+   "descripcion": "Caseload por profesional: citas elegidas por el paciente (propios) vs. asignadas automáticamente, con % de propios."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/agentes/lista",
+   "auth": "requireAuth + requirePermiso('analytics.agentes') (router.use a nivel de módulo)",
+   "modulo": "analyticsAgentes.ts",
+   "descripcion": "Lista usuarios activos clasificados como agentes (con área) y su sede asignada, para selectores de la UI."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/agentes/config",
+   "auth": "requireAuth + requirePermiso('analytics.agentes') (router.use a nivel de módulo)",
+   "modulo": "analyticsAgentes.ts",
+   "descripcion": "Devuelve SCORE_CONFIG: pesos y umbrales del score de desempeño de agentes para mostrarlos en la UI."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/agentes/resumen",
+   "auth": "requireAuth + requirePermiso('analytics.agentes') (router.use a nivel de módulo)",
+   "modulo": "analyticsAgentes.ts",
+   "descripcion": "Tabla de desempeño de todos los agentes + totales de equipo + tendencia, cacheada en Redis 10 min por filtros."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/agentes/comparativa",
+   "auth": "requireAuth + requirePermiso('analytics.agentes') (router.use a nivel de módulo)",
+   "modulo": "analyticsAgentes.ts",
+   "descripcion": "Tarjetas comparativas de hasta 8 agentes seleccionados por ?ids= (percentiles calculados sobre el equipo completo)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/agentes/recitacion",
+   "auth": "requireAuth + requirePermiso('analytics.agentes') (router.use a nivel de módulo)",
+   "modulo": "analyticsAgentes.ts",
+   "descripcion": "Reporte de recitación por sede / recepcionista para el rango de filtros, cacheado en Redis."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/agentes/agente/:id",
+   "auth": "requireAuth + requirePermiso('analytics.agentes') (router.use a nivel de módulo)",
+   "modulo": "analyticsAgentes.ts",
+   "descripcion": "Drill-down de un agente: KPIs, series, totales del equipo y desglose de sus citas por sede y por servicio; 404 si no existe."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/agentes/agente/:id/citas",
+   "auth": "requireAuth + requirePermiso('analytics.agentes') (router.use a nivel de módulo)",
+   "modulo": "analyticsAgentes.ts",
+   "descripcion": "Lista paginada (sin caché) de las citas creadas por el agente en el rango, con paciente, sede, servicio y promoción."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/analytics/agentes/timeline/:agenteId",
+   "auth": "requireAuth + requirePermiso('analytics.agentes') (router.use a nivel de módulo)",
+   "modulo": "analyticsAgentes.ts",
+   "descripcion": "Timeline paginado de eventos del AuditLog (entidad 'cita') generados por el agente, orden descendente por fecha."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/movimientos/verificar-citas",
+   "auth": "requireAuth",
+   "modulo": "movimientos.ts",
+   "descripcion": "Lista citas activas bloqueantes de una podóloga en un rango (cualquier sede) antes de crear/mover una asignación; devuelve bloqueado, total, resumen por día y detalle."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/movimientos/:id/impacto",
+   "auth": "requireAuth",
+   "modulo": "movimientos.ts",
+   "descripcion": "Devuelve las consecuencias de eliminar un movimiento (si tiene predecesor, sede anterior a restaurar y cuántas citas se verían afectadas) para el diálogo de confirmación."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/movimientos/preview",
+   "auth": "requireAuth",
+   "modulo": "movimientos.ts",
+   "descripcion": "Previsualiza un movimiento de profesional (profesionalId, sedeId, fechaInicio, fechaFin) vía previewMovimiento sin persistir nada."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/movimientos",
+   "auth": "requireAuth",
+   "modulo": "movimientos.ts",
+   "descripcion": "Lista asignaciones de sede (movimientos) con filtros profesionalId/sedeId/desde/hasta/estado y calcula estadoCalc (activo, proximo, futuro, historial) y motivoLabel."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/movimientos",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "movimientos.ts",
+   "descripcion": "Crea un movimiento de profesional entre sedes (cierra la asignación previa, crea retorno si es temporal); responde 409 CITAS_PENDIENTES si hay citas activas sin gestionar."
+  },
+  {
+   "metodo": "PUT",
+   "ruta": "/api/v1/movimientos/:id",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "movimientos.ts",
+   "descripcion": "Edita un movimiento: cambios estructurales (profesional/fechaInicio) lo recrean atómicamente; cambios de sede/fechaFin/motivo/notas sincronizan el retorno automático y validan citas pendientes y solapes."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/movimientos/:id",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "movimientos.ts",
+   "descripcion": "Elimina un movimiento (futuro o activo) restaurando la asignación previa exacta y borrando el retorno automático; 409 CITAS_PENDIENTES si hay citas activas del período en esa sede."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/notificaciones/activas",
+   "auth": "requireAuth",
+   "modulo": "notificaciones.ts",
+   "descripcion": "Devuelve las notificaciones vigentes (por fecha y sedes del usuario) que el usuario autenticado aún NO ha marcado como vistas."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/notificaciones/:id/vista",
+   "auth": "requireAuth",
+   "modulo": "notificaciones.ts",
+   "descripcion": "Marca una notificación como vista por el usuario autenticado (upsert idempotente en NotificacionVista)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/notificaciones/admin",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "notificaciones.ts",
+   "descripcion": "Lista las últimas 50 notificaciones (activas y vencidas) con autor, sedes, total de vistas y bandera estaActiva para el panel de administración."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/notificaciones/admin",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "notificaciones.ts",
+   "descripcion": "Crea una notificación (mensaje, fecha de vencimiento futura obligatoria, todas las sedes o sedes específicas)."
+  },
+  {
+   "metodo": "PUT",
+   "ruta": "/api/v1/notificaciones/admin/:id",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "notificaciones.ts",
+   "descripcion": "Edita una notificación no vencida (mensaje, fecha de vencimiento, alcance de sedes); rechaza editar vencidas (YA_VENCIDA) o poner fecha pasada (FECHA_PASADA)."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/notificaciones/admin/:id",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "notificaciones.ts",
+   "descripcion": "Elimina (hard delete) una notificación solo si nadie la ha visto; si ya tiene vistas responde 409 TIENE_VISTAS."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/pacientes/buscar",
+   "auth": "requireAuth + requireScope('patients:read')",
+   "modulo": "pacientes.ts",
+   "descripcion": "Búsqueda de pacientes por nombre completo, documento o teléfono (ILIKE + orden por similarity trigram, máx 10), enriquecida con alerta y familiares."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/pacientes/distritos-frecuentes",
+   "auth": "requireAuth + requireScope('patients:read')",
+   "modulo": "pacientes.ts",
+   "descripcion": "Top 8 de distritos UBIGEO más frecuentes entre pacientes vivos (opcional ?sedeId= por citas en esa sede), con caché Redis de 24h, para los chips del autocomplete."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/pacientes/:id",
+   "auth": "requireAuth + requireScope('patients:read')",
+   "modulo": "pacientes.ts",
+   "descripcion": "Ficha completa del paciente: datos, paquetes, alerta, familiares, historial de atenciones (pasado + hoy, máx 200), totalCitas, resumen por servicio, próximas citas y datosFaltantes."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/pacientes/:id/paquetes",
+   "auth": "requireAuth + requireScope('patients:read')",
+   "modulo": "pacientes.ts",
+   "descripcion": "Endpoint único de SALDOS de paquetes del paciente (módulo Sesiones): saldo derivado de consumos vivos, composición por ítem, consumos con cita asociada y conciliación."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/pacientes/:id/historial-genexis/existe",
+   "auth": "requireAuth + requireScope('patients:read')",
+   "modulo": "pacientes.ts",
+   "descripcion": "Consulta liviana que indica si el paciente tiene registros del historial Genexis (existe + total) para decidir si renderizar el botón."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/pacientes/:id/historial-genexis",
+   "auth": "requireAuth + requireScope('patients:read')",
+   "modulo": "pacientes.ts",
+   "descripcion": "Historial congelado (solo lectura) del sistema antiguo Genexis, paginado y filtrable por sede/año, con resumen global (total, primera/última cita, % asistencia, sedes, años)."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/pacientes",
+   "auth": "requireAuth",
+   "modulo": "pacientes.ts",
+   "descripcion": "Crea un paciente (validación zod + normalización, unicidad de documento con 409 PACIENTE_DUPLICADO, regla de residencia UBIGEO/país, bandera requiereActualizacionDatos server-side, audit en transacción)."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/pacientes/:id",
+   "auth": "requireAuth",
+   "modulo": "pacientes.ts",
+   "descripcion": "Edita parcialmente un paciente (campos no enviados no se tocan), revalida unicidad de documento, resuelve residencia UBIGEO/país, recalcula requiereActualizacionDatos y audita; devuelve datosFaltantes."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/promociones",
+   "auth": "requireAuth",
+   "modulo": "promociones.ts",
+   "descripcion": "Lista las promociones activas (no eliminadas) ordenadas por orden/nombre, para el desplegable al crear/editar una cita."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/promociones/todas",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "promociones.ts",
+   "descripcion": "Lista todas las promociones (incluye inactivas) con conteo enUso de citas vivas por promoción, para la pantalla de gestión."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/promociones",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "promociones.ts",
+   "descripcion": "Crea una promoción (o reactiva una inactiva con el mismo nombre); 409 PROMO_DUPLICADA si ya existe activa; registra auditoría en transacción."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/promociones/:id",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "promociones.ts",
+   "descripcion": "Edita una promoción (nombre, descripción, tipo, valor, activo, orden) validando nombre duplicado; registra auditoría."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/promociones/:id",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "promociones.ts",
+   "descripcion": "Quita una promoción: si tiene citas vivas solo la desactiva (conserva historial/FK), si no hace soft-delete (deletedAt); registra auditoría."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/recordatorios/dia",
+   "auth": "requireAuth",
+   "modulo": "recordatorios.ts",
+   "descripcion": "Vista por día de recordatorios tipo RECORDATORIO con datos de la cita (paciente, profesional, sede, servicio) y estado del envío; filtra por fecha/sede/profesional/estado vía query."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/recordatorios/metricas",
+   "auth": "requireAuth",
+   "modulo": "recordatorios.ts",
+   "descripcion": "Métricas agregadas de recordatorios (enviados, fallidos, tasas de respuesta/confirmación, tiempo promedio de confirmación, cuota diaria de correo, desglose por sede y por día)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/recordatorios/cita/:citaId",
+   "auth": "requireAuth",
+   "modulo": "recordatorios.ts",
+   "descripcion": "Devuelve el detalle/log cronológico de todos los recordatorios (no eliminados) de una cita específica."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/recordatorios/:citaId/reenviar",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "recordatorios.ts",
+   "descripcion": "Fuerza el reenvío manual del recordatorio más reciente de una cita: lo reprograma a ahora, encola el job BullMQ y registra auditoría."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/reniec/dni/:dni",
+   "auth": "requireAuth + requireScope('patients:read')",
+   "modulo": "reniec.ts",
+   "descripcion": "Consulta un DNI en RENIEC (vía reniecService/apiperu.dev) para autollenar los datos del paciente; mismos permisos que leer pacientes."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/reportes/horas-extra",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "reportes.ts",
+   "descripcion": "Reporte RRHH de horas extra trabajadas fuera del horario normal de sede (por ExcepcionHorario), con equivalente de recargo peruano (+25/35% extendido, +100% descanso/feriado), descontando almuerzos recurrentes; filtros desde/hasta/sedeId."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/reportes/rotacion",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "reportes.ts",
+   "descripcion": "Reporte de rotación intersedes de podólogas: timeline día a día del rango (sede base vs préstamos/coberturas de un día), total de días de presencia y cumplimiento de meta mensual configurable; filtros desde/hasta/sedeId/profesionalId/meta."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/reportes/meta/:profesionalId",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "reportes.ts",
+   "descripcion": "Fija (o borra con null) la meta de días de presencia mensual (metaDiasMes, 0-31) de una podóloga, registrando el cambio en AuditLog dentro de una transacción."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/webhooks/resend",
+   "auth": "público (sin requireAuth; autenticado por firma svix con RESEND_WEBHOOK_SECRET sobre raw body — 401 si falta el secreto o la firma es inválida)",
+   "modulo": "resendWebhook.ts",
+   "descripcion": "Webhook entrante de Resend (email.delivered/bounced/complained): valida firma svix, responde 200 de inmediato y en background registra AuditLog en la cita del recordatorio y marca emailInvalido en pacientes ante rebote/queja."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/roles",
+   "auth": "requireAuth (cualquier usuario autenticado)",
+   "modulo": "roles.ts",
+   "descripcion": "Lista todos los roles del sistema (tabla Rol) ordenados por fecha de creación, para poblar formularios."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/roles/permisos",
+   "auth": "requireAuth (cualquier usuario autenticado)",
+   "modulo": "roles.ts",
+   "descripcion": "Devuelve el catálogo de permisos disponibles agrupados por sección (Agenda, Pacientes, Herramientas, Movimientos, Administración, Usuarios y Roles) con id y label."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/roles",
+   "auth": "requireAuth + requirePermiso('roles.editar')",
+   "modulo": "roles.ts",
+   "descripcion": "Crea un rol personalizado (nombre interno en snake_case, label, descripción, permisos validados contra la lista); 409 si el nombre ya existe; esSistema=false."
+  },
+  {
+   "metodo": "PUT",
+   "ruta": "/api/v1/roles/:id",
+   "auth": "requireAuth + requirePermiso('roles.editar')",
+   "modulo": "roles.ts",
+   "descripcion": "Actualiza label, descripción y permisos de un rol existente (no permite cambiar el nombre interno); 404 si no existe."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/roles/:id",
+   "auth": "requireAuth + requirePermiso('roles.editar')",
+   "modulo": "roles.ts",
+   "descripcion": "Elimina (hard delete) un rol no-sistema; rechaza con 400 si es rol del sistema o si aún hay usuarios activos con ese rol asignado."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/baro-solicitud",
+   "auth": "requireAuth",
+   "modulo": "baroSolicitud.ts",
+   "descripcion": "Lista los profesionales de baropodometría 'por solicitud' (agrupados por cuántos servicios cubren) y los profesionales activos disponibles para agregar (excluye pool de auto-asignación y placeholders 'Baro N')."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/baro-solicitud/:profesionalId",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "baroSolicitud.ts",
+   "descripcion": "Agrega un profesional a la lista 'por solicitud' de baro: upsert de CompetenciaProfesional con soloPorSolicitud=true para los 2 servicios de baropodometría, con audit."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/baro-solicitud/:profesionalId",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "baroSolicitud.ts",
+   "descripcion": "Quita al profesional de la lista por solicitud: desactiva (activa=false) solo sus competencias soloPorSolicitud de baro, sin tocar el pool de auto-asignación."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/canales",
+   "auth": "requireAuth",
+   "modulo": "canales.ts",
+   "descripcion": "Lista los canales de reserva activos (id, valor, etiqueta, orden) para los selectores de reserva."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/canales/todos",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "canales.ts",
+   "descripcion": "Lista todos los canales no borrados (incluye inactivos) con conteo de citas que usan cada uno (enUso), para la pantalla de gestión."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/canales",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "canales.ts",
+   "descripcion": "Crea un canal a partir de la etiqueta (genera slug como valor); si ya existía inactivo/borrado lo reactiva; 409 CANAL_DUPLICADO si ya existe activo."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/canales/:id",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "canales.ts",
+   "descripcion": "Edita un canal: renombrar etiqueta, activar/desactivar y/o cambiar orden."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/canales/:id",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "canales.ts",
+   "descripcion": "Quita un canal: si tiene citas asociadas solo lo desactiva (conserva historial); si no tiene uso, soft-delete (deletedAt + activo=false)."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/citas/upload-comprobante",
+   "auth": "requireAuth (+ multer uploadComprobante.single('comprobante'))",
+   "modulo": "citas.ts",
+   "descripcion": "Sube el archivo de comprobante de pago y devuelve su URL pública (/uploads/comprobantes/...), nombre, mimeType y tamaño."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/citas",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "Lista citas con filtros query (sedeId, fecha, profesionalId, unidadNegocioId, pacienteId, estado) e incluye relaciones, comentarios, promo heredada del bloque, alertas de comportamiento y familiares del paciente."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/citas/outlook/reintentar",
+   "auth": "requireAuth + requireRol('admin')",
+   "modulo": "citas.ts",
+   "descripcion": "Reprocesa manualmente las sincronizaciones de Outlook Calendar que quedaron fallidas (reintentarOutlookFallidos)."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/citas/:id/confirmar-mail",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "Reenvía AHORA el correo de recordatorio (Correo 2 con botones confirmar/reprogramar) al paciente; valida estado no final y que tenga email; 429 si se agotó la cuota diaria."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/citas/calendario?token=",
+   "auth": "público (autenticado por token JWT de confirmación en query)",
+   "modulo": "citas.ts",
+   "descripcion": "Entrega el archivo .ics de la cita ('Agregar a mi agenda' desde el correo) para añadirla al calendario del paciente."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/citas/confirmar?token=",
+   "auth": "público (token de confirmación en query)",
+   "modulo": "citas.ts",
+   "descripcion": "Confirma la cita desde el enlace del correo (idempotente): marca estadoConfirmacion=confirmada, pasa agendada→confirmada, cancela recordatorios pendientes y devuelve página HTML de resultado."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/citas/cancelar?token=",
+   "auth": "público (token de cancelación en query)",
+   "modulo": "citas.ts",
+   "descripcion": "Cancela la cita desde el enlace del correo (idempotente, no permite si ya está en curso/atendida), audita como 'cancelar_por_paciente' y devuelve página HTML de resultado."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/citas/confirmar/:token",
+   "auth": "público (token de acción de UN SOLO uso en la ruta)",
+   "modulo": "citas.ts",
+   "descripcion": "Confirma la cita vía botón del recordatorio consumiendo un token de un solo uso; registra clickConfirmarAt/confirmadoAt en RecordatorioCita y detiene recordatorios pendientes."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/citas/reprogramar/:token",
+   "auth": "público (token de acción; redirige aunque sea inválido)",
+   "modulo": "citas.ts",
+   "descripcion": "Registra el click de reprogramar (clickReprogramarAt + audit) y redirige 302 a WhatsApp (wa.me) con mensaje prellenado para reprogramar."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/citas/:id",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "Devuelve el detalle completo de una cita (paciente, profesional, sede, servicio, subcategoría, paquete, promoción, comentarios, promo heredada)."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/citas",
+   "auth": "requireAuth + requireScope('appointments:write')",
+   "modulo": "citas.ts",
+   "descripcion": "Crea una cita: idempotencia por header Idempotency-Key, validación de canal/subcategoría/competencia/sede/turno/bloqueos, asignación automática según modoReserva (incl. 'Solo X' de baro), lock Redis anti doble-booking, numeración de sesión de paquete (con reanclaje Genexis), audit, socket, webhooks, recordatorios, videos y Outlook."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/citas/combinada",
+   "auth": "requireAuth + requireScope('appointments:write')",
+   "modulo": "citas.ts",
+   "descripcion": "Crea atómicamente las 2 citas de un bloque combinado (ancla profilaxis PRINCIPAL + servicio extra SECUNDARIO) en el mismo slot de 1 h, con transacción Serializable, locks por profesional y validaciones por pata."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/citas/:id/estado",
+   "auth": "requireAuth (reversa completada→en_atencion solo rol admin/coordinadora_sedes, chequeado inline)",
+   "modulo": "citas.ts",
+   "descripcion": "Cambia el estado de la cita según la máquina de transiciones válidas, con cascada a las hermanas del bloque combinado, comentario opcional al hilo, sincronización de sesiones de paquete, webhooks, Outlook y recordatorios."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/citas/:id/gestionar-movimiento",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "citas.ts",
+   "descripcion": "Cancela o marca como 'reprogramada' una cita bloqueante desde cualquier estado activo (bypass de transiciones) previo a un movimiento de podóloga, con cascada al bloque y todos los efectos de cancelación."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/citas/:id/mover",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "Reprograma/mueve una cita (drag & drop) a otro profesional/fecha/hora: revalida modoReserva, competencia, asignación de sede, turno, bloqueos y solapes (incl. profesional solicitado), con lock Redis, audit, webhook rescheduled y reprogramación de recordatorios/videos/Outlook."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/citas/grupo/:slotGrupoId/mover",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "Mueve un bloque combinado COMPLETO (ambas citas del slotGrupoId) a otro horario/profesional de forma atómica, validando que el destino atienda ambos servicios y excluyendo del chequeo de solape las citas del propio grupo."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/citas/:id",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "Cancela la cita (estado='cancelada', NO pone deletedAt para conservar historial); en bloque combinado cancela todo el grupo no finalizado, reembolsa sesiones de paquete, cancela recordatorios/videos/Outlook y libera el slot en caché."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/citas/:id/consultorio",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "Asigna o limpia el número de consultorio de la cita, con audit y evento socket 'cita:actualizada'."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/citas/:id/comentario",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "AGREGA una entrada al hilo append-only de comentarios de la cita (no reemplaza; máx 2000 chars, en cualquier estado), con snapshot del autor, audit y evento socket."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/citas/:id/canal",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "Cambia el canal de reserva de la cita (validado contra la tabla Canal activa), editable en cualquier estado, con audit y evento socket."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/citas/:id/promocion",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "Asigna o limpia la promoción de la cita; en un bloque combinado la escribe SIEMPRE en la cita portadora (PRINCIPAL) aunque se edite desde la secundaria, y emite eventos para ambas citas del bloque."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/citas/sede/:sedeId/stats",
+   "auth": "requireAuth",
+   "modulo": "citas.ts",
+   "descripcion": "KPIs del día por sede (query fecha opcional): conteos por estado (total, confirmadas, llegaron, no-shows, completadas, agendadas, en atención) y % de ocupación física (excluye mitades SECUNDARIO) sobre la capacidad de slots de 30 min."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/paquetes/instancia/:id/tamano",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "paquetes.ts",
+   "descripcion": "Corrige el tamaño (sesionesTotal) de una instancia de paquete de paciente: anula consumos sobrantes, recalcula saldo/estado y audita con motivo"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/paquetes/",
+   "auth": "requireAuth",
+   "modulo": "paquetes.ts",
+   "descripcion": "Lista todas las plantillas de paquete activas (no borradas) con su servicio, ordenadas por nombre"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/paquetes/paciente/:pacienteId",
+   "auth": "requireAuth",
+   "modulo": "paquetes.ts",
+   "descripcion": "Instancias de paquete del paciente en vista de AGENDAMIENTO: citas vivas, números de sesión ocupados, consumos de apertura y anclaje Genexis (la consume el drawer de Nueva Cita)"
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/paquetes/paciente/:pacienteId",
+   "auth": "requireAuth",
+   "modulo": "paquetes.ts",
+   "descripcion": "Asigna una instancia de paquete al paciente (con candado de sede y soporte origen Genexis); rechaza si ya hay uno activo del mismo servicio con cupo"
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/paquetes/",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "paquetes.ts",
+   "descripcion": "Crea una plantilla de paquete (nombre, servicio, total de sesiones, consumeNoShow, precio)"
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/paquetes/:id",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "paquetes.ts",
+   "descripcion": "Edita parcialmente una plantilla de paquete existente"
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/paquetes/:id",
+   "auth": "requireAuth, requireRol('admin')",
+   "modulo": "paquetes.ts",
+   "descripcion": "Soft-delete de una plantilla de paquete (setea deletedAt)"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/permisos/",
+   "auth": "requireAuth",
+   "modulo": "permisos.ts",
+   "descripcion": "Lista los permisos (bloqueos tipo PERMISO no recurrentes) de una sede en una fecha (?sedeId&fecha), con datos del profesional y creador"
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/permisos/",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "permisos.ts",
+   "descripcion": "Crea un permiso/bloqueo horario para un profesional; responde 409 con la lista de pacientes si hay citas activas en el rango"
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/permisos/multiple",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "permisos.ts",
+   "descripcion": "Bloquea a VARIOS profesionales a la vez en el mismo rango; resultado parcial 2xx con {creados, conflictos, invalidos}"
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/permisos/reunion",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "permisos.ts",
+   "descripcion": "Crea bloqueo de reunión administrativa para Daniel y/o Yasica Doy (todo-o-nada, marca esReunion y sincroniza con Outlook)"
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/permisos/:id",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "permisos.ts",
+   "descripcion": "Soft-delete de un permiso (solo tipo PERMISO), audita, invalida caché de disponibilidad y cancela el evento Outlook si era reunión"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/profesionales/",
+   "auth": "requireAuth",
+   "modulo": "profesionales.ts",
+   "descripcion": "Lista profesionales/columnas de la agenda filtrable por sede, unidad de negocio, fecha y activo, con turno del día, asignación vigente y detección de préstamos"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/profesionales/seleccionables",
+   "auth": "requireAuth",
+   "modulo": "profesionales.ts",
+   "descripcion": "Profesionales elegibles al reservar (asignados a la sede + solo-por-solicitud con competencia al servicio/unidad), con sus bloqueos del día"
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/profesionales/",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "profesionales.ts",
+   "descripcion": "Crea un profesional (nombres, apellidos, tipo, unidad de negocio, color de avatar)"
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/profesionales/:id",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "profesionales.ts",
+   "descripcion": "Actualiza parcialmente los datos de un profesional no borrado"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/profesionales/horarios-entrada",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "profesionales.ts",
+   "descripcion": "Devuelve por podóloga de la sede la hora de entrada (08:00/09:00) de cada día Lun-Vie de la semana indicada, con overrides marcados"
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/profesionales/:id/entrada",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "profesionales.ts",
+   "descripcion": "Fija la hora de entrada (08:00/09:00) de una o varias fechas como override de turno; 409 si deja citas fuera salvo forzar:true"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/profesionales/personal-excepcion",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "profesionales.ts",
+   "descripcion": "Lista podólogas asignadas a la sede con su estado de presencia (EntradaPodologa) en un día excepcional habilitado (?sedeId&fecha)"
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/profesionales/:id/presencia-excepcion",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "profesionales.ts",
+   "descripcion": "Marca/desmarca a una podóloga como presente en un día excepcional (crea/actualiza o borra su EntradaPodologa)"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/profesionales/dia-especial",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "profesionales.ts",
+   "descripcion": "Vista unificada de quién trabaja en la sede una fecha especial: podólogas propias con presencia + traíbles de otras sedes (coberturas de un día)"
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/profesionales/dia-especial/set",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "profesionales.ts",
+   "descripcion": "Aplica por cada fecha si una podóloga viene o no un día especial: propia → EntradaPodologa; de otra sede → cobertura de un día (idempotente y auditado)"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/profesionales/:id",
+   "auth": "requireAuth",
+   "modulo": "profesionales.ts",
+   "descripcion": "Detalle completo de un profesional: unidad de negocio, asignaciones con sede, horarios activos, bloqueos vigentes y competencias"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/profesionales/:id/horario",
+   "auth": "requireAuth",
+   "modulo": "profesionales.ts",
+   "descripcion": "Devuelve los horarios semanales activos del profesional y sus bloqueos futuros (fechaFin >= hoy)"
+  },
+  {
+   "metodo": "PUT",
+   "ruta": "/api/v1/profesionales/:id/horario",
+   "auth": "requireAuth, requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "profesionales.ts",
+   "descripcion": "Define el horario semanal permanente (lista completa de días con rango horario); días no incluidos quedan desactivados"
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/profesionales/:id/bloqueos",
+   "auth": "requireAuth",
+   "modulo": "profesionales.ts",
+   "descripcion": "Crea un bloqueo de agenda genérico para el profesional (fechaInicio, fechaFin, motivo)"
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/sedes",
+   "auth": "requireAuth",
+   "modulo": "sedes.ts",
+   "descripcion": "Lista sedes activas (no eliminadas) con sus unidades de negocio, ordenadas por orden manual y nombre."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/sedes/:id",
+   "auth": "requireAuth",
+   "modulo": "sedes.ts",
+   "descripcion": "Devuelve el detalle de una sede con sus unidades de negocio completas; 404 si no existe."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/servicios",
+   "auth": "requireAuth",
+   "modulo": "servicios.ts",
+   "descripcion": "Lista servicios (filtros ?unidadNegocioId y ?activo) con unidad de negocio y subcategorías activas."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/servicios/:id",
+   "auth": "requireAuth",
+   "modulo": "servicios.ts",
+   "descripcion": "Devuelve el detalle de un servicio con su unidad de negocio; 404 si no existe."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/servicios",
+   "auth": "requireAuth + requireRol('admin')",
+   "modulo": "servicios.ts",
+   "descripcion": "Crea un servicio generando automáticamente el código consecutivo por unidad (POD-/BAR-/FIS-NN)."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/servicios/:id",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "servicios.ts",
+   "descripcion": "Actualiza parcialmente un servicio existente (nombre, duración, color, precio, activo, etc.)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/servicios/:id/subcategorias",
+   "auth": "requireAuth",
+   "modulo": "servicios.ts",
+   "descripcion": "Lista las subcategorías de un servicio (incluye inactivas, para administración)."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/servicios/:id/subcategorias",
+   "auth": "requireAuth + requireRol('admin')",
+   "modulo": "servicios.ts",
+   "descripcion": "Crea una subcategoría del servicio validando nombre duplicado; audita en transacción."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/servicios/subcategorias/:subId",
+   "auth": "requireAuth + requireRol('admin', 'coordinadora_sedes')",
+   "modulo": "servicios.ts",
+   "descripcion": "Edita una subcategoría (nombre, precio, orden, activo) con chequeo de duplicados y auditoría."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/servicios/subcategorias/:subId",
+   "auth": "requireAuth + requireRol('admin')",
+   "modulo": "servicios.ts",
+   "descripcion": "Desactiva (soft delete) una subcategoría; las citas históricas conservan su subcategoriaId."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/servicio-videos",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Lista los videos (activos y pausados) de un servicio vía ?servicioId; 400 si falta el parámetro."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/servicio-videos/resumen",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Devuelve servicios activos con conteo de videos asociados (para badges en la UI)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/servicio-videos/historial",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Monitoreo de envíos de video (hasta 500 logs) filtrable por estado, servicio y rango de fechas."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/servicio-videos/preview",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Renderiza el HTML del correo de video (mismo motor del envío real) con logo incrustado para vista previa."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/servicio-videos",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Crea un video educativo para un servicio, audita y lanza backfill a citas futuras en segundo plano."
+  },
+  {
+   "metodo": "PUT",
+   "ruta": "/api/v1/servicio-videos/:id",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Edita un video; si cambia momento/offset reprograma los envíos pendientes en segundo plano."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/servicio-videos/:id/toggle",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Activa o pausa un video: activar dispara backfill; pausar cancela los envíos pendientes."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/servicio-videos/:id",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Soft delete de un video cancelando antes sus envíos pendientes; devuelve el conteo cancelado."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/servicio-videos/:id/test-envio",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Envía un correo de prueba del video al email del admin logueado (requiere RESEND_API_KEY)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/servicio-videos/supresiones",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Lista los correos excluidos (opt-out) de recibir videos educativos."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/servicio-videos/supresiones",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Agrega un correo a la lista de exclusión (409 si ya existe) y cancela sus envíos de video pendientes."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/servicio-videos/supresiones/:id",
+   "auth": "requireAuth + requireRol('admin') (router.use a nivel de módulo)",
+   "modulo": "servicioVideos.ts",
+   "descripcion": "Quita un correo de la lista de exclusión (soft delete), re-habilitando futuros videos para ese correo."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/users",
+   "auth": "requireAuth + requirePermiso('usuarios.ver')",
+   "modulo": "users.ts",
+   "descripcion": "Lista todos los usuarios no eliminados (id, nombre, email, rol, activo, creadoEn) ordenados por fecha de creación."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/users/:id",
+   "auth": "requireAuth + requirePermiso('usuarios.ver')",
+   "modulo": "users.ts",
+   "descripcion": "Obtiene un usuario por id (excluye soft-deleted); 404 si no existe."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/users",
+   "auth": "requireAuth + requirePermiso('usuarios.editar')",
+   "modulo": "users.ts",
+   "descripcion": "Crea un usuario (valida con Zod, email único en minúsculas, hashea password con bcrypt cost 12); 409 si el email ya existe."
+  },
+  {
+   "metodo": "PUT",
+   "ruta": "/api/v1/users/:id",
+   "auth": "requireAuth + requirePermiso('usuarios.editar')",
+   "modulo": "users.ts",
+   "descripcion": "Edita parcialmente un usuario (nombre, email, rol, activo, password rehasheado); impide que el caller se desactive a sí mismo (activo=false en su propio id → 400)."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/users/:id",
+   "auth": "requireAuth + requirePermiso('usuarios.editar')",
+   "modulo": "users.ts",
+   "descripcion": "Soft delete de un usuario (activo=false + deletedAt=now); impide auto-eliminarse (400 si id === caller.userId)."
+  },
+  {
+   "metodo": "GET",
+   "ruta": "/api/v1/webhooks",
+   "auth": "requireAuth + requireRol('admin')",
+   "modulo": "webhooks.ts",
+   "descripcion": "Lista las suscripciones de webhook no eliminadas, incluyendo la sede asociada (id y nombre)."
+  },
+  {
+   "metodo": "POST",
+   "ruta": "/api/v1/webhooks",
+   "auth": "requireAuth + requireRol('admin')",
+   "modulo": "webhooks.ts",
+   "descripcion": "Crea una suscripción de webhook (nombre, url, secret ≥16 chars, eventos appointment.created/rescheduled/cancelled/completed, sedeId opcional)."
+  },
+  {
+   "metodo": "PATCH",
+   "ruta": "/api/v1/webhooks/:id",
+   "auth": "requireAuth + requireRol('admin')",
+   "modulo": "webhooks.ts",
+   "descripcion": "Actualiza parcialmente una suscripción de webhook existente (schema Zod parcial, solo si no está soft-deleted)."
+  },
+  {
+   "metodo": "DELETE",
+   "ruta": "/api/v1/webhooks/:id",
+   "auth": "requireAuth + requireRol('admin')",
+   "modulo": "webhooks.ts",
+   "descripcion": "Soft delete de una suscripción de webhook (marca deletedAt=now)."
+  }
+ ],
+ "acciones": [
+  {
+   "accion": "Login (iniciar sesión)",
+   "ubicacion": "pages/LoginPage.tsx + stores/authStore.ts",
+   "endpointsUsados": "POST /auth/login; luego GET /notificaciones/activas (banner post-login)"
+  },
+  {
+   "accion": "Refresh de sesión/permisos al cargar la app",
+   "ubicacion": "App.tsx (checkAuth) + stores/authStore.ts",
+   "endpointsUsados": "GET /auth/me"
+  },
+  {
+   "accion": "Logout (cerrar sesión)",
+   "ubicacion": "components/layout/Sidebar.tsx",
+   "endpointsUsados": "ninguno (limpia el store local limablue-auth)"
+  },
+  {
+   "accion": "Ver banner de notificaciones post-login y marcarlas como vistas",
+   "ubicacion": "components/NotificacionLoginBanner.tsx (montado en Layout.tsx)",
+   "endpointsUsados": "GET /notificaciones/activas (en LoginPage); POST /notificaciones/:id/vista (una por notificación al cerrar)"
+  },
+  {
+   "accion": "Ver agenda del día (carga completa por sede/unidad/fecha)",
+   "ubicacion": "pages/AgendaPage.tsx",
+   "endpointsUsados": "GET /sedes; GET /profesionales?sedeId&unidadNegocioId&fecha&activo; GET /citas?sedeId&fecha&unidadNegocioId; GET /citas?sedeId&fecha (ocupación cruzada otras unidades); GET /citas/sede/:sedeId/stats?fecha; GET /horarios/:sedeId?fecha; GET /almuerzos?sedeId&fecha; GET /permisos?sedeId&fecha; WebSocket /socket.io (sala por sede, invalida queries)"
+  },
+  {
+   "accion": "Cambiar de sede (botones o teclas 1-5)",
+   "ubicacion": "components/agenda/HeaderAgenda.tsx + CommandPalette.tsx (evento agenda:sede)",
+   "endpointsUsados": "refetch de GET /citas, /profesionales, /citas/sede/:id/stats, /horarios/:id, /almuerzos, /permisos"
+  },
+  {
+   "accion": "Cambiar unidad de negocio (tabs Podología/Baro/Fisio…)",
+   "ubicacion": "pages/AgendaPage.tsx",
+   "endpointsUsados": "refetch GET /citas?unidadNegocioId y GET /profesionales?unidadNegocioId"
+  },
+  {
+   "accion": "Navegar fecha (‹ ›, atajos Hoy/Mañana/Sábado/En 1 sem., date-picker, tecla T)",
+   "ubicacion": "components/agenda/HeaderAgenda.tsx + CommandPalette.tsx",
+   "endpointsUsados": "refetch de todos los GET de agenda con la nueva fecha"
+  },
+  {
+   "accion": "Drag & drop de cita individual (reprogramar hora/profesional en el día)",
+   "ubicacion": "pages/AgendaPage.tsx (DndContext handleDragEnd) + ColumnaAgenda/TarjetaCita",
+   "endpointsUsados": "PATCH /citas/:id/mover {profesionalId, fecha, horaInicio, origenAsignacion} (con window.confirm si la cita era elegida_por_paciente; validación local de choques y hora entera)"
+  },
+  {
+   "accion": "Drag & drop de BLOQUE COMBINADO (mueve ambas citas atómicamente)",
+   "ubicacion": "pages/AgendaPage.tsx (slotGrupoId en handleDragEnd)",
+   "endpointsUsados": "PATCH /citas/grupo/:slotGrupoId/mover {profesionalId, fecha, horaInicio, origenAsignacion}"
+  },
+  {
+   "accion": "Click en slot vacío → abrir drawer Nueva Cita con hora/profesional prellenados",
+   "ubicacion": "components/agenda/ColumnaAgenda.tsx → DrawerNuevaCita",
+   "endpointsUsados": "ninguno directo (dispara las queries del drawer)"
+  },
+  {
+   "accion": "Click en tarjeta de cita (individual o mitad de combinada) → abrir PopoverCita",
+   "ubicacion": "components/agenda/TarjetaCita.tsx / TarjetaCitaCombinada",
+   "endpointsUsados": "ninguno directo (usa la cita ya cargada)"
+  },
+  {
+   "accion": "Auto-completar citas en 'llego' pasados 90 min (acción automática del cliente, solo día de hoy)",
+   "ubicacion": "pages/AgendaPage.tsx (useEffect cada 60 s)",
+   "endpointsUsados": "PATCH /citas/:id/estado {estado:'completada'} (Promise.allSettled por cada cita vencida)"
+  },
+  {
+   "accion": "Buscar paciente existente por documento o nombre al agendar",
+   "ubicacion": "components/agenda/DrawerNuevaCita.tsx (paso 'existente')",
+   "endpointsUsados": "GET /pacientes/buscar?q"
+  },
+  {
+   "accion": "Crear paciente nuevo (con tipo doc DNI/CE/Pasaporte, teléfono, email, fecha nac., distrito UBIGEO y país si Extranjero)",
+   "ubicacion": "components/agenda/DrawerNuevaCita.tsx (paso 'nuevo') + components/ui/DistritoAutocomplete.tsx",
+   "endpointsUsados": "POST /pacientes; GET /pacientes/buscar?q (detección de duplicado por documento, también en onError PACIENTE_DUPLICADO); GET /reniec/dni/:dni (autollenado nombres); GET /pacientes/distritos-frecuentes (chips del autocomplete)"
+  },
+  {
+   "accion": "Crear cita simple (con canal, promoción, subcategoría obligatoria si aplica, comentario)",
+   "ubicacion": "components/agenda/DrawerNuevaCita.tsx",
+   "endpointsUsados": "POST /citas (header Idempotency-Key único por apertura del drawer); soporte: GET /servicios?unidadNegocioId&activo; GET /profesionales/seleccionables?sedeId&unidadNegocioId&fecha&servicioId; GET /disponibilidad?sede&unidadNegocio&servicio&fecha&profesional; GET /horarios/:sedeId?fecha; GET /citas?sedeId&fecha (aviso ocupación del profesional); GET /combinaciones/config"
+  },
+  {
+   "accion": "Crear CITA COMBINADA (ancla profilaxis + servicio extra en el mismo turno, con profesional y paquete propios del extra)",
+   "ubicacion": "components/agenda/DrawerNuevaCita.tsx (toggle 'Combinar servicio en este turno')",
+   "endpointsUsados": "POST /citas/combinada {…, extra:{servicioId, profesionalId?, paquetePacienteId?}}; GET /combinaciones/config (ancla+extras activos); GET /profesionales/seleccionables (unidad del extra)"
+  },
+  {
+   "accion": "Agendar consumiendo paquete existente o ACTIVANDO paquete nuevo (selector 'Paquete de sesiones')",
+   "ubicacion": "components/agenda/DrawerNuevaCita.tsx (resolverPaquete) ",
+   "endpointsUsados": "GET /paquetes/paciente/:pacienteId; GET /paquetes (plantillas); si 'tpl:' → POST /paquetes/paciente/:pacienteId {paqueteId, fechaCompra, sedeId}; luego POST /citas {paquetePacienteId}"
+  },
+  {
+   "accion": "Flujo MEMBRESÍA-PRIMERO: usar membresía activa o ACTIVAR una nueva al agendar (con vigencia inicio/fin y saldo por ítem)",
+   "ubicacion": "components/agenda/DrawerNuevaCita.tsx (bloque 'Membresía')",
+   "endpointsUsados": "GET /membresias/vendibles; GET /pacientes/:id/paquetes (saldos vía usePaquetesPaciente); si 'tpl:' → POST /membresias/:promoId/vender {pacienteId, sedeId, fechaVenta, fechaFin, subcategorias} antes del POST /citas"
+  },
+  {
+   "accion": "Adjudicación MANUAL de sesión Genexis al agendar (paquete conciliado sin anclar o continuación 'gxtpl' creada por recepción)",
+   "ubicacion": "components/agenda/DrawerNuevaCita.tsx (desplegable '¿Qué sesión corresponde?') + VisorHistorialGenexis",
+   "endpointsUsados": "GET /pacientes/:id/historial-genexis/existe; GET /pacientes/:id/historial-genexis?sede&anio&page&limit (visor); si gxtpl → POST /paquetes/paciente/:id {origenGenexis:true}; POST /citas {sesionNumeroManual}"
+  },
+  {
+   "accion": "Subir comprobante de pago anticipado (click/drag&drop/Ctrl+V)",
+   "ubicacion": "components/agenda/DrawerNuevaCita.tsx",
+   "endpointsUsados": "POST /citas/upload-comprobante (multipart FormData); la URL resultante viaja en POST /citas {comprobanteUrl, comprobanteNombre, comprobanteMimeType}"
+  },
+  {
+   "accion": "Aviso de saldos Genexis pendientes de conciliación al agendar",
+   "ubicacion": "components/agenda/DrawerNuevaCita.tsx (AvisoGenexisSinConciliar)",
+   "endpointsUsados": "GET /conciliacion/pendientes-paciente/:pacienteId"
+  },
+  {
+   "accion": "Marcar LLEGÓ (¿Vino el paciente?)",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "PATCH /citas/:id/estado {estado:'llego'}"
+  },
+  {
+   "accion": "Check-in con CONSUMO de sesión (diálogo de un clic tras marcar llegada; FIFO entre elegibles, respeta candado de sede/vigencia/subcategoría)",
+   "ubicacion": "components/pacientes/SaldoPaquetes.tsx (DialogoConsumo, abierto desde PopoverCita)",
+   "endpointsUsados": "POST /consumos/cita/:citaId {paquetePacienteId}; GET /pacientes/:id/paquetes (saldos previos)"
+  },
+  {
+   "accion": "Marcar NO VINO (no_show)",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "PATCH /citas/:id/estado {estado:'no_show'}"
+  },
+  {
+   "accion": "Marcar EN ATENCIÓN",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "PATCH /citas/:id/estado {estado:'en_atencion'}"
+  },
+  {
+   "accion": "COMPLETAR atención",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "PATCH /citas/:id/estado {estado:'completada'}"
+  },
+  {
+   "accion": "Cancelar cita con motivo (si es bloque combinado cancela ambas citas)",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "PATCH /citas/:id/estado {estado:'cancelada', motivoCancelacion}"
+  },
+  {
+   "accion": "Reprogramar desde popover (panel con días rápidos, selector de profesional y slots con disponibilidad real)",
+   "ubicacion": "components/agenda/PopoverCita.tsx (botón lápiz junto al profesional)",
+   "endpointsUsados": "PATCH /citas/:id/mover {profesionalId, fecha, horaInicio}; soporte: GET /profesionales?sedeId&unidadNegocioId&fecha&activo; GET /citas?sedeId&fecha&unidadNegocioId (slots ocupados); GET /disponibilidad?sede&unidadNegocio&servicio&fecha&profesional"
+  },
+  {
+   "accion": "Asignar/quitar consultorio (chips C1..Cn por sede: Los Olivos 6, San Miguel 4, Lince 9, Paz Soldán 11, One 5)",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "PATCH /citas/:id/consultorio {consultorioNumero|null} (optimista con revert en error)"
+  },
+  {
+   "accion": "Agregar comentario de cita (hilo append-only con autor y hora)",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "PATCH /citas/:id/comentario {comentario} (agrega entrada, no reemplaza)"
+  },
+  {
+   "accion": "Cambiar canal de reserva de una cita existente (select inline)",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "PATCH /citas/:id/canal {canal}; GET /canales (opciones vía useCanales)"
+  },
+  {
+   "accion": "Cambiar/quitar promoción de una cita (solo portadora; la secundaria de un bloque la ve heredada solo-lectura)",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "PATCH /citas/:id/promocion {promocionId|null}; GET /promociones (vía usePromociones)"
+  },
+  {
+   "accion": "Enviar/reenviar correo de confirmación manual de la cita",
+   "ubicacion": "components/agenda/PopoverCita.tsx (bloque 'Confirmación por correo')",
+   "endpointsUsados": "POST /citas/:id/confirmar-mail"
+  },
+  {
+   "accion": "Ver historial del paciente dentro del popover (resumen por servicio + últimas citas)",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "GET /pacientes/:id (incluye historial, proximas, totalCitas, resumenServicios)"
+  },
+  {
+   "accion": "Ver comprobante de pago adjunto (Abrir ↗)",
+   "ubicacion": "components/agenda/PopoverCita.tsx",
+   "endpointsUsados": "window.open(comprobanteUrl) — archivo estático, sin endpoint API"
+  },
+  {
+   "accion": "Toggle 'actualizar datos' del paciente (bandera server-side) → salta a edición de ficha",
+   "ubicacion": "components/pacientes/ToggleDatosPaciente.tsx (en PopoverCita, PacientesPage, ficha)",
+   "endpointsUsados": "ninguno directo; navega a /pacientes/:id?editar=datos (la bandera requiereActualizacionDatos/datosFaltantes viene calculada en GET /citas y GET /pacientes/:id)"
+  },
+  {
+   "accion": "Ver alertas de calidad/atención del paciente (rombo no-show/reprogramador frecuente, badge de asistencia histórica, cuadro de familiares por teléfono)",
+   "ubicacion": "components/pacientes/RomboAlerta.tsx, BadgeAsistencia.tsx, CuadroFamiliares.tsx (en drawer, popover, buscadores, ficha)",
+   "endpointsUsados": "solo lectura: campos alerta/familiares incluidos en GET /citas, GET /pacientes/buscar y GET /pacientes/:id"
+  },
+  {
+   "accion": "Buscador de citas del día por DNI o nombre (botones sobre la agenda)",
+   "ubicacion": "components/agenda/ModalBuscador.tsx (abierto desde AgendaPage)",
+   "endpointsUsados": "GET /pacientes/buscar?q; GET /pacientes/:id (ficha con próximas/historial)"
+  },
+  {
+   "accion": "Acción rápida de estado desde el buscador (✓ Llegó / ▶ En atención)",
+   "ubicacion": "components/agenda/ModalBuscador.tsx",
+   "endpointsUsados": "PATCH /citas/:id/estado"
+  },
+  {
+   "accion": "Edición inline de próxima cita desde el buscador (fecha/hora/profesional)",
+   "ubicacion": "components/agenda/ModalBuscador.tsx",
+   "endpointsUsados": "PATCH /citas/:id/mover; GET /profesionales?sedeId&unidadNegocioId&fecha&activo"
+  },
+  {
+   "accion": "Abrir detalle completo de una cita desde el buscador (→ PopoverCita)",
+   "ubicacion": "components/agenda/ModalBuscador.tsx",
+   "endpointsUsados": "GET /citas/:id"
+  },
+  {
+   "accion": "Ir a la fecha de una cita desde el buscador",
+   "ubicacion": "components/agenda/ModalBuscador.tsx (onIrAFecha)",
+   "endpointsUsados": "ninguno (setFecha en agendaStore → refetch agenda)"
+  },
+  {
+   "accion": "Command palette ⌘K / Ctrl+K / ? (buscar paciente, cambiar sede, navegación rápida)",
+   "ubicacion": "components/agenda/CommandPalette.tsx (montado en Layout)",
+   "endpointsUsados": "GET /pacientes/buscar?q; GET /sedes; navegación client-side (/pacientes/:id, /admin, hoy)"
+  },
+  {
+   "accion": "Atajos de teclado globales: N=nueva cita, T=hoy, 1-5=sede",
+   "ubicacion": "components/agenda/CommandPalette.tsx (dispatch CustomEvent) + AgendaPage listeners",
+   "endpointsUsados": "ninguno directo"
+  },
+  {
+   "accion": "Ver horario semanal base de la sede (indicador de horario del día → modal)",
+   "ubicacion": "components/agenda/ModalHorario.tsx tab 'Horario semanal' (desde HeaderAgenda)",
+   "endpointsUsados": "GET /horarios/:sedeId?fecha (horarioDefault + efectivo)"
+  },
+  {
+   "accion": "Crear/editar EXCEPCIÓN de sede (feriado, cierre, apertura especial con horas y nota)",
+   "ubicacion": "components/agenda/ModalHorario.tsx tab 'Excepciones'",
+   "endpointsUsados": "POST /horarios/:sedeId/excepciones {fecha, abierto, horaApertura, horaCierre, nota}; GET /horarios/:sedeId/excepciones?desde&hasta (lista 60 días)"
+  },
+  {
+   "accion": "Eliminar excepción de sede (vuelve al horario normal)",
+   "ubicacion": "components/agenda/ModalHorario.tsx",
+   "endpointsUsados": "DELETE /horarios/:sedeId/excepciones/:fecha"
+  },
+  {
+   "accion": "Buscar pacientes (página Pacientes)",
+   "ubicacion": "pages/PacientesPage.tsx (PacientesPage)",
+   "endpointsUsados": "GET /pacientes/buscar?q (incluye badge saldo 📦 vía GET /pacientes/:id/paquetes por fila)"
+  },
+  {
+   "accion": "Ver ficha de paciente (datos, próximas citas, historial de atenciones, paquetes)",
+   "ubicacion": "pages/PacientesPage.tsx (FichaPacientePage)",
+   "endpointsUsados": "GET /pacientes/:id; GET /paquetes/paciente/:id; GET /pacientes/:id/paquetes (SaldoPaquetes detalle)"
+  },
+  {
+   "accion": "Editar DATOS del paciente (nombres, doc, teléfono, email, fecha nac., sexo, distrito UBIGEO, país si Extranjero; con autollenado RENIEC no destructivo y resaltado de campos faltantes)",
+   "ubicacion": "pages/PacientesPage.tsx (FichaPacientePage, editandoDatos; se auto-abre con ?editar=datos)",
+   "endpointsUsados": "PATCH /pacientes/:id; GET /reniec/dni/:dni; GET /pacientes/distritos-frecuentes (autocomplete)"
+  },
+  {
+   "accion": "Editar notas generales del paciente",
+   "ubicacion": "pages/PacientesPage.tsx (FichaPacientePage)",
+   "endpointsUsados": "PATCH /pacientes/:id {notas}"
+  },
+  {
+   "accion": "Botón '+ Agendar cita' desde la ficha (navega a agenda y abre el drawer)",
+   "ubicacion": "pages/PacientesPage.tsx (FichaPacientePage)",
+   "endpointsUsados": "ninguno directo (CustomEvent agenda:nueva-cita)"
+  },
+  {
+   "accion": "Registrar CONSUMO MANUAL de sesión (válvula de escape, exige cita del día o motivo)",
+   "ubicacion": "components/pacientes/SaldoPaquetes.tsx (ConsumoManualForm, variante detalle en ficha)",
+   "endpointsUsados": "POST /consumos/manual {paquetePacienteId, citaId?, motivo?}"
+  },
+  {
+   "accion": "ANULAR consumo de sesión con motivo (solo admin)",
+   "ubicacion": "components/pacientes/SaldoPaquetes.tsx (timeline de consumos)",
+   "endpointsUsados": "POST /consumos/:consumoId/anular {motivo}"
+  },
+  {
+   "accion": "Corregir TAMAÑO de paquete (solo admin; ej. 12→4 con preview y motivo obligatorio)",
+   "ubicacion": "components/pacientes/SaldoPaquetes.tsx (CorregirTamanoForm)",
+   "endpointsUsados": "PATCH /paquetes/instancia/:paquetePacienteId/tamano {sesionesTotal, motivo}"
+  },
+  {
+   "accion": "Ver Historial Genexis (visor solo-lectura con filtros sede/año y paginación; botón visible solo si existe historia)",
+   "ubicacion": "components/pacientes/HistorialGenexis.tsx (BotonHistorialGenexis/VisorHistorialGenexis; en popover, ficha, drawer, SaldoPaquetes)",
+   "endpointsUsados": "GET /pacientes/:id/historial-genexis/existe; GET /pacientes/:id/historial-genexis?sede&anio&page&limit; GET /sedes (filtro)"
+  },
+  {
+   "accion": "Ver tablero de MOVIMIENTOS de sede (hoy por sede / próximos / historial)",
+   "ubicacion": "pages/MovimientosPage.tsx",
+   "endpointsUsados": "GET /movimientos; GET /movimientos?estado=proximo; GET /movimientos?estado=historial; GET /sedes"
+  },
+  {
+   "accion": "Crear movimiento de sede (con preview de impacto en asignaciones y verificación de citas pendientes)",
+   "ubicacion": "components/movimientos/MovimientoModal.tsx",
+   "endpointsUsados": "POST /movimientos {profesionalId, sedeId, fechaInicio, fechaFin?, motivo, reemplazaA?, notas?}; GET /movimientos/preview; GET /movimientos/verificar-citas?profesionalId&fechaInicio&fechaFin"
+  },
+  {
+   "accion": "Editar movimiento",
+   "ubicacion": "components/movimientos/MovimientoModal.tsx",
+   "endpointsUsados": "PUT /movimientos/:id; GET /movimientos/preview; GET /movimientos/verificar-citas"
+  },
+  {
+   "accion": "Eliminar movimiento (con chequeo de impacto previo)",
+   "ubicacion": "pages/MovimientosPage.tsx",
+   "endpointsUsados": "DELETE /movimientos/:id; GET /movimientos/:id/impacto (confirmación)"
+  },
+  {
+   "accion": "Gestionar citas pendientes bloqueantes de un movimiento (cancelar o marcar reprogramada una por una)",
+   "ubicacion": "components/movimientos/MovimientoModal.tsx (lista de VerificarCitasResult)",
+   "endpointsUsados": "PATCH /citas/:id/gestionar-movimiento {estado:'cancelada'|'reprogramada', motivo?}; re-GET /movimientos/verificar-citas tras cada una"
+  },
+  {
+   "accion": "Exportar lista de citas del día a CSV (para confirmaciones WhatsApp; filtro por sede o todas)",
+   "ubicacion": "pages/HerramientasPage.tsx (ExcelTool)",
+   "endpointsUsados": "GET /exportar/citas?fecha&sedeId (descarga blob); GET /sedes"
+  },
+  {
+   "accion": "Exportar historial de atenciones de un paciente a PDF",
+   "ubicacion": "pages/HerramientasPage.tsx (PdfHistorialTool)",
+   "endpointsUsados": "GET /pacientes/buscar?q (elegir paciente); GET /exportar/historial/:pacienteId (descarga blob)"
+  },
+  {
+   "accion": "Exportar reporte de Reactivación de Pacientes a Excel (filtros sede/servicio/rango)",
+   "ubicacion": "pages/HerramientasPage.tsx (ReactivacionTool)",
+   "endpointsUsados": "GET /exportar/reactivacion?params (descarga blob); GET /sedes; GET /servicios?activo"
+  },
+  {
+   "accion": "Navegar a las sub-herramientas desde el hub de Herramientas (tarjetas)",
+   "ubicacion": "pages/HerramientasPage.tsx (VistaInicio)",
+   "endpointsUsados": "ninguno (navegación a /herramientas/{recordatorios,almuerzos,horarios,permisos,dias-especiales,reportes-rrhh,canales,membresias,conciliacion,promociones,combinaciones,baro-solicitud,confirmacion-mail,videos-servicio})"
+  },
+  {
+   "accion": "Asignar ALMUERZO a un profesional (bloqueo de 1h con hora de inicio elegida)",
+   "ubicacion": "pages/herramientas/AlmuerzosPage.tsx",
+   "endpointsUsados": "POST /almuerzos {profesionalId, sedeId, horaInicio}; GET /almuerzos?sedeId; GET /profesionales?sedeId&activo; GET /sedes"
+  },
+  {
+   "accion": "Eliminar almuerzo",
+   "ubicacion": "pages/herramientas/AlmuerzosPage.tsx",
+   "endpointsUsados": "DELETE /almuerzos/:id"
+  },
+  {
+   "accion": "Bloquear PERMISO a uno o varios profesionales a la vez (reporta conflictos con citas)",
+   "ubicacion": "pages/herramientas/PermisosPage.tsx",
+   "endpointsUsados": "POST /permisos/multiple {profesionalIds[], sedeId, fecha, horaInicio, horaFin, motivo} (devuelve creados/conflictos/invalidos); GET /permisos?sedeId&fecha; GET /profesionales?sedeId&fecha&activo; GET /sedes"
+  },
+  {
+   "accion": "Crear REUNIÓN administrativa (Daniel, Yasica o ambos → bloqueo verde en todas las sedes)",
+   "ubicacion": "pages/herramientas/PermisosPage.tsx",
+   "endpointsUsados": "POST /permisos/reunion {fecha, horaInicio, horaFin, motivo, destinatario:'daniel'|'yasica'|'ambos'}"
+  },
+  {
+   "accion": "Eliminar permiso/bloqueo/reunión",
+   "ubicacion": "pages/herramientas/PermisosPage.tsx",
+   "endpointsUsados": "DELETE /permisos/:id"
+  },
+  {
+   "accion": "Horarios del personal — SEMANA TIPO: ver y guardar turno semanal permanente por trabajador (con 'forzar' si hay conflictos)",
+   "ubicacion": "pages/herramientas/HorariosPage.tsx tab 'semana' → HorariosPersonalPage.tsx (SemanaTipoContent)",
+   "endpointsUsados": "GET /profesionales?activo; GET /profesionales/:id/horario; PUT /profesionales/:id/horario {dias[{diaSemana,horaInicio,horaFin}], forzar?}"
+  },
+  {
+   "accion": "Horarios del personal — ENTRADA 8/9 por semana (toggle por día y podóloga, multi-fecha, con forzar)",
+   "ubicacion": "pages/herramientas/HorariosPage.tsx tab 'fechas' → HorariosEntradaPage.tsx (AjustesFechaContent)",
+   "endpointsUsados": "GET /profesionales/horarios-entrada?sedeId&semana; PATCH /profesionales/:id/entrada {fechas[], horaInicio:'08:00'|'09:00', forzar?}; GET /sedes"
+  },
+  {
+   "accion": "Horarios del personal — PRESENCIA en día excepcional habilitado (domingo/feriado abierto: quién viene y a qué hora)",
+   "ubicacion": "pages/herramientas/HorariosEntradaPage.tsx (dentro de tab 'fechas')",
+   "endpointsUsados": "GET /profesionales/personal-excepcion?sedeId&fecha; PATCH /profesionales/:id/presencia-excepcion {sedeId, fecha, presente, horaInicio?}"
+  },
+  {
+   "accion": "DÍAS ESPECIALES: marcar quién trabaja / traer podóloga de otra sede (multi-fechas, entrada 8/9)",
+   "ubicacion": "pages/herramientas/DiasEspecialesPage.tsx",
+   "endpointsUsados": "GET /profesionales/dia-especial?sedeId&fecha; POST /profesionales/dia-especial/set {profesionalId, sedeId, fechas[], viene, horaInicio?}; GET /horarios/:sedeId/excepciones?desde&hasta (próximos 90 días); GET /sedes"
+  },
+  {
+   "accion": "Gestión de CANALES de reserva (crear, renombrar, activar/desactivar, eliminar)",
+   "ubicacion": "pages/herramientas/CanalesPage.tsx",
+   "endpointsUsados": "GET /canales/todos; POST /canales {etiqueta}; PATCH /canales/:id {etiqueta|activo|orden}; DELETE /canales/:id (desactiva si está en uso)"
+  },
+  {
+   "accion": "Gestión de PROMOCIONES (crear con tipo PRECIO_FIJO/PORCENTAJE/OTRO y valor, editar, activar/desactivar, eliminar)",
+   "ubicacion": "pages/herramientas/PromocionesPage.tsx",
+   "endpointsUsados": "GET /promociones/todas; POST /promociones; PATCH /promociones/:id; DELETE /promociones/:id (desactiva si está en uso)"
+  },
+  {
+   "accion": "Constructor de MEMBRESÍAS: listar, crear, editar (snapshot: ventas previas intactas), eliminar, reactivar",
+   "ubicacion": "pages/herramientas/MembresiasPage.tsx",
+   "endpointsUsados": "GET /membresias; POST /membresias {nombre, duracionMeses, precio, sedesHabilitadas[], composicion[{servicioId,cantidad,subcategoriaId?}]}; PATCH /membresias/:id; DELETE /membresias/:id; POST /membresias/:id/activar; GET /sedes; GET /servicios?activo"
+  },
+  {
+   "accion": "VENDER membresía a un paciente (sede candado, vigencia inicio/fin editable, elección de subcategorías no fijadas)",
+   "ubicacion": "pages/herramientas/MembresiasPage.tsx (modal Vender)",
+   "endpointsUsados": "POST /membresias/:id/vender {pacienteId, sedeId, fechaVenta, fechaFin, subcategorias[]}; GET /pacientes/buscar?q; GET /servicios?activo (subcategorías)"
+  },
+  {
+   "accion": "CONCILIACIÓN Genexis: listar aperturas propuestas con filtros",
+   "ubicacion": "pages/herramientas/ConciliacionPage.tsx",
+   "endpointsUsados": "GET /conciliacion/aperturas?params"
+  },
+  {
+   "accion": "Aprobar apertura de saldo Genexis (con posible edición del consumo aprobado / ajuste pro-cliente)",
+   "ubicacion": "pages/herramientas/ConciliacionPage.tsx",
+   "endpointsUsados": "POST /conciliacion/aperturas/:id/aprobar {…}"
+  },
+  {
+   "accion": "Descartar apertura Genexis con motivo",
+   "ubicacion": "pages/herramientas/ConciliacionPage.tsx",
+   "endpointsUsados": "POST /conciliacion/aperturas/:id/descartar {motivo}"
+  },
+  {
+   "accion": "Aprobar EN BLOQUE por nivel de confianza",
+   "ubicacion": "pages/herramientas/ConciliacionPage.tsx",
+   "endpointsUsados": "POST /conciliacion/aperturas/aprobar-bloque {confianza}"
+  },
+  {
+   "accion": "Cerrar la conciliación (opcionalmente confirmando pendientes)",
+   "ubicacion": "pages/herramientas/ConciliacionPage.tsx",
+   "endpointsUsados": "POST /conciliacion/cerrar {confirmarPendientes}"
+  },
+  {
+   "accion": "Ver evidencia Genexis de una apertura",
+   "ubicacion": "pages/herramientas/ConciliacionPage.tsx",
+   "endpointsUsados": "GET /conciliacion/aperturas/:id/evidencia"
+  },
+  {
+   "accion": "Panel de RECORDATORIOS: tabla del día + métricas (filtros fecha/rango/sede/profesional/estado)",
+   "ubicacion": "pages/herramientas/RecordatoriosPanel.tsx",
+   "endpointsUsados": "GET /recordatorios/dia?filtros; GET /recordatorios/metricas?filtros; GET /sedes"
+  },
+  {
+   "accion": "Reenviar recordatorio de una cita",
+   "ubicacion": "pages/herramientas/RecordatoriosPanel.tsx",
+   "endpointsUsados": "POST /recordatorios/:citaId/reenviar"
+  },
+  {
+   "accion": "Configurar remitente del correo de confirmación (fromEmail/fromName)",
+   "ubicacion": "pages/herramientas/ConfirmacionMailPage.tsx",
+   "endpointsUsados": "GET /herramientas/mail-config; PUT /herramientas/mail-config {fromEmail, fromName}"
+  },
+  {
+   "accion": "Ver estado del dominio de envío en Resend (verified/pending/failed) + reintentar",
+   "ubicacion": "pages/herramientas/ConfirmacionMailPage.tsx",
+   "endpointsUsados": "GET /herramientas/mail-config/dominio"
+  },
+  {
+   "accion": "Enviar correo de PRUEBA",
+   "ubicacion": "pages/herramientas/ConfirmacionMailPage.tsx",
+   "endpointsUsados": "POST /herramientas/mail-config/test {to}"
+  },
+  {
+   "accion": "Baropodometría por solicitud: agregar/quitar médicos elegibles 'solo por solicitud'",
+   "ubicacion": "pages/herramientas/BaroSolicitudPage.tsx",
+   "endpointsUsados": "GET /baro-solicitud; POST /baro-solicitud/:profesionalId; DELETE /baro-solicitud/:profesionalId"
+  },
+  {
+   "accion": "Configurar BLOQUES COMBINADOS: fijar/quitar servicio ancla, agregar extra combinable, activar/pausar, quitar",
+   "ubicacion": "pages/herramientas/CombinacionesPage.tsx",
+   "endpointsUsados": "GET /combinaciones/admin; GET /combinaciones/config; PUT /combinaciones/ancla {servicioAnclaId|null}; POST /combinaciones {servicioExtraId}; PATCH /combinaciones/:id {activo}; DELETE /combinaciones/:id; GET /servicios?activo"
+  },
+  {
+   "accion": "VIDEOS por servicio: seleccionar servicio y listar sus videos educativos",
+   "ubicacion": "pages/herramientas/VideosServicioPage.tsx",
+   "endpointsUsados": "GET /servicio-videos/resumen; GET /servicio-videos?servicioId"
+  },
+  {
+   "accion": "Crear/editar video de servicio (YouTube URL, asunto, cuerpo, momento ANTES/DESPUÉS + offset horas/días/meses/años)",
+   "ubicacion": "pages/herramientas/VideosServicioPage.tsx (modal)",
+   "endpointsUsados": "POST /servicio-videos; PUT /servicio-videos/:id"
+  },
+  {
+   "accion": "Pausar/reactivar video (toggle)",
+   "ubicacion": "pages/herramientas/VideosServicioPage.tsx",
+   "endpointsUsados": "PATCH /servicio-videos/:id/toggle"
+  },
+  {
+   "accion": "Eliminar video (cancela envíos programados)",
+   "ubicacion": "pages/herramientas/VideosServicioPage.tsx",
+   "endpointsUsados": "DELETE /servicio-videos/:id"
+  },
+  {
+   "accion": "Enviar TEST del correo de video",
+   "ubicacion": "pages/herramientas/VideosServicioPage.tsx",
+   "endpointsUsados": "POST /servicio-videos/:id/test-envio"
+  },
+  {
+   "accion": "Vista previa del correo del video (mismo motor que el envío real)",
+   "ubicacion": "pages/herramientas/VideosServicioPage.tsx",
+   "endpointsUsados": "POST /servicio-videos/preview {asunto, tituloVideo, cuerpoTexto, youtubeUrl}"
+  },
+  {
+   "accion": "Ver historial de envíos de videos (filtros)",
+   "ubicacion": "pages/herramientas/VideosServicioPage.tsx",
+   "endpointsUsados": "GET /servicio-videos/historial?params"
+  },
+  {
+   "accion": "Lista de EXCLUSIÓN de videos: agregar/quitar email suprimido",
+   "ubicacion": "pages/herramientas/VideosServicioPage.tsx",
+   "endpointsUsados": "GET /servicio-videos/supresiones; POST /servicio-videos/supresiones {email, motivo?}; DELETE /servicio-videos/supresiones/:id"
+  },
+  {
+   "accion": "Reporte RRHH — HORAS EXTRA (rango + sede) y exportar CSV",
+   "ubicacion": "pages/herramientas/ReportesRrhhPage.tsx (tab horas extra)",
+   "endpointsUsados": "GET /reportes/horas-extra?desde&hasta&sedeId; GET /sedes; CSV generado client-side (Blob)"
+  },
+  {
+   "accion": "Reporte RRHH — ROTACIÓN intersedes (sede base vs préstamos, timeline) y exportar CSV",
+   "ubicacion": "pages/herramientas/ReportesRrhhPage.tsx (tab rotación)",
+   "endpointsUsados": "GET /reportes/rotacion?desde&hasta&sedeId; CSV client-side. (PATCH /reportes/meta/:profesionalId existe en api/reportes.ts pero NO está cableado a la UI actualmente)"
+  },
+  {
+   "accion": "Admin — Matriz de COMPETENCIAS: activar/desactivar servicio×profesional",
+   "ubicacion": "pages/AdminPage.tsx tab 'Competencias' (MatrizCompetencias)",
+   "endpointsUsados": "GET /competencias; POST /competencias/toggle {profesionalId, servicioId, activa}; GET /sedes; GET /profesionales?activo; GET /servicios?activo"
+  },
+  {
+   "accion": "Admin — PLANTILLAS DE PAQUETES: crear, editar, eliminar",
+   "ubicacion": "pages/AdminPage.tsx tab 'Paquetes' (GestionPaquetes)",
+   "endpointsUsados": "GET /paquetes; POST /paquetes {nombre, servicioId, totalSesiones, consumeNoShow?, precio?}; PATCH /paquetes/:id; DELETE /paquetes/:id"
+  },
+  {
+   "accion": "Admin — PODÓLOGAS/PROFESIONALES: crear y editar (nombre, tipo, unidad, color, activo)",
+   "ubicacion": "pages/AdminPage.tsx tab 'Podólogas' (GestionProfesionales)",
+   "endpointsUsados": "GET /profesionales; POST /profesionales; PATCH /profesionales/:id; GET /sedes"
+  },
+  {
+   "accion": "Admin — SERVICIOS: crear, editar, activar/desactivar",
+   "ubicacion": "pages/AdminPage.tsx tab 'Servicios' (GestionServicios)",
+   "endpointsUsados": "GET /servicios; POST /servicios {nombre, codigo?, duracionMinutos, color, precioReferencial?, unidadNegocioId}; PATCH /servicios/:id (incluye {activo})"
+  },
+  {
+   "accion": "Admin — SUBCATEGORÍAS de servicio (ej. Profilaxis Regular/Premium): crear, editar, activar/desactivar, eliminar",
+   "ubicacion": "pages/AdminPage.tsx (GestionSubcategorias dentro de tab Servicios)",
+   "endpointsUsados": "GET /servicios/:servicioId/subcategorias; POST /servicios/:servicioId/subcategorias; PATCH /servicios/subcategorias/:subId; DELETE /servicios/subcategorias/:subId"
+  },
+  {
+   "accion": "Admin — Visor de AUDITORÍA (rango de fechas)",
+   "ubicacion": "pages/AdminPage.tsx tab 'Auditoría' (VisorAuditoria)",
+   "endpointsUsados": "GET /audit?desde&hasta&limit=100"
+  },
+  {
+   "accion": "Gestión de USUARIOS: crear, editar (nombre/email/password/rol/activo), activar/desactivar (no puede desactivarse a sí mismo)",
+   "ubicacion": "pages/admin/UsersPage.tsx",
+   "endpointsUsados": "GET /users; POST /users; PUT /users/:id (edición y toggle activo); GET /roles (selector)"
+  },
+  {
+   "accion": "Gestión de ROLES y permisos: crear rol, editar label/descripción/permisos por grupo, eliminar (no roles de sistema)",
+   "ubicacion": "pages/admin/RolesPage.tsx",
+   "endpointsUsados": "GET /roles; GET /roles/permisos; POST /roles; PATCH /roles/:id; DELETE /roles/:id"
+  },
+  {
+   "accion": "NOTIFICACIONES internas (admin): listar, crear (mensaje, vigencia, todas las sedes o selección), editar, eliminar",
+   "ubicacion": "pages/NotificacionesAdminPage.tsx",
+   "endpointsUsados": "GET /notificaciones/admin; POST /notificaciones/admin; PUT /notificaciones/admin/:id; DELETE /notificaciones/admin/:id; GET /sedes"
+  },
+  {
+   "accion": "Analytics — Dashboard principal (KPIs del período + resumen de agentes) con barra de filtros global (rango, sede, unidad)",
+   "ubicacion": "pages/AnalyticsPage.tsx + pages/analytics/GlobalFilterBar.tsx",
+   "endpointsUsados": "GET /analytics/kpis?desde&hasta&filtros; GET /analytics/agentes/resumen; GET /analytics/unidades; GET /sedes"
+  },
+  {
+   "accion": "Analytics — Detalle por KPI (click en tarjeta → /analytics/:kpi): tendencia, servicios, heatmap día×hora, profesionales, no-show, caseload, canales, promociones, sedes",
+   "ubicacion": "pages/analytics/AnalyticsDetallePage.tsx + pages/analytics/kpis.tsx (hooks)",
+   "endpointsUsados": "GET /analytics/tendencia (granularidad auto/día/semana/mes); GET /analytics/servicios; GET /analytics/heatmap; GET /analytics/profesionales; GET /analytics/noshow; GET /analytics/caseload; GET /analytics/canales; GET /analytics/promociones; GET /analytics/sedes. (POST /analytics/recalcular/hoy existe en api/analytics.ts pero sin botón en la UI)"
+  },
+  {
+   "accion": "Analytics Agentes — Resumen de desempeño (volumen, gestión, calidad, conversión, tendencia semanal) con filtros sede/área/servicio/canal",
+   "ubicacion": "pages/analytics/agentes/AgentesResumenPage.tsx + AgentesFilterBar.tsx",
+   "endpointsUsados": "GET /analytics/agentes/resumen?desde&hasta&filtros; GET /sedes"
+  },
+  {
+   "accion": "Analytics Agentes — Comparativa (selección de agentes)",
+   "ubicacion": "pages/analytics/agentes/AgentesComparativaPage.tsx",
+   "endpointsUsados": "GET /analytics/agentes/lista; GET /analytics/agentes/comparativa?ids=a,b,c&filtros"
+  },
+  {
+   "accion": "Analytics Agentes — Detalle de un agente (KPIs, citas paginadas, timeline de auditoría)",
+   "ubicacion": "pages/analytics/agentes/AgenteDetallePage.tsx",
+   "endpointsUsados": "GET /analytics/agentes/agente/:id; GET /analytics/agentes/agente/:id/citas?page; GET /analytics/agentes/timeline/:id?page"
+  },
+  {
+   "accion": "Analytics Agentes — Reporte de recitación (definido en el cliente API; usado por vistas de agentes)",
+   "ubicacion": "api/analyticsAgentes.ts (agentesApi.recitacion)",
+   "endpointsUsados": "GET /analytics/agentes/recitacion?desde&hasta&filtros"
+  },
+  {
+   "accion": "Navegación por Sidebar (Agenda, Pacientes, Movimientos, Herramientas, Analytics, Admin, Usuarios, Roles, Notificaciones — según permisos del rol)",
+   "ubicacion": "components/layout/Sidebar.tsx + Layout.tsx",
+   "endpointsUsados": "ninguno directo (rutas client-side definidas en App.tsx)"
+  }
+ ]
+}

@@ -1,0 +1,571 @@
+{"t":1783709038457,"tipo":"feriado_creado","sede":"Los Olivos","status":200}
+{"t":1783709038465,"tipo":"feriado_creado","sede":"One","status":200}
+{"t":1783709038472,"tipo":"feriado_creado","sede":"San Miguel","status":200}
+{"t":1783709038482,"tipo":"feriado_creado","sede":"Lince","status":200}
+{"t":1783709038489,"tipo":"feriado_creado","sede":"Paz Soldán","status":200}
+{"t":1783709039665,"tipo":"reprogramada","citaId":"cb9d88ea-bfde-483a-8a71-8777c8733a74","intento":1}
+{"t":1783709039670,"tipo":"reprogramada","citaId":"0015e60b-522f-4969-b09b-e20c158bff2d","intento":1}
+{"t":1783709039763,"tipo":"reprogramada","citaId":"8cc6aecf-7508-474a-bdbf-8a15c4dbcd7b","intento":1}
+{"t":1783709039950,"tipo":"reprogramada","citaId":"0015e60b-522f-4969-b09b-e20c158bff2d","intento":2}
+{"t":1783709040095,"tipo":"reprogramada","citaId":"8cc6aecf-7508-474a-bdbf-8a15c4dbcd7b","intento":2}
+{"t":1783709040378,"tipo":"reprogramada","citaId":"0015e60b-522f-4969-b09b-e20c158bff2d","intento":3}
+{"t":1783709040439,"tipo":"reprogramada","citaId":"212b971b-940d-424e-ad92-ca80eb661af0","intento":1}
+{"t":1783709040633,"tipo":"reprogramada","citaId":"8cc6aecf-7508-474a-bdbf-8a15c4dbcd7b","intento":3}
+{"t":1783709040634,"tipo":"reprogramada","citaId":"f9e9cc7d-45d7-4c0a-8ad1-43539a4b28b3","intento":1}
+{"t":1783709040675,"tipo":"reprogramada","citaId":"d897b79d-2cd0-4f76-9766-d92f8c992f07","intento":1}
+{"t":1783709041060,"tipo":"reprogramada","citaId":"9b766c30-8369-48d3-953f-a34c8a27c871","intento":1}
+{"t":1783709041107,"tipo":"reprogramada","citaId":"494c9631-67e2-436b-b96c-fcbeb39afd42","intento":1}
+{"t":1783709041587,"tipo":"reprogramada","citaId":"9b766c30-8369-48d3-953f-a34c8a27c871","intento":2}
+{"t":1783709041862,"tipo":"reprogramada","citaId":"51ea71bc-36f6-4d7c-8ed4-b4521fc54adf","intento":1}
+{"t":1783709041896,"tipo":"reprogramada","citaId":"77bd0534-9a46-43dd-8af7-4df2bba3fd61","intento":1}
+{"t":1783709041936,"tipo":"reprogramada","citaId":"9b766c30-8369-48d3-953f-a34c8a27c871","intento":3}
+{"t":1783709042055,"tipo":"reprogramada","citaId":"b8f45782-f0ab-4144-a3b5-4eda48d49899","intento":1}
+{"t":1783709042179,"tipo":"reprogramada","citaId":"77bd0534-9a46-43dd-8af7-4df2bba3fd61","intento":2}
+{"t":1783709042345,"tipo":"reprogramada","citaId":"51ea71bc-36f6-4d7c-8ed4-b4521fc54adf","intento":2}
+{"t":1783709042539,"tipo":"reprogramada","citaId":"77bd0534-9a46-43dd-8af7-4df2bba3fd61","intento":3}
+{"t":1783709042601,"tipo":"reprogramada","citaId":"c56ee95c-133b-42d1-a5ad-6eca67ff1c7b","intento":1}
+{"t":1783709043284,"tipo":"reprogramada","citaId":"0c5a97c7-80ad-4078-8263-03b7ef5c6009","intento":1}
+{"t":1783709043344,"tipo":"reprogramada","citaId":"c56ee95c-133b-42d1-a5ad-6eca67ff1c7b","intento":2}
+{"t":1783709043871,"tipo":"reprogramada","citaId":"0c5a97c7-80ad-4078-8263-03b7ef5c6009","intento":2}
+{"t":1783709044006,"tipo":"reprogramada","citaId":"e4b0b6d6-2295-42db-8783-6f2e42880a86","intento":1}
+{"t":1783709044007,"tipo":"reprogramada","citaId":"97e3520d-d1be-4162-9b1f-deb2437d3ec5","intento":1}
+{"t":1783709044280,"tipo":"reprogramada","citaId":"0c5a97c7-80ad-4078-8263-03b7ef5c6009","intento":3}
+{"t":1783709044320,"tipo":"reprogramada","citaId":"808a7dd1-e4ad-478b-9d8e-7b57692ffc7c","intento":1}
+{"t":1783709044405,"tipo":"reprogramada","citaId":"e4b0b6d6-2295-42db-8783-6f2e42880a86","intento":2}
+{"t":1783709044538,"tipo":"reprogramada","citaId":"97e3520d-d1be-4162-9b1f-deb2437d3ec5","intento":2}
+{"t":1783709044917,"tipo":"reprogramada","citaId":"808a7dd1-e4ad-478b-9d8e-7b57692ffc7c","intento":2}
+{"t":1783709045212,"tipo":"reprogramada","citaId":"7725c915-047d-4040-9156-76a63a3762de","intento":1}
+{"t":1783709045312,"tipo":"reprogramada","citaId":"97e3520d-d1be-4162-9b1f-deb2437d3ec5","intento":3}
+{"t":1783709045461,"tipo":"reprogramada","citaId":"35bd58c9-a473-4c8e-ab8e-798732e65ac0","intento":1}
+{"t":1783709045489,"tipo":"reprogramada","citaId":"808a7dd1-e4ad-478b-9d8e-7b57692ffc7c","intento":3}
+{"t":1783709045539,"tipo":"reprogramada","citaId":"0a15022c-b8fb-4c44-b234-95b195dcc1b7","intento":1}
+{"t":1783709045578,"tipo":"reprogramada","citaId":"7725c915-047d-4040-9156-76a63a3762de","intento":2}
+{"t":1783709045738,"tipo":"reprogramada","citaId":"1f6f0f72-7794-496d-835b-5ce3b80e38ff","intento":1}
+{"t":1783709045747,"tipo":"reprogramada","citaId":"1ae6151f-94f0-4f8d-8bd1-8d33204fd6a6","intento":1}
+{"t":1783709045807,"tipo":"carrera_slot","contexto":"mover","citaId":"0a15022c-b8fb-4c44-b234-95b195dcc1b7"}
+{"t":1783709045888,"tipo":"reprogramada","citaId":"7725c915-047d-4040-9156-76a63a3762de","intento":3}
+{"t":1783709045909,"tipo":"reprogramada","citaId":"e33a17fc-50fc-4bbe-98b9-4c80ce32ecae","intento":1}
+{"t":1783709046038,"tipo":"reprogramada","citaId":"1f6f0f72-7794-496d-835b-5ce3b80e38ff","intento":2}
+{"t":1783709046080,"tipo":"reprogramada","citaId":"06480d6f-b6ac-4102-b6d8-67c2d38db7d2","intento":1}
+{"t":1783709046163,"tipo":"reprogramada","citaId":"a54e6573-a3ba-4c2b-80bc-8977124f43d7","intento":1}
+{"t":1783709046164,"tipo":"reprogramada","citaId":"0a15022c-b8fb-4c44-b234-95b195dcc1b7","intento":3}
+{"t":1783709046233,"tipo":"carrera_slot","contexto":"mover","citaId":"e33a17fc-50fc-4bbe-98b9-4c80ce32ecae"}
+{"t":1783709046382,"tipo":"reprogramada","citaId":"1f6f0f72-7794-496d-835b-5ce3b80e38ff","intento":3}
+{"t":1783709046439,"tipo":"reprogramada","citaId":"06480d6f-b6ac-4102-b6d8-67c2d38db7d2","intento":2}
+{"t":1783709046531,"tipo":"reprogramada","citaId":"a54e6573-a3ba-4c2b-80bc-8977124f43d7","intento":2}
+{"t":1783709046772,"tipo":"reprogramada","citaId":"e33a17fc-50fc-4bbe-98b9-4c80ce32ecae","intento":3}
+{"t":1783709047074,"tipo":"reprogramada","citaId":"a54e6573-a3ba-4c2b-80bc-8977124f43d7","intento":3}
+{"t":1783709047264,"tipo":"reprogramada","citaId":"e4256e9d-2cec-4571-9d6a-3cbe4a18ed2f","intento":1}
+{"t":1783709047274,"tipo":"reprogramada","citaId":"09c179b7-fbbd-4539-92f5-9b043d78f566","intento":1}
+{"t":1783709047628,"tipo":"reprogramada","citaId":"09c179b7-fbbd-4539-92f5-9b043d78f566","intento":2}
+{"t":1783709047916,"tipo":"carrera_slot","quien":"sim.recep03@simulacion.local","fecha":"2026-07-31","hora":"10:30","error":"PROFESIONAL_OCUPADO"}
+{"t":1783709048035,"tipo":"reprogramada","citaId":"09c179b7-fbbd-4539-92f5-9b043d78f566","intento":3}
+{"t":1783709048423,"tipo":"reprogramada","citaId":"c8e2de3c-4d02-4fee-b8b6-ce2504d6fc6a","intento":1}
+{"t":1783709048679,"tipo":"reprogramada","citaId":"2b66ca70-59e0-4164-a584-6f8675f78023","intento":1}
+{"t":1783709048858,"tipo":"reprogramada","citaId":"b2cb3324-aa02-4d21-9f00-abb1212d25ed","intento":1}
+{"t":1783709048858,"tipo":"reprogramada","citaId":"c8e2de3c-4d02-4fee-b8b6-ce2504d6fc6a","intento":2}
+{"t":1783709048920,"tipo":"carrera_slot","contexto":"mover","citaId":"51c89162-b7b4-4c16-a2c6-4efa547b8c6e"}
+{"t":1783709048953,"tipo":"reprogramada","citaId":"2b66ca70-59e0-4164-a584-6f8675f78023","intento":2}
+{"t":1783709048953,"tipo":"reprogramada","citaId":"aa65e830-d78c-4bfb-8c63-bd6cd6057578","intento":1}
+{"t":1783709049004,"tipo":"reprogramada","citaId":"722c1c23-1c2d-48a6-b91a-3ed785b480a8","intento":1}
+{"t":1783709049450,"tipo":"reprogramada","citaId":"b2cb3324-aa02-4d21-9f00-abb1212d25ed","intento":2}
+{"t":1783709049450,"tipo":"reprogramada","citaId":"2b66ca70-59e0-4164-a584-6f8675f78023","intento":3}
+{"t":1783709049529,"tipo":"reprogramada","citaId":"2858134b-6a43-486d-96de-9fc0e376fda7","intento":1}
+{"t":1783709049849,"tipo":"reprogramada","citaId":"b2cb3324-aa02-4d21-9f00-abb1212d25ed","intento":3}
+{"t":1783709050054,"tipo":"reprogramada","citaId":"2858134b-6a43-486d-96de-9fc0e376fda7","intento":2}
+{"t":1783709050095,"tipo":"reprogramada","citaId":"ec01fe29-ee4d-41cc-8c82-5d186c7c93a0","intento":1}
+{"t":1783709050150,"tipo":"reprogramada","citaId":"ae38695c-a23b-45bc-af9d-b9e09ed1e6e1","intento":1}
+{"t":1783709050542,"tipo":"reprogramada","citaId":"b048dac7-cb52-404e-83bf-679b8bbfa2f4","intento":1}
+{"t":1783709050548,"tipo":"reprogramada","citaId":"baec88df-dd60-4c0e-9aee-bfb905d1cccd","intento":1}
+{"t":1783709050763,"tipo":"reprogramada","citaId":"ec01fe29-ee4d-41cc-8c82-5d186c7c93a0","intento":2}
+{"t":1783709050858,"tipo":"reprogramada","citaId":"e1ffd64b-a3a1-4f3a-95ad-328bc04e51a5","intento":1}
+{"t":1783709050878,"tipo":"reprogramada","citaId":"b048dac7-cb52-404e-83bf-679b8bbfa2f4","intento":2}
+{"t":1783709051261,"tipo":"reprogramada","citaId":"b048dac7-cb52-404e-83bf-679b8bbfa2f4","intento":3}
+{"t":1783709051308,"tipo":"reprogramada","citaId":"e1ffd64b-a3a1-4f3a-95ad-328bc04e51a5","intento":2}
+{"t":1783709051404,"tipo":"reprogramada","citaId":"7b289929-b360-4134-b974-56b928c1dcd0","intento":1}
+{"t":1783709051405,"tipo":"reprogramada","citaId":"45e89045-584c-46c5-9a49-31b9aa42ccfd","intento":1}
+{"t":1783709051648,"tipo":"reprogramada","citaId":"265df74b-8fd8-43c9-9663-aa2ba2f9925f","intento":1}
+{"t":1783709051716,"tipo":"reprogramada","citaId":"e1ffd64b-a3a1-4f3a-95ad-328bc04e51a5","intento":3}
+{"t":1783709051771,"tipo":"reprogramada","citaId":"45e89045-584c-46c5-9a49-31b9aa42ccfd","intento":2}
+{"t":1783709051953,"tipo":"reprogramada","citaId":"e90ec021-3c0e-4fca-821c-3689a2973549","intento":1}
+{"t":1783709051957,"tipo":"carrera_slot","quien":"sim.recep03@simulacion.local","fecha":"2026-07-30","hora":"11:00","error":"PROFESIONAL_OCUPADO"}
+{"t":1783709052299,"tipo":"reprogramada","citaId":"265df74b-8fd8-43c9-9663-aa2ba2f9925f","intento":2}
+{"t":1783709052368,"tipo":"reprogramada","citaId":"e90ec021-3c0e-4fca-821c-3689a2973549","intento":2}
+{"t":1783709052368,"tipo":"reprogramada","citaId":"e4c30c50-502a-4d6e-9e65-09eb52ec5e80","intento":1}
+{"t":1783709052381,"tipo":"reprogramada","citaId":"624217a5-3a52-4eae-a7db-46755b50d65a","intento":1}
+{"t":1783709052613,"tipo":"carrera_slot","quien":"sim.recep03@simulacion.local","fecha":"2026-08-06","hora":"12:00","error":"PROFESIONAL_OCUPADO"}
+{"t":1783709052858,"tipo":"reprogramada","citaId":"bb505b16-3602-471e-b26e-0a68073f7eaa","intento":1}
+{"t":1783709052859,"tipo":"reprogramada","citaId":"e4c30c50-502a-4d6e-9e65-09eb52ec5e80","intento":2}
+{"t":1783709052997,"tipo":"reprogramada","citaId":"624217a5-3a52-4eae-a7db-46755b50d65a","intento":2}
+{"t":1783709053216,"tipo":"reprogramada","citaId":"bb505b16-3602-471e-b26e-0a68073f7eaa","intento":2}
+{"t":1783709053344,"tipo":"carrera_slot","contexto":"mover","citaId":"624217a5-3a52-4eae-a7db-46755b50d65a"}
+{"t":1783709053407,"tipo":"reprogramada","citaId":"a3ce5cde-66bb-4cec-ab4d-62f2ccf8dbf8","intento":1}
+{"t":1783709053524,"tipo":"reprogramada","citaId":"bb505b16-3602-471e-b26e-0a68073f7eaa","intento":3}
+{"t":1783709053647,"tipo":"carrera_slot","contexto":"mover","citaId":"295a3d2e-5b53-4a02-8359-979b2b9580c0"}
+{"t":1783709053735,"tipo":"reprogramada","citaId":"d3032d64-6737-438e-9920-3696ae42cb38","intento":1}
+{"t":1783709054035,"tipo":"reprogramada","citaId":"d3032d64-6737-438e-9920-3696ae42cb38","intento":2}
+{"t":1783709054088,"tipo":"reprogramada","citaId":"295a3d2e-5b53-4a02-8359-979b2b9580c0","intento":2}
+{"t":1783709054482,"tipo":"reprogramada","citaId":"0b6c9a1e-e08d-4550-ba59-043e43cf92f4","intento":1}
+{"t":1783709054487,"tipo":"carrera_slot","quien":"sim.cc02@simulacion.local","fecha":"2026-07-31","hora":"09:30","error":"PROFESIONAL_OCUPADO"}
+{"t":1783709054596,"tipo":"reprogramada","citaId":"1010ad6a-44eb-457c-a25c-cd048ec04021","intento":1}
+{"t":1783709054620,"tipo":"reprogramada","citaId":"122ef63a-a2c6-4d6a-8131-2a428fc4684b","intento":1}
+{"t":1783709054651,"tipo":"reprogramada","citaId":"d2a8373f-4280-4b59-b048-e78b8779e239","intento":1}
+{"t":1783709054651,"tipo":"reprogramada","citaId":"295a3d2e-5b53-4a02-8359-979b2b9580c0","intento":3}
+{"t":1783709054865,"tipo":"reprogramada","citaId":"3e873a37-e09e-4064-a2b2-cc9ef76b9460","intento":1}
+{"t":1783709055034,"tipo":"reprogramada","citaId":"0b6c9a1e-e08d-4550-ba59-043e43cf92f4","intento":2}
+{"t":1783709055342,"tipo":"reprogramada","citaId":"1010ad6a-44eb-457c-a25c-cd048ec04021","intento":2}
+{"t":1783709055359,"tipo":"reprogramada","citaId":"122ef63a-a2c6-4d6a-8131-2a428fc4684b","intento":2}
+{"t":1783709055465,"tipo":"reprogramada","citaId":"a43edc59-8fcb-4cc6-a20b-7d1516cfe07c","intento":1}
+{"t":1783709055513,"tipo":"reprogramada","citaId":"3e873a37-e09e-4064-a2b2-cc9ef76b9460","intento":2}
+{"t":1783709055764,"tipo":"carrera_slot","contexto":"mover","citaId":"122ef63a-a2c6-4d6a-8131-2a428fc4684b"}
+{"t":1783709055870,"tipo":"reprogramada","citaId":"a43edc59-8fcb-4cc6-a20b-7d1516cfe07c","intento":2}
+{"t":1783709056114,"tipo":"reprogramada","citaId":"506c305b-b8e9-47b6-a193-8e2d6a9535a7","intento":1}
+{"t":1783709056237,"tipo":"reprogramada","citaId":"38e2a352-cc73-42b7-b055-e1696aa585d4","intento":1}
+{"t":1783709056313,"tipo":"reprogramada","citaId":"971878a8-d9ca-4bf4-b835-808d161d9ced","intento":1}
+{"t":1783709056314,"tipo":"reprogramada","citaId":"a43edc59-8fcb-4cc6-a20b-7d1516cfe07c","intento":3}
+{"t":1783709056584,"tipo":"reprogramada","citaId":"38e2a352-cc73-42b7-b055-e1696aa585d4","intento":2}
+{"t":1783709056731,"tipo":"reprogramada","citaId":"93aef7d8-3f87-4f1e-9f15-803bf212f87c","intento":1}
+{"t":1783709056768,"tipo":"reprogramada","citaId":"98069bd7-ae39-4672-8258-320be427cb7b","intento":1}
+{"t":1783709056831,"tipo":"reprogramada","citaId":"85f3bfb1-1d5d-48d0-a08b-15f45bfd4a73","intento":1}
+{"t":1783709056882,"tipo":"reprogramada","citaId":"38e2a352-cc73-42b7-b055-e1696aa585d4","intento":3}
+{"t":1783709057066,"tipo":"reprogramada","citaId":"93aef7d8-3f87-4f1e-9f15-803bf212f87c","intento":2}
+{"t":1783709057184,"tipo":"reprogramada","citaId":"85f3bfb1-1d5d-48d0-a08b-15f45bfd4a73","intento":2}
+{"t":1783709057372,"tipo":"reprogramada","citaId":"250c5d8c-a7ab-46ed-8c8b-dc81a132115c","intento":1}
+{"t":1783709057494,"tipo":"reprogramada","citaId":"93aef7d8-3f87-4f1e-9f15-803bf212f87c","intento":3}
+{"t":1783709057607,"tipo":"reprogramada","citaId":"81d3a01e-894a-4a1c-ae65-1f32b58c26cd","intento":1}
+{"t":1783709057607,"tipo":"reprogramada","citaId":"85f3bfb1-1d5d-48d0-a08b-15f45bfd4a73","intento":3}
+{"t":1783709057617,"tipo":"reprogramada","citaId":"75fa0754-cba1-49c3-b410-888484c1a333","intento":1}
+{"t":1783709057677,"tipo":"reprogramada","citaId":"68a95cc0-886f-43af-ad68-0f5e7d05a7ca","intento":1}
+{"t":1783709057746,"tipo":"carrera_slot","quien":"sim.recep06@simulacion.local","fecha":"2026-07-20","hora":"17:30","error":"PROFESIONAL_OCUPADO"}
+{"t":1783709057945,"tipo":"reprogramada","citaId":"250c5d8c-a7ab-46ed-8c8b-dc81a132115c","intento":2}
+{"t":1783709058117,"tipo":"reprogramada","citaId":"46285691-6cf8-4db0-8772-3dd1726755eb","intento":1}
+{"t":1783709058136,"tipo":"reprogramada","citaId":"81d3a01e-894a-4a1c-ae65-1f32b58c26cd","intento":2}
+{"t":1783709058246,"tipo":"reprogramada","citaId":"75fa0754-cba1-49c3-b410-888484c1a333","intento":2}
+{"t":1783709058673,"tipo":"reprogramada","citaId":"46285691-6cf8-4db0-8772-3dd1726755eb","intento":2}
+{"t":1783709058917,"tipo":"reprogramada","citaId":"05ccf194-d9f5-477e-8ba3-ea1615f58de1","intento":1}
+{"t":1783709059140,"tipo":"reprogramada","citaId":"ce7c43e0-4c03-4efd-93c0-c3c04769e3f7","intento":1}
+{"t":1783709059214,"tipo":"reprogramada","citaId":"46285691-6cf8-4db0-8772-3dd1726755eb","intento":3}
+{"t":1783709059267,"tipo":"carrera_slot","quien":"sim.recep12@simulacion.local","fecha":"2026-07-10","hora":"16:00","error":"PROFESIONAL_OCUPADO"}
+{"t":1783709059628,"tipo":"reprogramada","citaId":"ce7c43e0-4c03-4efd-93c0-c3c04769e3f7","intento":2}
+{"t":1783709059998,"tipo":"reprogramada","citaId":"ce7c43e0-4c03-4efd-93c0-c3c04769e3f7","intento":3}
+{"t":1783709060073,"tipo":"reprogramada","citaId":"2fc1c37e-6309-489e-9f24-20eebbef3ae2","intento":1}
+{"t":1783709060117,"tipo":"reprogramada","citaId":"b290509a-9abb-4b28-a687-555bacecb07e","intento":1}
+{"t":1783709061313,"tipo":"reprogramada","citaId":"6598b58f-7e82-4d1f-9cd5-49a0ccc23424","intento":1}
+{"t":1783709061533,"tipo":"reprogramada","citaId":"4d820e93-3f4b-4005-ae30-93e3e58acb33","intento":1}
+{"t":1783709061535,"tipo":"reprogramada","citaId":"3e246534-8e7b-48c4-bcdc-3113d44484d1","intento":1}
+{"t":1783709061651,"tipo":"reprogramada","citaId":"1e258d60-e2e8-4cb5-b7e9-9512672807d4","intento":1}
+{"t":1783709061905,"tipo":"reprogramada","citaId":"76e79bcd-7194-4f2e-89e7-c8cc7ca135d3","intento":1}
+{"t":1783709062064,"tipo":"reprogramada","citaId":"1e258d60-e2e8-4cb5-b7e9-9512672807d4","intento":2}
+{"t":1783709062314,"tipo":"reprogramada","citaId":"76e79bcd-7194-4f2e-89e7-c8cc7ca135d3","intento":2}
+{"t":1783709062814,"tipo":"reprogramada","citaId":"76e79bcd-7194-4f2e-89e7-c8cc7ca135d3","intento":3}
+{"t":1783709143696,"tipo":"enfermedad","profesional":"Maximina Gutierrez Ñahuis","profesionalId":"8349b845-3ce5-424e-a7b5-0b79fd1eb30f","sedeId":"56e99005-2481-40a9-b8e7-2d46f92a387c","fechas":["2026-07-18","2026-07-20"],"citasEncima":[{"fecha":"2026-07-18","activas":1,"ids":["a54e6573-a3ba-4c2b-80bc-8977124f43d7"]},{"fecha":"2026-07-20","activas":1,"ids":["a3ce5cde-66bb-4cec-ab4d-62f2ccf8dbf8"]}],"permisos":[{"fecha":"2026-07-18","status":409,"resp":"{\"error\":\"CITAS_EN_RANGO\",\"message\":\"No se puede bloquear 08:00–20:00: hay 1 cita(s) agendada(s) en ese rango (08:00 José Zztest Cruz Ríos). Reprograma o cancela esas citas antes de bloquear el horari"},{"fecha":"2026-07-20","status":409,"resp":"{\"error\":\"CITAS_EN_RANGO\",\"message\":\"No se puede bloquear 08:00–20:00: hay 1 cita(s) agendada(s) en ese rango (11:30 Flor Zztest Huamán Fernández). Reprograma o cancela esas citas antes de bloquear el"}]}
+{"t":1783709143723,"tipo":"enfermedad","profesional":"Jenny Rosario Chiclla Suehara","profesionalId":"a7876dae-5f8c-438d-8771-c4c8b27757f8","sedeId":"de18c68d-796a-49b4-a101-ccd43e3a01e5","fechas":["2026-07-23"],"citasEncima":[{"fecha":"2026-07-23","activas":1,"ids":["e4b0b6d6-2295-42db-8783-6f2e42880a86"]}],"permisos":[{"fecha":"2026-07-23","status":409,"resp":"{\"error\":\"CITAS_EN_RANGO\",\"message\":\"No se puede bloquear 08:00–20:00: hay 1 cita(s) agendada(s) en ese rango (14:00 Miguel Pedro Zztest Bravo Espinoza). Reprograma o cancela esas citas antes de bloqu"}]}
+{"t":1783709143766,"tipo":"enfermedad","profesional":"Gissela Victoria Morote Carmona","profesionalId":"dc103ea0-92ca-4ac4-9833-5cbeaacd9918","sedeId":"38e39bdf-5fff-4450-999b-de50eddc68cd","fechas":["2026-07-20","2026-08-08"],"citasEncima":[{"fecha":"2026-07-20","activas":1,"ids":["a43edc59-8fcb-4cc6-a20b-7d1516cfe07c"]},{"fecha":"2026-08-08","activas":1,"ids":["d2a8373f-4280-4b59-b048-e78b8779e239"]}],"permisos":[{"fecha":"2026-07-20","status":409,"resp":"{\"error\":\"CITAS_EN_RANGO\",\"message\":\"No se puede bloquear 08:00–20:00: hay 1 cita(s) agendada(s) en ese rango (11:30 Néstor Zztest Aguilar Palomino). Reprograma o cancela esas citas antes de bloquear "},{"fecha":"2026-08-08","status":409,"resp":"{\"error\":\"CITAS_EN_RANGO\",\"message\":\"No se puede bloquear 08:00–20:00: hay 1 cita(s) agendada(s) en ese rango (11:00 Patricia Julia Zztest Bravo Condori). Reprograma o cancela esas citas antes de bloq"}]}
+{"t":1783709143773,"tipo":"bloqueo_parcial","profesional":"Fiorella Rios Peñaherrera","fecha":"2026-07-23","status":409}
+{"t":1783709143780,"tipo":"bloqueo_parcial","profesional":"Mirtha Chavez Vasquez","fecha":"2026-07-24","status":409}
+{"t":1783709143816,"tipo":"cambio_horario_permanente","profesional":"Ivonne Jill Auris Asca","id":"e7972316-3e91-43fc-b1c6-77aaad98939a","status":409,"detalle409":"{\"error\":\"HORARIO_CONFLICTO_CITAS\",\"message\":\"Hay 14 cita(s) que quedarían FUERA del nuevo turno: 2026-07-18 13:00, 2026-07-17 16:00, 2026-07-21 16:00, 2026-07-25 09:30, 2026-07-24 16:30 (+9 más). Muévelas primero, o repite la operación con \\\"forzar\\\" para aplicar de todos modos.\",\"statusCode\":409}","forzadoStatus":200}
+{"t":1783709144169,"tipo":"carrera_slot","quien":"sim.recep05@simulacion.local","fecha":"2026-07-22","hora":"15:00","error":"PROFESIONAL_OCUPADO"}
+{"t":1783709144766,"tipo":"reprogramada","citaId":"986b1489-7ff2-477c-af70-59e74f4a7bde","intento":1}
+{"t":1783709144829,"tipo":"reprogramada","citaId":"592272a8-6437-4f56-a76f-cdf3eaf3c2a5","intento":1}
+{"t":1783709145105,"tipo":"reprogramada","citaId":"ddb5a497-8d7f-4dcc-abf0-5383806c3e1f","intento":1}
+{"t":1783709145118,"tipo":"reprogramada","citaId":"986b1489-7ff2-477c-af70-59e74f4a7bde","intento":2}
+{"t":1783709145146,"tipo":"reprogramada","citaId":"3916e961-7e76-4291-b34e-f70dfb50935a","intento":1}
+{"t":1783709145151,"tipo":"reprogramada","citaId":"592272a8-6437-4f56-a76f-cdf3eaf3c2a5","intento":2}
+{"t":1783709145341,"tipo":"reprogramada","citaId":"986b1489-7ff2-477c-af70-59e74f4a7bde","intento":3}
+{"t":1783709145388,"tipo":"reprogramada","citaId":"3916e961-7e76-4291-b34e-f70dfb50935a","intento":2}
+{"t":1783709145406,"tipo":"reprogramada","citaId":"592272a8-6437-4f56-a76f-cdf3eaf3c2a5","intento":3}
+{"t":1783709145456,"tipo":"reprogramada","citaId":"ddb5a497-8d7f-4dcc-abf0-5383806c3e1f","intento":2}
+{"t":1783709145564,"tipo":"reprogramada","citaId":"b442c417-9bce-48c3-ab2d-84a57307cc5e","intento":1}
+{"t":1783709145689,"tipo":"reprogramada","citaId":"3916e961-7e76-4291-b34e-f70dfb50935a","intento":3}
+{"t":1783709145920,"tipo":"reprogramada","citaId":"b442c417-9bce-48c3-ab2d-84a57307cc5e","intento":2}
+{"t":1783709146683,"tipo":"reprogramada","citaId":"e503a224-95e8-445a-85b1-b7ec79eb8ce7","intento":1}
+{"t":1783709146938,"tipo":"reprogramada","citaId":"3cdefba6-19ba-466e-807a-601971705e5a","intento":1}
+{"t":1783709147112,"tipo":"combinada_fallida","status":409,"error":"{\"error\":\"PROFESIONAL_OCUPADO\",\"message\":\"El profesional ya tiene una cita a esa hora (11:00, Podología). No puede atender en dos lugares a la vez.\",\"statusCode\":409}"}
+{"t":1783709147302,"tipo":"combinada_fallida","status":400,"error":"{\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado ese servicio\",\"statusCode\":400}"}
+{"t":1783709147375,"tipo":"reprogramada","citaId":"3cdefba6-19ba-466e-807a-601971705e5a","intento":2}
+{"t":1783709147508,"tipo":"combinada_fallida","status":400,"error":"{\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado ese servicio\",\"statusCode\":400}"}
+{"t":1783709147557,"tipo":"combinada_fallida","status":400,"error":"{\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado ese servicio\",\"statusCode\":400}"}
+{"t":1783709147608,"tipo":"reprogramada","citaId":"a36e6b62-6dd6-4482-80fb-9e990613cf5b","intento":1}
+{"t":1783709147824,"tipo":"reprogramada","citaId":"fbadc167-3c7b-4a88-9629-b11c69da3a00","intento":1}
+{"t":1783709147923,"tipo":"reprogramada","citaId":"a36e6b62-6dd6-4482-80fb-9e990613cf5b","intento":2}
+{"t":1783709147969,"tipo":"reprogramada","citaId":"76bac6c4-14b4-4051-a845-1a8df87839d4","intento":1}
+{"t":1783709148286,"tipo":"reprogramada","citaId":"b8b897c3-8d63-471c-b30c-163151bb22dc","intento":1}
+{"t":1783709148303,"tipo":"combinada_fallida","status":400,"error":"{\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado ese servicio\",\"statusCode\":400}"}
+{"t":1783709148400,"tipo":"reprogramada","citaId":"e4789105-3665-49bf-8bd2-b456ca20e94c","intento":1}
+{"t":1783709148630,"tipo":"reprogramada","citaId":"b8b897c3-8d63-471c-b30c-163151bb22dc","intento":2}
+{"t":1783709148727,"tipo":"reprogramada","citaId":"2582dc17-7bf2-4938-ae57-bee153b05907","intento":1}
+{"t":1783709148836,"tipo":"reprogramada","citaId":"e4789105-3665-49bf-8bd2-b456ca20e94c","intento":2}
+{"t":1783709149195,"tipo":"reprogramada","citaId":"8a94b850-d454-4368-9a6f-ff0be1f8330d","intento":1}
+{"t":1783709149220,"tipo":"reprogramada","citaId":"e4789105-3665-49bf-8bd2-b456ca20e94c","intento":3}
+{"t":1783709149526,"tipo":"reprogramada","citaId":"8a94b850-d454-4368-9a6f-ff0be1f8330d","intento":2}
+{"t":1783709149583,"tipo":"reprogramada","citaId":"4640cc14-0299-4f8c-b6c1-a4b152cc9a20","intento":1}
+{"t":1783709149913,"tipo":"reprogramada","citaId":"b0029a24-4f05-4655-878c-720d07817070","intento":1}
+{"t":1783709150029,"tipo":"reprogramada","citaId":"4640cc14-0299-4f8c-b6c1-a4b152cc9a20","intento":2}
+{"t":1783709150186,"tipo":"carrera_slot","quien":"sim.recep04@simulacion.local","fecha":"2026-08-03","hora":"14:00","error":"PROFESIONAL_OCUPADO"}
+{"t":1783709150341,"tipo":"reprogramada","citaId":"b0029a24-4f05-4655-878c-720d07817070","intento":2}
+{"t":1783709150699,"tipo":"reprogramada","citaId":"39ee0cf5-c468-4431-8eac-cc89865e8567","intento":1}
+{"t":1783709150754,"tipo":"reprogramada","citaId":"7cdc078b-c701-4529-a4b0-39bc48f6a015","intento":1}
+{"t":1783709150977,"tipo":"reprogramada","citaId":"ad50a2b9-2116-4c8b-81ba-5a9cf97eaf35","intento":1}
+{"t":1783709151045,"tipo":"reprogramada","citaId":"39ee0cf5-c468-4431-8eac-cc89865e8567","intento":2}
+{"t":1783709151092,"tipo":"reprogramada","citaId":"411150c5-77f7-45b8-ade0-434ec461be2c","intento":1}
+{"t":1783709151137,"tipo":"combinada_fallida","status":400,"error":"{\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado ese servicio\",\"statusCode\":400}"}
+{"t":1783709151260,"tipo":"reprogramada","citaId":"ad50a2b9-2116-4c8b-81ba-5a9cf97eaf35","intento":2}
+{"t":1783709151412,"tipo":"reprogramada","citaId":"58f0ff84-3265-4b19-80cf-063eb3894acc","intento":1}
+{"t":1783709151603,"tipo":"reprogramada","citaId":"ad50a2b9-2116-4c8b-81ba-5a9cf97eaf35","intento":3}
+{"t":1783709151643,"tipo":"reprogramada","citaId":"411150c5-77f7-45b8-ade0-434ec461be2c","intento":2}
+{"t":1783709151712,"tipo":"reprogramada","citaId":"58f0ff84-3265-4b19-80cf-063eb3894acc","intento":2}
+{"t":1783709151770,"tipo":"combinada_fallida","status":400,"error":"{\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado ese servicio\",\"statusCode\":400}"}
+{"t":1783709152273,"tipo":"combinada_fallida","status":409,"error":"{\"error\":\"PROFESIONAL_OCUPADO\",\"message\":\"El profesional ya tiene una cita a esa hora (16:30, Podología). No puede atender en dos lugares a la vez.\",\"statusCode\":409}"}
+{"t":1783709152403,"tipo":"reprogramada","citaId":"6217b13a-a163-48b7-a6e2-3bd74eb0462f","intento":1}
+{"t":1783709152516,"tipo":"reprogramada","citaId":"c9205ff5-d127-4aa8-9d58-d7eef64e131b","intento":1}
+{"t":1783709152861,"tipo":"reprogramada","citaId":"7e96fa45-6477-41d4-870b-c255f8319c34","intento":1}
+{"t":1783709152887,"tipo":"reprogramada","citaId":"6217b13a-a163-48b7-a6e2-3bd74eb0462f","intento":2}
+{"t":1783709152972,"tipo":"reprogramada","citaId":"d8a0e0ae-209d-44be-aa40-eab3a05d9393","intento":1}
+{"t":1783709152991,"tipo":"reprogramada","citaId":"c9205ff5-d127-4aa8-9d58-d7eef64e131b","intento":2}
+{"t":1783709153020,"tipo":"reprogramada","citaId":"feaf8748-4457-4aa6-a73a-2ce7d8a47a18","intento":1}
+{"t":1783709153051,"tipo":"carrera_slot","quien":"sim.cc03@simulacion.local","fecha":"2026-08-08","hora":"09:00","error":"PROFESIONAL_OCUPADO"}
+{"t":1783709153067,"tipo":"reprogramada","citaId":"693f5ad0-7c63-4cb5-9875-76dbb46a4764","intento":1}
+{"t":1783709153137,"tipo":"combinada_fallida","status":409,"error":"{\"error\":\"PROFESIONAL_OCUPADO\",\"message\":\"El profesional ya tiene una cita a esa hora (17:00, Podología). No puede atender en dos lugares a la vez.\",\"statusCode\":409}"}
+{"t":1783709153143,"tipo":"reprogramada","citaId":"6217b13a-a163-48b7-a6e2-3bd74eb0462f","intento":3}
+{"t":1783709153162,"tipo":"reprogramada","citaId":"7e96fa45-6477-41d4-870b-c255f8319c34","intento":2}
+{"t":1783709153205,"tipo":"carrera_slot","contexto":"mover","citaId":"4d95b65c-ff55-457b-846f-26e7ff5b06d3"}
+{"t":1783709153256,"tipo":"reprogramada","citaId":"adcbfefd-a795-49df-a516-b5b27b299547","intento":1}
+{"t":1783709153277,"tipo":"combinada_fallida","status":409,"error":"{\"error\":\"PROFESIONAL_OCUPADO\",\"message\":\"El profesional ya tiene una cita a esa hora (08:00, Podología). No puede atender en dos lugares a la vez.\",\"statusCode\":409}"}
+{"t":1783709153426,"tipo":"reprogramada","citaId":"d8a0e0ae-209d-44be-aa40-eab3a05d9393","intento":2}
+{"t":1783709153506,"tipo":"reprogramada","citaId":"7e96fa45-6477-41d4-870b-c255f8319c34","intento":3}
+{"t":1783709153599,"tipo":"reprogramada","citaId":"4d95b65c-ff55-457b-846f-26e7ff5b06d3","intento":2}
+{"t":1783709153662,"tipo":"combinada_fallida","status":409,"error":"{\"error\":\"PROFESIONAL_OCUPADO\",\"message\":\"El profesional ya tiene una cita a esa hora (15:00, Podología). No puede atender en dos lugares a la vez.\",\"statusCode\":409}"}
+{"t":1783709153689,"tipo":"reprogramada","citaId":"e92481f3-cdd4-4885-8732-98967a81bc12","intento":1}
+{"t":1783709153998,"tipo":"reprogramada","citaId":"d8a0e0ae-209d-44be-aa40-eab3a05d9393","intento":3}
+{"t":1783709154076,"tipo":"reprogramada","citaId":"bc3943f2-ae15-44d3-a4eb-c94cb7ff137d","intento":1}
+{"t":1783709154098,"tipo":"reprogramada","citaId":"b60a2e94-e81f-49d5-9d0b-47ebdc26bf37","intento":1}
+{"t":1783709154135,"tipo":"reprogramada","citaId":"4d95b65c-ff55-457b-846f-26e7ff5b06d3","intento":3}
+{"t":1783709154163,"tipo":"reprogramada","citaId":"e92481f3-cdd4-4885-8732-98967a81bc12","intento":2}
+{"t":1783709154332,"tipo":"combinada_fallida","status":400,"error":"{\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado ese servicio\",\"statusCode\":400}"}
+{"t":1783709154508,"tipo":"reprogramada","citaId":"b60a2e94-e81f-49d5-9d0b-47ebdc26bf37","intento":2}
+{"t":1783709155666,"tipo":"combinada_fallida","status":400,"error":"{\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado ese servicio\",\"statusCode\":400}"}
+{"t":1783709155688,"tipo":"reprogramada","citaId":"a6cc96ea-470b-4d18-a223-f63146a138a5","intento":1}
+{"t":1783709155907,"tipo":"reprogramada","citaId":"20fb3a78-5eb0-473b-b3c8-30c50c37fb7e","intento":1}
+{"t":1783709156148,"tipo":"reprogramada","citaId":"bf93423f-dc1f-44bc-81ea-f5052bd4ef2a","intento":1}
+{"t":1783709156186,"tipo":"reprogramada","citaId":"627274ba-d525-42d0-bcf0-208716c51150","intento":1}
+{"t":1783709156480,"tipo":"reprogramada","citaId":"bf93423f-dc1f-44bc-81ea-f5052bd4ef2a","intento":2}
+{"t":1783709156527,"tipo":"reprogramada","citaId":"627274ba-d525-42d0-bcf0-208716c51150","intento":2}
+{"t":1783709156817,"tipo":"reprogramada","citaId":"bf93423f-dc1f-44bc-81ea-f5052bd4ef2a","intento":3}
+{"t":1783709156827,"tipo":"reprogramada","citaId":"eb8c9cce-8dac-459b-a1a7-0711fccbb667","intento":1}
+{"t":1783709156827,"tipo":"reprogramada","citaId":"4dfb2445-c115-4213-a812-ef5cd312df99","intento":1}
+{"t":1783709156849,"tipo":"reprogramada","citaId":"91467aaf-ba47-4a81-9a05-6dc4828030c7","intento":1}
+{"t":1783709157078,"tipo":"combinada_fallida","status":400,"error":"{\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado ese servicio\",\"statusCode\":400}"}
+{"t":1783709157202,"tipo":"reprogramada","citaId":"4dfb2445-c115-4213-a812-ef5cd312df99","intento":2}
+{"t":1783709157271,"tipo":"reprogramada","citaId":"91467aaf-ba47-4a81-9a05-6dc4828030c7","intento":2}
+{"t":1783709157298,"tipo":"combinada_fallida","status":400,"error":"{\"error\":\"SIN_COMPETENCIA\",\"message\":\"El profesional no tiene habilitado ese servicio\",\"statusCode\":400}"}
+{"t":1783709157483,"tipo":"reprogramada","citaId":"ea17b181-8088-4d37-a26b-fc0ab128b8a2","intento":1}
+{"t":1783709157505,"tipo":"reprogramada","citaId":"dcff2d60-d966-4e06-a510-dafa79f05d5f","intento":1}
+{"t":1783709157725,"tipo":"reprogramada","citaId":"91467aaf-ba47-4a81-9a05-6dc4828030c7","intento":3}
+{"t":1783709157774,"tipo":"reprogramada","citaId":"2546574e-58a9-4937-8277-990b733754de","intento":1}
+{"t":1783709157846,"tipo":"reprogramada","citaId":"c52cb1eb-03ae-49de-8312-36983a3e7750","intento":1}
+{"t":1783709157902,"tipo":"reprogramada","citaId":"444a34fb-a192-4435-95ba-cac011231e1d","intento":1}
+{"t":1783709157958,"tipo":"reprogramada","citaId":"ea17b181-8088-4d37-a26b-fc0ab128b8a2","intento":2}
+{"t":1783709158079,"tipo":"reprogramada","citaId":"c52cb1eb-03ae-49de-8312-36983a3e7750","intento":2}
+{"t":1783709158126,"tipo":"reprogramada","citaId":"2546574e-58a9-4937-8277-990b733754de","intento":2}
+{"t":1783709158156,"tipo":"reprogramada","citaId":"444a34fb-a192-4435-95ba-cac011231e1d","intento":2}
+{"t":1783709158224,"tipo":"reprogramada","citaId":"39ccaadb-7a4e-4792-8e40-b3d855ada3ab","intento":1}
+{"t":1783709158230,"tipo":"reprogramada","citaId":"ea17b181-8088-4d37-a26b-fc0ab128b8a2","intento":3}
+{"t":1783709158325,"tipo":"reprogramada","citaId":"444a34fb-a192-4435-95ba-cac011231e1d","intento":3}
+{"t":1783709158345,"tipo":"reprogramada","citaId":"2546574e-58a9-4937-8277-990b733754de","intento":3}
+{"t":1783709158393,"tipo":"reprogramada","citaId":"079e222e-1547-403c-8ac5-e51f6c7852c3","intento":1}
+{"t":1783709158403,"tipo":"reprogramada","citaId":"39ccaadb-7a4e-4792-8e40-b3d855ada3ab","intento":2}
+{"t":1783709158409,"tipo":"reprogramada","citaId":"ff8d2d3e-8d27-4dab-9b73-63a8d14ede39","intento":1}
+{"t":1783709158495,"tipo":"reprogramada","citaId":"68020dbe-bff7-4e9c-835d-3c426e17456b","intento":1}
+{"t":1783709158527,"tipo":"reprogramada","citaId":"39ccaadb-7a4e-4792-8e40-b3d855ada3ab","intento":3}
+{"t":1783709158529,"tipo":"reprogramada","citaId":"39b7b6f5-6cd1-4b63-81bd-d576043179e5","intento":1}
+{"t":1783709158559,"tipo":"reprogramada","citaId":"ff8d2d3e-8d27-4dab-9b73-63a8d14ede39","intento":2}
+{"t":1783709158646,"tipo":"reprogramada","citaId":"68020dbe-bff7-4e9c-835d-3c426e17456b","intento":2}
+{"t":1783709158676,"tipo":"reprogramada","citaId":"39b7b6f5-6cd1-4b63-81bd-d576043179e5","intento":2}
+{"t":1783709158781,"tipo":"reprogramada","citaId":"68020dbe-bff7-4e9c-835d-3c426e17456b","intento":3}
+{"t":1783709158792,"tipo":"reprogramada","citaId":"39b7b6f5-6cd1-4b63-81bd-d576043179e5","intento":3}
+{"t":1783709270572,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"3cdf1a76-a862-4659-b7ba-9ca2c8845252","status":201}
+{"t":1783709270573,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"6641d2d1-08f2-4635-b787-0cbc972c551d","status":201}
+{"t":1783709270577,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"a8a1c01d-eb4b-4ce7-82b3-a503c1acbbe6","status":201}
+{"t":1783709270597,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"fd662742-8373-47b5-8db6-ed8d86c0169c","status":201}
+{"t":1783709270606,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"7e9e8cf4-77ae-4b8c-bd58-005eb5a2f6c7","status":201}
+{"t":1783709270619,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"107898d1-452a-4687-b433-43465c0d3d89","status":201}
+{"t":1783709270619,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"ab94a191-95ae-4b13-b966-4621ddc26bc0","status":201}
+{"t":1783709270625,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"b6d0ab4c-3f05-41bb-8150-c6c5e605158c","status":201}
+{"t":1783709270631,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"2c8ad50e-7bd2-4ef5-8e06-9f0cb4ee1390","status":201}
+{"t":1783709270637,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"e0f9252a-acca-4332-bd5c-274cdd1c854c","status":201}
+{"t":1783709270647,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"ae015dbc-0f03-4147-8457-60edd88b4bd2","status":201}
+{"t":1783709270715,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"947f2d88-1070-49e6-babf-4aecda1e0553","status":201}
+{"t":1783709270808,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"a8a1c01d-eb4b-4ce7-82b3-a503c1acbbe6","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709270877,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"e0f9252a-acca-4332-bd5c-274cdd1c854c","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709271037,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep07@simulacion.local"}
+{"t":1783709271039,"tipo":"sobrecupo_paquete","paquete":"679158bf-246c-4550-aded-454c557a1304","total":1,"extraAgendadas":0,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709271090,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc01@simulacion.local"}
+{"t":1783709271123,"tipo":"sobrecupo_paquete","paquete":"0b198f06-0fe3-4b91-8e65-16814d1e7c32","total":1,"extraAgendadas":0,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709271246,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"4f970762-2f06-439f-ad6f-2da2696faffb","status":201}
+{"t":1783709271271,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"4f99d9e6-4bd2-497b-94e5-07eee325db4d","status":201}
+{"t":1783709271296,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"450fc785-fab9-4a9b-bb41-153c7c1eeaf2","status":201}
+{"t":1783709271306,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"ad6c4d7c-f0c0-4928-8da8-1b0474a1bd9f","status":201}
+{"t":1783709271318,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"c3f430f0-efe1-45af-8b2a-0d9a9b8a7cbd","status":201}
+{"t":1783709271325,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"8a3591f8-5853-4c01-a478-f4535805588f","status":201}
+{"t":1783709271339,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"4cc705f8-4fcd-4aac-ba45-b0302579f23f","status":201}
+{"t":1783709271344,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"037b0bb2-f74e-42a9-b085-9247f8fa2290","status":201}
+{"t":1783709271424,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"3cdf1a76-a862-4659-b7ba-9ca2c8845252","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709271478,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"b9046519-df15-4625-9cf2-1d716c908305","status":201}
+{"t":1783709271486,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"107898d1-452a-4687-b433-43465c0d3d89","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709271498,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"fd662742-8373-47b5-8db6-ed8d86c0169c","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709271555,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"b224c6ac-e94c-43d8-bfab-da987b0cce5e","status":201}
+{"t":1783709271573,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"bb752364-8f67-4b28-8ec6-a7d1cb695408","status":201}
+{"t":1783709271622,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"19fa9c80-1a2a-4690-8653-4d3e515db390","status":201}
+{"t":1783709271683,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep08@simulacion.local"}
+{"t":1783709271721,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep05@simulacion.local"}
+{"t":1783709271870,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"a335fd46-eeee-407c-8a16-d58fcaa1eb1a","status":201}
+{"t":1783709271910,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"698c5226-c3fb-477a-b383-9bfe1c46227a","status":201}
+{"t":1783709271923,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"d7ddf3e7-d0a6-45c0-9351-24027e28d4bd","status":201}
+{"t":1783709271965,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"0229b8d8-ee60-4816-97fd-abe7326dd40c","status":201}
+{"t":1783709271967,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"094578bb-777a-4931-a33b-62da37b3f520","status":201}
+{"t":1783709272066,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"d7ccef29-fe64-40e7-a69d-6343f12bedba","status":201}
+{"t":1783709272067,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"c1b72d03-db46-414f-a1ae-3a4a1c9cf4a0","status":201}
+{"t":1783709272091,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"7e9e8cf4-77ae-4b8c-bd58-005eb5a2f6c7","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709272185,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"698c5226-c3fb-477a-b383-9bfe1c46227a","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709272235,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"2c8ad50e-7bd2-4ef5-8e06-9f0cb4ee1390","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709272248,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"d9cccdcf-35c8-40ff-8da8-c1240bed5e4b","status":201}
+{"t":1783709272257,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"cc1beffe-7b44-49fd-a8ce-6d745db297ea","status":201}
+{"t":1783709272270,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"b6d0ab4c-3f05-41bb-8150-c6c5e605158c","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709272295,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"e1a530f0-fa01-4697-998d-c2d3fade5305","status":201}
+{"t":1783709272298,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"cd98144c-71f6-45d1-9e8c-f4ace2d36d47","status":201}
+{"t":1783709272322,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"c1b72d03-db46-414f-a1ae-3a4a1c9cf4a0","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709272332,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"ab94a191-95ae-4b13-b966-4621ddc26bc0","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709272391,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"f52fa5fa-ee1f-4c8b-b75a-1b687c524e98","status":201}
+{"t":1783709272420,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"b224c6ac-e94c-43d8-bfab-da987b0cce5e","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709272425,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"947f2d88-1070-49e6-babf-4aecda1e0553","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709272430,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"19fa9c80-1a2a-4690-8653-4d3e515db390","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709272441,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"6641d2d1-08f2-4635-b787-0cbc972c551d","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709272497,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep11@simulacion.local"}
+{"t":1783709272781,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"ae015dbc-0f03-4147-8457-60edd88b4bd2","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709272908,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep08@simulacion.local"}
+{"t":1783709272925,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"267945b7-3e95-41ec-86e8-3bac4eb28e21","status":201}
+{"t":1783709272960,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"da7fe744-f59e-40d2-85cc-fefbcf37646c","status":201}
+{"t":1783709272988,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"a053dc7a-f366-44dd-8881-48776df0e110","status":201}
+{"t":1783709273200,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"d70a8b59-6934-4b1d-a6bc-aa418ec30c6d","status":201}
+{"t":1783709273213,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"61256326-82dd-47cf-9a9e-53e6457baf0b","status":201}
+{"t":1783709273240,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"0229b8d8-ee60-4816-97fd-abe7326dd40c","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709273286,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep08@simulacion.local"}
+{"t":1783709273290,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"c3ef5fde-15cd-42b0-8eea-3f732e7e477d","status":201}
+{"t":1783709273307,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc02@simulacion.local"}
+{"t":1783709273343,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"1ba7a305-6779-428f-b6d0-3b2d958c8c12","status":201}
+{"t":1783709273349,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"a896c38f-761b-4e3d-ac05-c77de2c2f18a","status":201}
+{"t":1783709273388,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"199e6785-8638-470d-80bd-68085671fef0","status":201}
+{"t":1783709273422,"tipo":"sobrecupo_paquete","paquete":"2ab3836c-0725-4fce-86ba-3ff90c7e04f4","total":4,"extraAgendadas":1,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709273678,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"62f7f06f-b409-4ee9-8373-9c63ef38c27a","status":201}
+{"t":1783709273711,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"992aabf9-21ac-4afe-af7f-da596972504f","status":201}
+{"t":1783709273751,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep06@simulacion.local"}
+{"t":1783709273801,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"a1809e3e-6fb4-4174-ab2d-775356c1bb75","status":201}
+{"t":1783709273838,"tipo":"sobrecupo_paquete","paquete":"ca956be9-00c0-424f-9385-77c7fe7dd49b","total":4,"extraAgendadas":1,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709273839,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"c8c7a2bd-344c-480d-a69f-3b38fdcf7c52","status":201}
+{"t":1783709273840,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"267945b7-3e95-41ec-86e8-3bac4eb28e21","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709273863,"tipo":"sobrecupo_paquete","paquete":"4e941745-be43-41d0-a5a2-0a4dcc8281dd","total":4,"extraAgendadas":2,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709273987,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"affa9944-c72b-4dfd-9e8b-ea0dc08dc141","status":201}
+{"t":1783709273998,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"d70a8b59-6934-4b1d-a6bc-aa418ec30c6d","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709274015,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"0b9eaba0-0b39-45b6-a8de-e62905eca659","status":201}
+{"t":1783709274023,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"b67de63a-59a3-468a-b40e-41753986933a","status":201}
+{"t":1783709274035,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"61256326-82dd-47cf-9a9e-53e6457baf0b","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709274048,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc08@simulacion.local"}
+{"t":1783709274049,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"9b24a5e3-c3e4-4be3-a77f-12c5b0dea684","status":201}
+{"t":1783709274075,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep10@simulacion.local"}
+{"t":1783709274101,"tipo":"sobrecupo_paquete","paquete":"87e23866-7bee-4af4-8f6d-88cdc61b3da2","total":4,"extraAgendadas":2,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709274127,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"199e6785-8638-470d-80bd-68085671fef0","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709274152,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"c3ef5fde-15cd-42b0-8eea-3f732e7e477d","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709274179,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"a896c38f-761b-4e3d-ac05-c77de2c2f18a","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709274251,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"a22b5789-aeef-4a09-be43-38c468b51ca6","status":201}
+{"t":1783709274362,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"5d782730-c924-44a1-b94c-cc6125d47cf8","status":201}
+{"t":1783709274411,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"edd7f518-f718-4559-ac27-6864270e0838","status":201}
+{"t":1783709274439,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"1ba7a305-6779-428f-b6d0-3b2d958c8c12","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709274480,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"6ecacff5-82c0-491e-83b2-746aa9803282","status":201}
+{"t":1783709274532,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"aa6e4fdb-4994-4764-81a8-5bbca0d8d336","status":201}
+{"t":1783709274552,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"e82deb4c-436f-4fda-9fc4-139cfc0f7b90","status":201}
+{"t":1783709274573,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc07@simulacion.local"}
+{"t":1783709274581,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"204c583f-36fb-4fae-ac8e-27d0bcacdbea","status":201}
+{"t":1783709274619,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"aaf6b9d0-4015-452e-89a3-9fbc626eb3f2","status":201}
+{"t":1783709274685,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"eab5508e-b813-4f14-8541-c4ecfaffc601","status":201}
+{"t":1783709274693,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"a053dc7a-f366-44dd-8881-48776df0e110","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709274715,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"153a7c45-e541-4766-8f19-779c4b4bf643","status":201}
+{"t":1783709274726,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"794b10bd-5ed3-415b-a86c-ed1f14599223","status":201}
+{"t":1783709274743,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"e82deb4c-436f-4fda-9fc4-139cfc0f7b90","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709274783,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"9b24a5e3-c3e4-4be3-a77f-12c5b0dea684","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709274794,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc07@simulacion.local"}
+{"t":1783709274941,"tipo":"sobrecupo_paquete","paquete":"154880b6-7d6e-45e8-80fc-180ec05a58df","total":1,"extraAgendadas":0,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709275050,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"ddf4e030-1c21-444c-a6f3-5b6d51857f6a","status":201}
+{"t":1783709275109,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"61d9abe3-ec48-4746-8cdc-d2bc59d7f3ae","status":201}
+{"t":1783709275120,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"b95f2827-9de9-48e1-93d0-1a7002c80065","status":201}
+{"t":1783709275129,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc04@simulacion.local"}
+{"t":1783709275138,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"bb35904a-c215-4d34-a085-49e68b1bfd66","status":201}
+{"t":1783709275168,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"1d47db0e-1283-4665-871d-7abd8cdf185e","status":201}
+{"t":1783709275213,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"9f55d329-1b8d-4af0-ab17-b6cf3579b8c3","status":201}
+{"t":1783709275249,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"5d782730-c924-44a1-b94c-cc6125d47cf8","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709275266,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"ff40f12d-91c4-4dd9-890c-ddd3597933f1","status":201}
+{"t":1783709275302,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"9db1fabe-750c-40f3-b643-d9dc5c016eb4","status":201}
+{"t":1783709275306,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"4536132e-bb1e-4470-afe3-1fec19ae8c77","status":201}
+{"t":1783709275346,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"bb35904a-c215-4d34-a085-49e68b1bfd66","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709275434,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"204c583f-36fb-4fae-ac8e-27d0bcacdbea","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709275485,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc04@simulacion.local"}
+{"t":1783709275491,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"eab5508e-b813-4f14-8541-c4ecfaffc601","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709275492,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"49f81d68-6b4f-4788-8ad2-461e8c831234","status":201}
+{"t":1783709275495,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"153a7c45-e541-4766-8f19-779c4b4bf643","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709275586,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"fe6ee355-9b39-4748-9568-a8477c5b30c5","status":201}
+{"t":1783709275588,"tipo":"sobrecupo_paquete","paquete":"1aa61785-eb9c-4599-a044-ecb94dfa0d8e","total":1,"extraAgendadas":0,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709275714,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"aa1ab493-b489-40c2-82c4-27caa3ad999a","status":201}
+{"t":1783709275751,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"c177b59c-20fc-4d05-ab00-5e6178ca0ac7","status":201}
+{"t":1783709275780,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"1a7e5c7c-dd0b-47f2-8bd9-28549b87ef48","status":201}
+{"t":1783709275781,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"b1f4f709-498d-4fbf-b266-38f685dfb15a","status":201}
+{"t":1783709275856,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"19be269b-a2a8-4cfe-8a5a-eca754167750","status":201}
+{"t":1783709275857,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"814479d4-c45b-4be0-9f51-3f343babcf05","status":201}
+{"t":1783709275879,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"aa6e4fdb-4994-4764-81a8-5bbca0d8d336","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709275984,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"edd7f518-f718-4559-ac27-6864270e0838","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709275991,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"42fc85dd-266e-46bf-8193-abcd18cb4cb2","status":201}
+{"t":1783709275993,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"1d47db0e-1283-4665-871d-7abd8cdf185e","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709276082,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"ff40f12d-91c4-4dd9-890c-ddd3597933f1","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709276104,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"bc5306d7-5bfd-4f1a-b593-d8052b223eb8","status":201}
+{"t":1783709276144,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"664159de-d0f2-4985-b73b-10d7909a430f","status":201}
+{"t":1783709276220,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"5999e006-4cf8-417d-9050-5268bd3038e3","status":201}
+{"t":1783709276249,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"3df0e55a-55ae-4341-987f-c9b70340ab6b","status":201}
+{"t":1783709276390,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"4093afe6-2348-4cd6-8e05-b3496bab9f87","status":201}
+{"t":1783709276415,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"5999e006-4cf8-417d-9050-5268bd3038e3","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709276440,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"49f81d68-6b4f-4788-8ad2-461e8c831234","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709276540,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"72bda1f2-5d06-49b0-a21f-0bc61ea99e0e","status":201}
+{"t":1783709276571,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"fe6ee355-9b39-4748-9568-a8477c5b30c5","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709276589,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"f7b29eee-7c9a-4884-ac58-d79e68708ea5","status":201}
+{"t":1783709276645,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"0b293f1e-e329-4ec2-8b10-7b13cb5be081","status":201}
+{"t":1783709276683,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"0c58eb3b-31cc-4b93-b32a-c850c2c06f4e","status":201}
+{"t":1783709276688,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep02@simulacion.local"}
+{"t":1783709276746,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"c177b59c-20fc-4d05-ab00-5e6178ca0ac7","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709276767,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"814479d4-c45b-4be0-9f51-3f343babcf05","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709276789,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"8a0aa232-0b52-4cfe-b2da-9c2465ff2506","status":201}
+{"t":1783709276790,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"3fbbd8cb-70b5-4201-b13f-088d2e8b5e95","status":201}
+{"t":1783709276829,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"87d8f356-afc2-4e21-80fc-28aecf33b413","status":201}
+{"t":1783709276854,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"7184981f-e8dd-4419-804a-8bd53a099bd3","status":201}
+{"t":1783709276938,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"794b10bd-5ed3-415b-a86c-ed1f14599223","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709277016,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"0c1336eb-c2e7-46a9-8168-ba3d28817b79","status":201}
+{"t":1783709277071,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"66fdac76-cd9d-4e9e-8674-71e63e5667b5","status":201}
+{"t":1783709277154,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"6bd3d091-6e98-4af8-b4d6-26395da06ff7","status":201}
+{"t":1783709277258,"tipo":"sobrecupo_paquete","paquete":"7fc478f9-9aa5-4307-bcbc-19678b923f77","total":4,"extraAgendadas":2,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709277262,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"3ccf7493-fd58-4a2f-a457-7c53706336f0","status":201}
+{"t":1783709277359,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"ae59c9c1-51e0-48f4-af4b-36522abd7c6f","status":201}
+{"t":1783709277400,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"f8398ed4-65c7-4a9f-a958-8dbfc530b922","status":201}
+{"t":1783709277479,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"29765f90-bde2-4bd1-a96c-d5cc70c1e9ce","status":201}
+{"t":1783709277480,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"6c6f124d-b751-4a9b-9fd6-e943abef8c60","status":201}
+{"t":1783709277489,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"241225b0-7f69-4d59-ba0d-b4f1eebc389d","status":201}
+{"t":1783709277539,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"976dd72a-2954-4da4-8a8c-9e5e3b6b2e05","status":201}
+{"t":1783709277675,"tipo":"sobrecupo_paquete","paquete":"1823d89d-3ea1-408f-9e0e-4ef0a6348493","total":4,"extraAgendadas":2,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709277744,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"664159de-d0f2-4985-b73b-10d7909a430f","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709277745,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"8a0aa232-0b52-4cfe-b2da-9c2465ff2506","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709277760,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"bc5306d7-5bfd-4f1a-b593-d8052b223eb8","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709277828,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc07@simulacion.local"}
+{"t":1783709277862,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"b6ae7fee-d6f8-4d8d-9a06-4f105f207434","status":201}
+{"t":1783709277965,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"0f75fdb4-da84-4553-ad04-9fb4a5d316ed","status":201}
+{"t":1783709277980,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"5a2130e9-1c6d-4722-82ef-5c0957c9f803","status":201}
+{"t":1783709278020,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"11a2b461-42da-4c1a-96f7-bac7f4220185","status":201}
+{"t":1783709278042,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"0c1336eb-c2e7-46a9-8168-ba3d28817b79","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709278293,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"16f936e3-495b-4929-bb33-2916ac812f0f","status":201}
+{"t":1783709278315,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"6bd3d091-6e98-4af8-b4d6-26395da06ff7","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709278318,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"78e7db70-2a10-48b4-a97c-3201bd79f580","status":201}
+{"t":1783709278321,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"9698a936-f071-4826-aa78-ae6ad0eec0bd","status":201}
+{"t":1783709278330,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"4f92162f-8115-4a94-b0d9-a0828cef2f0c","status":201}
+{"t":1783709278335,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"11a2b461-42da-4c1a-96f7-bac7f4220185","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709278363,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"f08a07b2-e432-4c25-878b-9fab072f43cb","status":201}
+{"t":1783709278455,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"d3f411c0-776b-4e67-a6fc-8da96d87e050","status":201}
+{"t":1783709278461,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"50c4eb1a-2fce-4607-9d15-a6f0db12be82","status":201}
+{"t":1783709278541,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"9698a936-f071-4826-aa78-ae6ad0eec0bd","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709278549,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"0b293f1e-e329-4ec2-8b10-7b13cb5be081","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709278558,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"0c58eb3b-31cc-4b93-b32a-c850c2c06f4e","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709278576,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep10@simulacion.local"}
+{"t":1783709278649,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc04@simulacion.local"}
+{"t":1783709278769,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep10@simulacion.local"}
+{"t":1783709278770,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc07@simulacion.local"}
+{"t":1783709278859,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"1c198671-3833-48af-bf52-d1cb1dc3c2aa","status":201}
+{"t":1783709278898,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"57b93a78-b17d-4735-9913-2aa2f471ce66","status":201}
+{"t":1783709278914,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc04@simulacion.local"}
+{"t":1783709278929,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"0d780852-9d5e-4fd6-a165-b6387f7e4679","status":201}
+{"t":1783709278972,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"986e3130-5492-4d65-b475-7dc9baf00076","status":201}
+{"t":1783709278975,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"c82024a4-9817-4f16-af45-451692828e11","status":201}
+{"t":1783709278992,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"005aa47f-fe94-4a57-aaa6-290725f7b013","status":201}
+{"t":1783709279017,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"c9e5f083-0369-47d5-909f-0c3e30e58de8","status":201}
+{"t":1783709279051,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"552ac90f-0116-41b4-bec6-ba5d30488738","status":201}
+{"t":1783709279052,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"be2753fd-92f9-41a6-908e-d84675ab990c","status":201}
+{"t":1783709279074,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"57b93a78-b17d-4735-9913-2aa2f471ce66","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709279082,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep10@simulacion.local"}
+{"t":1783709279152,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"241225b0-7f69-4d59-ba0d-b4f1eebc389d","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709279259,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"ab5e76c7-16ff-447b-9c6d-766fc7a50b15","status":201}
+{"t":1783709279296,"tipo":"sobrecupo_paquete","paquete":"b0fce376-ae48-4f5c-a9c2-23c0306e3506","total":4,"extraAgendadas":1,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709279297,"tipo":"sobrecupo_paquete","paquete":"bd72d674-3d7e-448c-b552-308a37f9f8b3","total":1,"extraAgendadas":0,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709279396,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"3ccf7493-fd58-4a2f-a457-7c53706336f0","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709279424,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep09@simulacion.local"}
+{"t":1783709279454,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"57660047-5c58-42ac-b0aa-c59e840aa112","status":201}
+{"t":1783709279496,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"889249d0-d879-4faa-8da5-6b6567982bfb","status":201}
+{"t":1783709279538,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"744ffe64-a462-4835-8c75-0b64e64054fb","status":201}
+{"t":1783709279538,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"11481cac-7f3c-4c0c-8104-041146c01f13","status":201}
+{"t":1783709279541,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"064b1f48-ce0d-445d-8c7d-500bfe58268a","status":201}
+{"t":1783709279553,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"aaba9b10-ea1d-4675-a523-85bbbfeb326b","status":201}
+{"t":1783709279581,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"383fc247-076d-4ecd-b863-70a1beca2248","status":201}
+{"t":1783709279614,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"57b63935-b053-4da5-b575-f7e99c9a2fb6","status":201}
+{"t":1783709279627,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"66fdac76-cd9d-4e9e-8674-71e63e5667b5","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709279702,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"f08a07b2-e432-4c25-878b-9fab072f43cb","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709279706,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"005aa47f-fe94-4a57-aaa6-290725f7b013","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709279770,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep09@simulacion.local"}
+{"t":1783709279787,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"d3f411c0-776b-4e67-a6fc-8da96d87e050","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709279836,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"8dbadd2c-2fda-4816-b462-2f710bc2835d","status":201}
+{"t":1783709279865,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"a84d7788-6299-49dd-89be-1d7e39d93f24","status":201}
+{"t":1783709279866,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep11@simulacion.local"}
+{"t":1783709279955,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"a37f4b13-eb0e-40b6-b909-1677a9905e3f","status":201}
+{"t":1783709280093,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"cc88203f-e778-4ce5-8246-ff68d530cfd0","status":201}
+{"t":1783709280122,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"08c4a765-f5a6-4bef-a834-1efb2ac70170","status":201}
+{"t":1783709280140,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"a37f4b13-eb0e-40b6-b909-1677a9905e3f","status":409,"error":"{\"error\":\"PAQUETE_AGOTADO\",\"message\":\"Paquete agotado: se cobra como venta normal\",\"statusCode\":409}"}
+{"t":1783709280249,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"62a51e92-331b-4a04-b985-1a71c718db2d","status":201}
+{"t":1783709280251,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"0ffd0fd0-937b-4009-a5f1-520483fdc8fe","status":201}
+{"t":1783709280286,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"4bbcc84c-2821-436a-9d80-8212c341e928","status":201}
+{"t":1783709280297,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"0d780852-9d5e-4fd6-a165-b6387f7e4679","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709280315,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"c9e5f083-0369-47d5-909f-0c3e30e58de8","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709280322,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.cc01@simulacion.local"}
+{"t":1783709280333,"tipo":"sobrecupo_paquete","paquete":"698e0973-fee1-4ef3-a3a7-001503d4b904","total":4,"extraAgendadas":1,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709280370,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"38822a8c-3949-4fbe-96a6-c6c66a37999c","status":201}
+{"t":1783709280379,"tipo":"sobrecupo_paquete","paquete":"62e231cf-5090-483a-bd79-a45c5c95129f","total":4,"extraAgendadas":1,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709280385,"tipo":"sobrecupo_paquete","paquete":"f2497369-8e15-4ae3-9a32-2fc1597f48ce","total":1,"extraAgendadas":0,"rechazo":"PAQUETE_SIN_SESIONES"}
+{"t":1783709280388,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"1c198671-3833-48af-bf52-d1cb1dc3c2aa","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709280427,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"6d6066b7-e7f8-4028-a860-a1d6e68d77e8","status":201}
+{"t":1783709280524,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep09@simulacion.local"}
+{"t":1783709280607,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"c6f6b7e0-1acd-4766-a9c8-863b9874023c","status":201}
+{"t":1783709280630,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"af742946-0ed7-4131-beb0-a7402ca554b0","status":201}
+{"t":1783709280680,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"e9a94028-bb4e-4a71-b89c-62446679f2ca","status":201}
+{"t":1783709280720,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"a84d7788-6299-49dd-89be-1d7e39d93f24","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709280789,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"9f7ce4cd-7fa7-4104-8e8c-6601b88c2beb","status":201}
+{"t":1783709280826,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"383fc247-076d-4ecd-b863-70a1beca2248","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709280836,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"09079ccc-24a7-4790-a511-ff43ec5edf34","status":201}
+{"t":1783709280947,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"8dbadd2c-2fda-4816-b462-2f710bc2835d","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709280978,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"552ac90f-0116-41b4-bec6-ba5d30488738","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709281029,"tipo":"consumo","etiqueta":"consumo-normal","citaId":"f4b3de67-8792-41d5-8c5a-e8147e1cd9a7","status":201}
+{"t":1783709281088,"tipo":"consumo","etiqueta":"doble-consumo-misma-cita","citaId":"62a51e92-331b-4a04-b985-1a71c718db2d","status":409,"error":"{\"error\":\"CONFLICT\",\"message\":\"El registro ya existe (conflicto de unicidad)\",\"statusCode\":409}"}
+{"t":1783709281210,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep02@simulacion.local"}
+{"t":1783709281312,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep02@simulacion.local"}
+{"t":1783709281315,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"f7b3d8c5-ff27-4d7b-a23d-b691f01e32ee","status":409,"error":"{\"error\":\"SERVICIO_NO_CORRESPONDE\",\"message\":\"El servicio o la subcategoría de la cita no corresponde a este paquete\",\"statusCode\":409}"}
+{"t":1783709281320,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"32867071-b111-4825-a484-b96116e60ca9","status":409,"error":"{\"error\":\"SERVICIO_NO_CORRESPONDE\",\"message\":\"El servicio o la subcategoría de la cita no corresponde a este paquete\",\"statusCode\":409}"}
+{"t":1783709281380,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"76090dd2-873f-4d54-be93-3efdb753d778","status":201}
+{"t":1783709281383,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"6ba1a5b8-a12d-4e2f-ba68-6eeb71b326d4","status":201}
+{"t":1783709281384,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"05730a3b-a65f-4f32-96c5-9a14f0adef04","status":201}
+{"t":1783709281485,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep02@simulacion.local"}
+{"t":1783709281654,"tipo":"carrera_slot","contexto":"paquete","quien":"sim.recep07@simulacion.local"}
+{"t":1783709281741,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"fa916e58-7f40-4f3e-bbba-831eaaf73696","status":409,"error":"{\"error\":\"SERVICIO_NO_CORRESPONDE\",\"message\":\"El servicio o la subcategoría de la cita no corresponde a este paquete\",\"statusCode\":409}"}
+{"t":1783709281784,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"46d65aab-9849-454c-b98f-cf32ff6078a9","status":409,"error":"{\"error\":\"SERVICIO_NO_CORRESPONDE\",\"message\":\"El servicio o la subcategoría de la cita no corresponde a este paquete\",\"statusCode\":409}"}
+{"t":1783709281828,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"db3b2ccb-2b1a-4a57-a64a-29e13e1390bf","status":201}
+{"t":1783709281839,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"262afcf2-4462-4ce5-b5b2-2a8c88454a54","status":201}
+{"t":1783709281846,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"e0348d34-8c0a-4419-8343-4179af13e28d","status":201}
+{"t":1783709281886,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"8be11ae6-3c97-4e49-b65f-2c448c953eea","status":409,"error":"{\"error\":\"SERVICIO_NO_CORRESPONDE\",\"message\":\"El servicio o la subcategoría de la cita no corresponde a este paquete\",\"statusCode\":409}"}
+{"t":1783709282143,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"193dafde-1447-4bbb-85b1-5921ba651881","status":201}
+{"t":1783709282190,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"aa1d94dd-3439-439a-b3a1-d5495852b478","status":201}
+{"t":1783709282224,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"601bca1d-2b30-456f-aca1-c629ada5c214","status":409,"error":"{\"error\":\"SERVICIO_NO_CORRESPONDE\",\"message\":\"El servicio o la subcategoría de la cita no corresponde a este paquete\",\"statusCode\":409}"}
+{"t":1783709282248,"tipo":"consumo","etiqueta":"consumo-membresia","citaId":"8c2eeb06-182b-4b31-ac9c-959d041e8e17","status":201}
+{"t":1783709282423,"tipo":"consumo","etiqueta":"consumo-paquete-AJENO","citaId":"1746c868-2def-4f37-8d15-5a1c3bfdeac0","status":400,"error":"{\"error\":\"APP_ERROR\",\"message\":\"El paquete no es de este paciente\",\"statusCode\":400}"}
+{"t":1783709442789,"tipo":"BUG_combinada_vs_simple","fecha":"2026-08-06","hora":"08:00","vivas":0,"grupos":0,"statusCombi":409,"statusSimple":409}
+{"t":1783709442981,"tipo":"BUG_combinada_vs_simple","fecha":"2026-08-07","hora":"09:00","vivas":0,"grupos":0,"statusCombi":409,"statusSimple":409}
+{"t":1783709451278,"tipo":"BUG_combinada_vs_simple","fecha":"2026-08-06","hora":"08:00","vivas":0,"grupos":0,"statusCombi":409,"statusSimple":409}
+{"t":1783709797117,"tipo":"enfermedad_flujo_real","profesional":"Maximina Gutierrez Ñahuis","dia":"2026-07-18","citasActivas":1,"gestionadas":1,"bloqueoAntes":{"status":409,"error":"CITAS_EN_RANGO"},"bloqueoDespues":{"status":201},"agendarTrasBloqueo":{"status":409,"error":"SLOT_BLOQUEADO"}}
+{"t":1783709797229,"tipo":"enfermedad_flujo_real","profesional":"Jenny Rosario Chiclla Suehara","dia":"2026-07-23","citasActivas":1,"gestionadas":1,"bloqueoAntes":{"status":409,"error":"CITAS_EN_RANGO"},"bloqueoDespues":{"status":201},"agendarTrasBloqueo":{"status":409,"error":"SLOT_BLOQUEADO"}}
+{"t":1783709797312,"tipo":"enfermedad_flujo_real","profesional":"Gissela Victoria Morote Carmona","dia":"2026-07-20","citasActivas":1,"gestionadas":1,"bloqueoAntes":{"status":409,"error":"CITAS_EN_RANGO"},"bloqueoDespues":{"status":201},"agendarTrasBloqueo":{"status":400,"error":"SIN_COMPETENCIA"}}

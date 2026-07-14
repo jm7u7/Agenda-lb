@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { horaInicioValidaParaDuracion, timeToMinutes } from '@limablue/shared';
+import { horaInicioValidaParaDuracion, timeToMinutes, esCitaInactiva } from '@limablue/shared';
 import { useAgendaStore } from '../stores/agendaStore';
 import { sedesApi, profesionalesApi, horariosApi, type Sede } from '../api';
 import { citasApi, type CitaResumen } from '../api/citas';
@@ -138,7 +138,7 @@ export function AgendaPage() {
     const map = new Map<string, { horaInicio: string; duracionMinutos: number; unidad: string }[]>();
     for (const c of citasSedeTodas) {
       if (c.unidadNegocioId === unidadNegocioId) continue; // las de la unidad actual ya son tarjetas
-      if (['cancelada', 'no_show', 'reprogramada'].includes(c.estado)) continue;
+      if (esCitaInactiva(c.estado)) continue;
       const personas = [c.profesionalId, c.solicitadoProfesional?.id].filter(Boolean) as string[];
       for (const pid of personas) {
         const arr = map.get(pid) ?? [];
@@ -197,7 +197,9 @@ export function AgendaPage() {
       if (!citas) return;
       const ahora = new Date();
       const fechaAgenda = fechaStr(); // solo aplica al día visible
-      const hoy = new Date().toISOString().slice(0, 10);
+      // "Hoy" en hora LOCAL (Lima): con toISOString (UTC) a partir de las 19:00 ya era
+      // "mañana" y el auto-completado dejaba de correr la última parte del día.
+      const hoy = format(new Date(), 'yyyy-MM-dd');
       if (fechaAgenda !== hoy) return; // solo en el día de hoy
 
       const citasParaCompletar = citas.filter(c => {
@@ -257,6 +259,28 @@ export function AgendaPage() {
       return;
     }
 
+    // Una cita larga (60 min) puede caer en un slot libre pero PISAR la siguiente media
+    // hora ya ocupada. El backend igual lo rechaza; aquí se avisa con un mensaje claro
+    // antes de llamar a la API.
+    if (draggingCita.duracionMinutos > 30 && citas) {
+      const ini = timeToMinutes(nuevaHora);
+      const fin = ini + draggingCita.duracionMinutos;
+      const grupoIds = draggingCita.slotGrupoId
+        ? citas.filter(c => c.slotGrupoId === draggingCita.slotGrupoId).map(c => c.id)
+        : [draggingCita.id];
+      const choque = citas.find(c =>
+        c.profesionalId === nuevoProfesionalId &&
+        !grupoIds.includes(c.id) &&
+        !esCitaInactiva(c.estado) &&
+        timeToMinutes(c.horaInicio) < fin &&
+        timeToMinutes(c.horaInicio) + c.duracionMinutos > ini,
+      );
+      if (choque) {
+        toast.error(`No cabe ahí: chocaría con la cita de las ${choque.horaInicio}. Elige un espacio de ${draggingCita.duracionMinutos} min libres.`);
+        return;
+      }
+    }
+
     // Advertir si el paciente eligió el profesional y se está cambiando
     if (draggingCita.origenAsignacion === 'elegida_por_paciente' && draggingCita.profesionalId !== nuevoProfesionalId) {
       const profDestino = profesionales?.find(p => p.id === nuevoProfesionalId);
@@ -278,7 +302,7 @@ export function AgendaPage() {
       horaInicio: nuevaHora,
       origenAsignacion: profesionalCambio ? 'elegida_por_paciente' : 'asignada_automaticamente',
     });
-  }, [draggingCita, fechaStr, moverMutation, profesionales]);
+  }, [draggingCita, fechaStr, moverMutation, profesionales, citas]);
 
   const handleSlotClick = useCallback((hora: string, profesional: { id: string }) => {
     setDrawerState({ hora, profesionalId: profesional.id });
@@ -350,6 +374,7 @@ export function AgendaPage() {
           <button
             onClick={() => setDrawerState({})}
             className="btn-primary btn-sm mr-2"
+            data-testid="btn-nueva-cita"
           >
             + Nueva cita
           </button>
@@ -396,7 +421,7 @@ export function AgendaPage() {
             </div>
           ) : (
             <div className="flex-1 overflow-auto">
-              <div className="flex min-w-max relative">
+              <div className="flex min-w-max relative" data-testid="agenda-grid">
                 {/* Eje de horas pegado a la izquierda al hacer scroll horizontal */}
                 <div className="sticky left-0 z-20 bg-white border-r border-slate-200 shrink-0">
                   <EjeHoras apertura={aperturaGrid} cierre={cierreGrid} />

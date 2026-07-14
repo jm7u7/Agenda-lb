@@ -24,6 +24,7 @@ export interface Movimiento {
   fechaInicio: string;
   fechaFin: string | null;
   activa: boolean;
+  esRetorno: boolean;
   motivo: MotivoMovimiento;
   motivoLabel: string;
   notas: string | null;
@@ -93,7 +94,7 @@ export const movimientosApi = {
 
   editar: (
     id: string,
-    data: { fechaFin?: string | null; motivo?: MotivoMovimiento; notas?: string | null },
+    data: { profesionalId?: string; sedeId?: string; fechaInicio?: string; fechaFin?: string | null; motivo?: MotivoMovimiento; notas?: string | null },
   ) => api.put<Movimiento>(`/movimientos/${id}`, data),
 
   eliminar: (id: string) => api.delete(`/movimientos/${id}`),

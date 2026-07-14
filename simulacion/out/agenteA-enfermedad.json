@@ -1,0 +1,66 @@
+{
+ "enfermedades": [
+  {
+   "profesional": "Maximina Gutierrez Ñahuis",
+   "dia": "2026-07-18",
+   "citasActivas": 1,
+   "gestionadas": 1,
+   "bloqueoAntes": {
+    "status": 409,
+    "error": "CITAS_EN_RANGO"
+   },
+   "bloqueoDespues": {
+    "status": 201
+   },
+   "agendarTrasBloqueo": {
+    "status": 409,
+    "error": "SLOT_BLOQUEADO"
+   }
+  },
+  {
+   "profesional": "Jenny Rosario Chiclla Suehara",
+   "dia": "2026-07-23",
+   "citasActivas": 1,
+   "gestionadas": 1,
+   "bloqueoAntes": {
+    "status": 409,
+    "error": "CITAS_EN_RANGO"
+   },
+   "bloqueoDespues": {
+    "status": 201
+   },
+   "agendarTrasBloqueo": {
+    "status": 409,
+    "error": "SLOT_BLOQUEADO"
+   }
+  },
+  {
+   "profesional": "Gissela Victoria Morote Carmona",
+   "dia": "2026-07-20",
+   "citasActivas": 1,
+   "gestionadas": 1,
+   "bloqueoAntes": {
+    "status": 409,
+    "error": "CITAS_EN_RANGO"
+   },
+   "bloqueoDespues": {
+    "status": 201
+   },
+   "agendarTrasBloqueo": {
+    "status": 400,
+    "error": "SIN_COMPETENCIA"
+   }
+  }
+ ],
+ "bloqueoVsAgendamiento": {
+  "bloqueoStatus": 201,
+  "agendamientos": [
+   422,
+   400,
+   400,
+   400,
+   400
+  ],
+  "citasVivasEnBloqueo": 0
+ }
+}

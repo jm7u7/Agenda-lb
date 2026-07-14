@@ -1,0 +1,96 @@
+{
+ "total": 15,
+ "inesperados": 0,
+ "hallazgos": [
+  {
+   "ataque": "estado en cita inexistente",
+   "status": 404,
+   "ok": true,
+   "resp": "{\"error\":\"APP_ERROR\",\"message\":\"Cita no encontrada\",\"statusCode\":404}"
+  },
+  {
+   "ataque": "mover cita inexistente",
+   "status": 404,
+   "ok": true,
+   "resp": "{\"error\":\"APP_ERROR\",\"message\":\"Cita no encontrada\",\"statusCode\":404}"
+  },
+  {
+   "ataque": "paciente inexistente",
+   "status": 404,
+   "ok": true,
+   "resp": "{\"error\":\"APP_ERROR\",\"message\":\"Paciente no encontrado\",\"statusCode\":404}"
+  },
+  {
+   "ataque": "crear cita sin campos",
+   "status": 422,
+   "ok": true,
+   "resp": "{\"error\":\"VALIDATION_ERROR\",\"message\":\"Datos inválidos\",\"statusCode\":422,\"details\":[{\"campo\":\"pacienteId\",\"mensaje\":\"Required\"},{\"campo\":\"sedeId\",\"mensaje\":\"Required\"},{\"campo\":\"un"
+  },
+  {
+   "ataque": "crear cita fecha basura",
+   "status": 422,
+   "ok": true,
+   "resp": "{\"error\":\"VALIDATION_ERROR\",\"message\":\"Datos inválidos\",\"statusCode\":422,\"details\":[{\"campo\":\"fecha\",\"mensaje\":\"Invalid\"}]}"
+  },
+  {
+   "ataque": "estado inválido (volando)",
+   "status": 422,
+   "ok": true,
+   "resp": "{\"error\":\"VALIDATION_ERROR\",\"message\":\"Datos inválidos\",\"statusCode\":422,\"details\":[{\"campo\":\"estado\",\"mensaje\":\"Invalid enum value. Expected 'agendada' | 'confirmada' | 'llego' | "
+  },
+  {
+   "ataque": "ubigeo inválido en paciente",
+   "status": 422,
+   "ok": true,
+   "resp": "{\"error\":\"VALIDATION_ERROR\",\"message\":\"Datos inválidos\",\"statusCode\":422,\"details\":[{\"campo\":\"nombres\",\"mensaje\":\"String must contain at least 2 character(s)\"},{\"campo\":\"apellidoMa"
+  },
+  {
+   "ataque": "reprogramar cita CANCELADA",
+   "status": 400,
+   "ok": true,
+   "resp": "{\"error\":\"ESTADO_FINAL\",\"message\":\"No se puede mover una cita finalizada\",\"statusCode\":400}"
+  },
+  {
+   "ataque": "cancelar DOS veces",
+   "status": 400,
+   "ok": true,
+   "resp": "{\"error\":\"TRANSICION_INVALIDA\",\"message\":\"Transición inválida: cancelada → llego\",\"statusCode\":400}"
+  },
+  {
+   "ataque": "TZ: fecha 2026-07-15 se guarda igual",
+   "status": 200,
+   "ok": true,
+   "resp": "{\"guardada\":\"2026-07-15\"}"
+  },
+  {
+   "ataque": "recepcionista crea usuario (debe 403)",
+   "status": 403,
+   "ok": true,
+   "resp": "{\"error\":\"FORBIDDEN\",\"message\":\"Sin permisos para esta acción\",\"statusCode\":403}"
+  },
+  {
+   "ataque": "recepcionista ve analytics/kpis (debe 403)",
+   "status": 403,
+   "ok": true,
+   "resp": "{\"error\":\"FORBIDDEN\",\"message\":\"Sin permisos para esta acción\",\"statusCode\":403}"
+  },
+  {
+   "ataque": "sin token (debe 401)",
+   "status": 401,
+   "ok": true,
+   "resp": "{\"error\":\"UNAUTHORIZED\",\"message\":\"Token de autorización requerido\",\"statusCode\":401}"
+  },
+  {
+   "ataque": "cita 06:00 fuera de turno",
+   "status": 400,
+   "ok": true,
+   "resp": "{\"error\":\"SLOT_FUERA_HORARIO\",\"message\":\"El slot 06:00 está fuera del horario del profesional (09:00–18:00)\",\"statusCode\":400}"
+  },
+  {
+   "ataque": "Profilaxis 60min en :30",
+   "status": 400,
+   "ok": true,
+   "resp": "{\"error\":\"SLOT_HORA_INVALIDA\",\"message\":\"Los servicios de 1 hora solo pueden iniciarse en hora entera (08:00, 09:00, …)\",\"statusCode\":400}"
+  }
+ ]
+}

@@ -1,11 +1,15 @@
+// Ajustes por fecha (antes "Horarios de entrada"). CAPA 2 del modelo de horarios:
+// overrides de turno de días CONCRETOS — entrada 8/9 de Lun-Vie y presencia en días
+// especiales (domingo/feriado habilitado). A diferencia del modelo viejo, el override
+// afecta la agenda Y los horarios reservables (una sola verdad: `turnosDelDia`).
+// Se muestra dentro de la herramienta unificada HorariosPage.
+
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { format, addDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { sedesApi, profesionalesApi, type PodologaSemana, type DiaEntrada } from '../../api';
-import { useAuthStore } from '../../stores/authStore';
 import { cn } from '../../utils/cn';
 
 const DIA_LABEL = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -14,24 +18,48 @@ function hoyISO(): string {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
-// ── Fila de podóloga: 6 días con toggle 8/9 + acción de semana completa ────────
+// ¿El error es la salvaguarda de citas fuera del nuevo turno? → ofrecer forzar.
+function esConflictoCitas(e: Error): boolean {
+  return (e as Error & { data?: { error?: string } }).data?.error === 'HORARIO_CONFLICTO_CITAS';
+}
+
+// ── Fila de podóloga: 5 días con toggle 8/9 + acción de semana completa ────────
 function FilaPodologa({ p, sedeId, semanaRef }: { p: PodologaSemana; sedeId: string; semanaRef: string }) {
   const qc = useQueryClient();
   const iniciales = `${p.nombres[0] ?? ''}${p.apellidos[0] ?? ''}`.toUpperCase();
 
   const mut = useMutation({
-    mutationFn: ({ fechas, hora }: { fechas: string[]; hora: '08:00' | '09:00' }) =>
-      profesionalesApi.setEntrada(p.id, fechas, hora),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['horarios-entrada', sedeId, semanaRef] }),
-    onError: (e: Error) => toast.error(e.message),
+    mutationFn: ({ fechas, hora, forzar }: { fechas: string[]; hora: '08:00' | '09:00'; forzar?: boolean }) =>
+      profesionalesApi.setEntrada(p.id, fechas, hora, forzar),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['horarios-entrada', sedeId, semanaRef] });
+      // Refrescar la AGENDA y los SLOTS: el override de entrada define el turno real del día.
+      qc.invalidateQueries({ queryKey: ['profesionales-sede'] });
+      qc.invalidateQueries({ queryKey: ['disponibilidad'] });
+    },
+    onError: (e: Error, vars) => {
+      if (esConflictoCitas(e)) {
+        if (window.confirm(`${e.message}\n\n¿Aplicar la entrada de todos modos?`)) {
+          mut.mutate({ ...vars, forzar: true });
+          return;
+        }
+        return;
+      }
+      toast.error(e.message);
+    },
   });
 
   const nombreCorto = `${p.nombres.split(' ')[0]} ${p.apellidos.split(' ')[0]}`;
-  const todasIguales = p.dias.every(d => d.horaEntrada === p.dias[0]?.horaEntrada);
+  const diasLaborables = p.dias.filter(d => d.trabaja);
+  const todasIguales = diasLaborables.every(d => d.horaEntrada === diasLaborables[0]?.horaEntrada);
 
   const setSemana = (hora: '08:00' | '09:00') => {
-    mut.mutate({ fechas: p.dias.map(d => d.fecha), hora });
-    toast.success(`${nombreCorto}: toda la semana entra ${hora === '08:00' ? 'a las 8:00' : 'a las 9:00'}`);
+    // Solo los días que la persona TRABAJA (semana tipo): un toggle masivo no debe
+    // crear overrides en sus días libres.
+    mut.mutate(
+      { fechas: diasLaborables.map(d => d.fecha), hora },
+      { onSuccess: () => toast.success(`${nombreCorto}: su semana laboral entra ${hora === '08:00' ? 'a las 8:00' : 'a las 9:00'}`) },
+    );
   };
   const toggleDia = (d: DiaEntrada) => {
     const nueva = d.horaEntrada === '08:00' ? '09:00' : '08:00';
@@ -61,9 +89,22 @@ function FilaPodologa({ p, sedeId, semanaRef }: { p: PodologaSemana; sedeId: str
         </div>
       </div>
 
-      {/* 5 días Lun-Vie — clic para alternar 8/9 (excepción de ese día). Sábado siempre 08:00. */}
+      {/* 5 días Lun-Vie — clic para alternar 8/9 (override de ese día). Sábado siempre 08:00.
+          Los días sin horario base ("No trabaja") no son toggleables: el override no aplica ahí. */}
       <div className="grid grid-cols-5 gap-2">
         {p.dias.map(d => {
+          if (!d.trabaja) {
+            return (
+              <div
+                key={d.fecha}
+                title={`${DIA_LABEL[d.diaSemana]} ${format(parseISO(d.fecha), 'd MMM', { locale: es })} · no trabaja este día (ver Semana tipo)`}
+                className="flex flex-col items-center py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed"
+              >
+                <span className="text-xxs font-medium opacity-70">{DIA_LABEL[d.diaSemana]}</span>
+                <span className="text-xxs font-semibold">No trabaja</span>
+              </div>
+            );
+          }
           const es8 = d.horaEntrada === '08:00';
           return (
             <button
@@ -102,7 +143,11 @@ function PanelDiaEspecial({ sedeId }: { sedeId: string }) {
   const mut = useMutation({
     mutationFn: ({ id, presente, hora }: { id: string; presente: boolean; hora?: '08:00' | '09:00' }) =>
       profesionalesApi.setPresenciaExcepcion(id, sedeId, fecha, presente, hora),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['personal-excepcion', sedeId, fecha] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['personal-excepcion', sedeId, fecha] });
+      qc.invalidateQueries({ queryKey: ['profesionales-sede'] });
+      qc.invalidateQueries({ queryKey: ['disponibilidad'] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -169,10 +214,8 @@ function PanelDiaEspecial({ sedeId }: { sedeId: string }) {
   );
 }
 
-// ── Página ────────────────────────────────────────────────────────────────────
-export function HorariosEntradaPage() {
-  const navigate = useNavigate();
-  const puedeGestionar = useAuthStore(s => s.isCoordinadora()); // admin + coordinadora_sedes
+// ── Contenido de la pestaña "Ajustes por fecha" ────────────────────────────────
+export function AjustesFechaContent() {
   const [sedeSelId, setSedeSelId] = useState('');
   const [semanaRef, setSemanaRef] = useState<string>(hoyISO());
 
@@ -182,16 +225,8 @@ export function HorariosEntradaPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['horarios-entrada', sedeId, semanaRef],
     queryFn: () => profesionalesApi.listarHorariosEntrada(sedeId, semanaRef),
-    enabled: !!sedeId && puedeGestionar,
+    enabled: !!sedeId,
   });
-
-  if (!puedeGestionar) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-slate-50 text-slate-400 text-sm">
-        Solo la Coordinadora de Sedes (y el admin) pueden gestionar los horarios de entrada.
-      </div>
-    );
-  }
 
   const rangoSemana = data
     ? `${format(parseISO(data.semana.lunes), "d 'de' MMM", { locale: es })} – ${format(parseISO(data.semana.viernes), "d 'de' MMM yyyy", { locale: es })}`
@@ -199,19 +234,7 @@ export function HorariosEntradaPage() {
   const esSemanaActual = data ? parseISO(data.semana.lunes) <= new Date() && new Date() <= addDays(parseISO(data.semana.viernes), 3) : false;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-3 sticky top-0 z-10">
-        <button onClick={() => navigate('/herramientas')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all" title="Volver a Herramientas">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        <div className="w-9 h-9 rounded-xl bg-sky-500 flex items-center justify-center shrink-0"><span className="text-white text-lg">🕗</span></div>
-        <div>
-          <h1 className="text-base font-bold text-slate-900">Horarios de entrada</h1>
-          <p className="text-xs text-slate-500">Define por semana qué podólogas entran a las 8:00 o 9:00 (con excepciones por día)</p>
-        </div>
-      </div>
-
+    <>
       {/* Tabs de sede */}
       <div className="bg-white border-b border-slate-200 px-6 flex gap-0 overflow-x-auto">
         {sedes.map(s => (
@@ -224,7 +247,7 @@ export function HorariosEntradaPage() {
       </div>
 
       {/* Selector de semana */}
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-center gap-3 sticky top-[57px] z-10">
+      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-center gap-3">
         <button onClick={() => setSemanaRef(format(addDays(parseISO(semanaRef), -7), 'yyyy-MM-dd'))}
           className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-all" title="Semana anterior">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -249,8 +272,9 @@ export function HorariosEntradaPage() {
           <span className="text-lg leading-none">💡</span>
           <p className="text-xs text-sky-800 leading-relaxed">
             Elige la <strong>semana</strong> arriba y define la entrada de cada podóloga (Lun–Vie). Usa <strong>“Toda la semana”</strong>
-            para fijar los 5 días de una vez, o haz <strong>clic en un día</strong> para una excepción puntual (azul = 8:00, ámbar = 9:00).
-            Los <strong>sábados la entrada es siempre 8:00</strong>. El cambio se aplica de inmediato en la agenda de esa fecha.
+            para fijar los 5 días de una vez, o haz <strong>clic en un día</strong> para un ajuste puntual (azul = 8:00, ámbar = 9:00).
+            Los <strong>sábados la entrada es siempre 8:00</strong>. El cambio se aplica de inmediato en la agenda
+            <strong> y en los horarios reservables</strong> de esa fecha.
           </p>
         </div>
 
@@ -266,6 +290,6 @@ export function HorariosEntradaPage() {
 
         {sedeId && <PanelDiaEspecial sedeId={sedeId} />}
       </div>
-    </div>
+    </>
   );
 }

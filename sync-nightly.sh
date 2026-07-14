@@ -9,7 +9,9 @@ set -uo pipefail
 export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
 
 SRC="/Users/apple/Limablue Agenda/"
-REPO="$HOME/Documents/Git-Agenda"
+# Movido fuera de ~/Documents (carpeta TCC-protegida) para que el LaunchAgent pueda ejecutarlo
+# desde launchd sin exit 126. Ver ~/Library/LaunchAgents/com.limablue.agenda-backup.plist.
+REPO="$HOME/Agenda-backup"
 LOG="$REPO/sync-nightly.log"
 
 {
@@ -55,6 +57,7 @@ LOG="$REPO/sync-nightly.log"
     --exclude='dist/' \
     --exclude='build/' \
     --include='.env.example' \
+    --include='.env.production.example' \
     --exclude='.env' \
     --exclude='.env.*' \
     --exclude='.DS_Store' \
@@ -67,6 +70,12 @@ LOG="$REPO/sync-nightly.log"
     --exclude='limablue_dump.sql.gz.enc' \
     --exclude='sync-nightly.sh' \
     --exclude='sync-nightly.log' \
+    --exclude='logs/' \
+    --exclude='e2e/.auth/' \
+    --exclude='e2e/test-results/' \
+    --exclude='e2e/playwright-report/' \
+    --exclude='test-results/' \
+    --exclude='playwright-report/' \
     "$SRC" "$REPO/"
   echo "Código sincronizado desde: $SRC"
 

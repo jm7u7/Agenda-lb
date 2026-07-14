@@ -1,0 +1,25 @@
+# Caddy: TLS automático (Let's Encrypt) + reverse proxy same-origin.
+# Todo el tráfico del dominio va al servidor web (serve-prod.cjs), que sirve el frontend
+# estático y proxya internamente /api y /socket.io (incl. WebSocket) a la API.
+# Requiere que el DNS de $DOMAIN apunte a este servidor (registro A) y los puertos 80/443 abiertos.
+
+{$DOMAIN} {
+	encode gzip zstd
+
+	# Cabeceras de seguridad básicas (PII de salud).
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# WebSocket (tiempo real) y todo lo demás → web:5180 (serve-prod.cjs enruta /api y /socket.io a la API).
+	reverse_proxy web:5180
+
+	log {
+		output stdout
+		format console
+	}
+}

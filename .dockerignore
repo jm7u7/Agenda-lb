@@ -1,0 +1,30 @@
+# Se construye limpio dentro de la imagen (npm ci + build). Nunca copiar secretos ni artefactos locales.
+node_modules
+**/node_modules
+dist
+**/dist
+build
+**/build
+.git
+.gitignore
+# Secretos: JAMÁS en la imagen (se inyectan por env_file/environment en runtime)
+.env
+.env.*
+!.env.example
+!.env.production.example
+# Artefactos locales
+logs
+*.log
+apps/api/uploads
+e2e/.auth
+e2e/test-results
+e2e/playwright-report
+playwright-report
+test-results
+.claude
+.agents
+simulacion
+*.sql
+*.sql.gz
+*.enc
+.DS_Store

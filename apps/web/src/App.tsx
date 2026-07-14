@@ -18,7 +18,7 @@ import { RolesPage } from './pages/admin/RolesPage';
 import { NotificacionesAdminPage } from './pages/NotificacionesAdminPage';
 import { AlmuerzosPage } from './pages/herramientas/AlmuerzosPage';
 import { ConfirmacionMailPage } from './pages/herramientas/ConfirmacionMailPage';
-import { HorariosEntradaPage } from './pages/herramientas/HorariosEntradaPage';
+import { HorariosPage } from './pages/herramientas/HorariosPage';
 import { PermisosPage } from './pages/herramientas/PermisosPage';
 import { CanalesPage } from './pages/herramientas/CanalesPage';
 import { PromocionesPage } from './pages/herramientas/PromocionesPage';
@@ -29,7 +29,7 @@ import { RecordatoriosPanel } from './pages/herramientas/RecordatoriosPanel';
 import { BaroSolicitudPage } from './pages/herramientas/BaroSolicitudPage';
 import { CombinacionesPage } from './pages/herramientas/CombinacionesPage';
 import { ReportesRrhhPage } from './pages/herramientas/ReportesRrhhPage';
-import { HorariosPersonalPage } from './pages/herramientas/HorariosPersonalPage';
+import { ComposicionSedePage } from './pages/herramientas/ComposicionSedePage';
 import { VideosServicioPage } from './pages/herramientas/VideosServicioPage';
 
 export default function App() {
@@ -50,7 +50,9 @@ export default function App() {
         <Route path="/herramientas" element={<HerramientasPage />} />
         <Route path="/herramientas/almuerzos" element={<AlmuerzosPage />} />
         <Route path="/herramientas/confirmacion-mail" element={<ConfirmacionMailPage />} />
-        <Route path="/herramientas/horarios-entrada" element={<HorariosEntradaPage />} />
+        <Route path="/herramientas/horarios" element={<HorariosPage />} />
+        {/* Rutas viejas → herramienta unificada (enlaces guardados siguen funcionando) */}
+        <Route path="/herramientas/horarios-entrada" element={<Navigate to="/herramientas/horarios?tab=fechas" replace />} />
         <Route path="/herramientas/permisos" element={<PermisosPage />} />
         <Route path="/herramientas/canales" element={<CanalesPage />} />
         <Route path="/herramientas/promociones" element={<PromocionesPage />} />
@@ -62,7 +64,8 @@ export default function App() {
         <Route path="/herramientas/combinaciones" element={<CombinacionesPage />} />
         <Route path="/herramientas/videos-servicio" element={<VideosServicioPage />} />
         <Route path="/herramientas/reportes-rrhh" element={<ReportesRrhhPage />} />
-        <Route path="/herramientas/horarios-personal" element={<HorariosPersonalPage />} />
+        <Route path="/herramientas/composicion-sede" element={<ComposicionSedePage />} />
+        <Route path="/herramientas/horarios-personal" element={<Navigate to="/herramientas/horarios?tab=semana" replace />} />
         <Route path="/movimientos" element={<MovimientosPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/usuarios" element={<UsersPage />} />

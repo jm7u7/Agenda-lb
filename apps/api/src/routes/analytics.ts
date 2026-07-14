@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../db';
+import { redis } from '../redis';
 import { requireAuth, requireRol } from '../middleware/auth';
+import { AppError } from '../middleware/errorHandler';
 import { agregarRango, agregarHoy } from '../services/agregacion';
 
 const router = Router();
@@ -60,18 +64,84 @@ function prevPeriod(desde: string, hasta: string) {
 
 const requireCoordinadora = requireRol('admin', 'coordinadora_sedes');
 
-// ─── Recalcular agregados ──────────────────────────────────────────────────────
+// ─── Recalcular agregados (con candado anti-concurrencia) ──────────────────────
+// El ETL de agregados_diarios tarda ~2 min a volumen real; dos ejecuciones concurrentes se
+// pisarían sobre la misma tabla. Candado GLOBAL en Redis (cubre AMBOS endpoints de recálculo,
+// porque ambos escriben agregados_diarios): SET NX + TTL como candado; si ya hay uno en curso
+// se responde 409 (no se encola, no se espera). El TTL cubre el caso de proceso muerto que no
+// alcanzó a liberar. Se libera en `finally` SOLO si seguimos siendo el dueño del candado
+// (script Lua compare-and-delete) para no borrar un candado ajeno re-tomado tras expirar.
+const RECALC_LOCK_KEY = 'analytics:recalcular:lock';
+const RECALC_LOCK_TTL_S = 600; // 10 min
+const LUA_UNLOCK = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
+
+async function conLockRecalculo<T>(
+  meta: { usuarioId?: string; ip?: string; accion: string; detalle: Record<string, unknown> },
+  run: () => Promise<T>,
+): Promise<T> {
+  const token = randomUUID();
+  let tengoLock = false;
+  let redisVivo = true;
+  try {
+    tengoLock = (await redis.set(RECALC_LOCK_KEY, token, 'EX', RECALC_LOCK_TTL_S, 'NX')) === 'OK';
+  } catch (e) {
+    // Redis caído: no bloqueamos el recálculo por una caída de caché (coherente con el resto
+    // del proyecto), pero queda sin protección de concurrencia mientras Redis no esté.
+    redisVivo = false;
+    console.warn('[analytics] Redis no disponible para el candado de recálculo; se ejecuta sin lock', e);
+  }
+  if (redisVivo && !tengoLock) {
+    throw new AppError('Ya hay un recálculo de agregados en ejecución. Espera a que termine.', 409, 'RECALCULO_EN_CURSO');
+  }
+  try {
+    const resultado = await run();
+    // Auditoría: quién disparó el recálculo y su alcance/resultado (best-effort).
+    try {
+      await prisma.auditLog.create({
+        data: {
+          usuarioId: meta.usuarioId,
+          accion: meta.accion,
+          entidad: 'analytics',
+          entidadId: '00000000-0000-0000-0000-000000000000',
+          ip: meta.ip,
+          despues: { ...meta.detalle, resultado } as never,
+        },
+      });
+    } catch (e) {
+      console.warn('[analytics] no se pudo registrar AuditLog del recálculo', e);
+    }
+    return resultado;
+  } finally {
+    if (tengoLock) {
+      try {
+        await redis.eval(LUA_UNLOCK, 1, RECALC_LOCK_KEY, token);
+      } catch { /* no crítico: el TTL liberará el candado */ }
+    }
+  }
+}
+
+// PROPUESTA (no implementada — pendiente de aprobación): job programado de madrugada vía BullMQ
+// `repeatable` (p. ej. cron diario 03:00 America/Lima) que dispare el recálculo automáticamente,
+// para que agregados_diarios no dependa de disparos manuales. Reutilizaría este mismo candado
+// (`analytics:recalcular:lock`) para no colisionar con un recálculo manual en curso.
+
 router.post('/recalcular', requireAuth, requireCoordinadora, async (req, res) => {
   const { desde, hasta } = z.object({
     desde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     hasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   }).parse(req.body);
-  const n = await agregarRango(parseFechaStart(desde), parseFechaEnd(hasta));
+  const n = await conLockRecalculo(
+    { usuarioId: req.user?.userId, ip: req.ip, accion: 'recalcular_agregados', detalle: { desde, hasta } },
+    () => agregarRango(parseFechaStart(desde), parseFechaEnd(hasta)),
+  );
   res.json({ ok: true, grupos: n });
 });
 
-router.post('/recalcular/hoy', requireAuth, requireCoordinadora, async (_req, res) => {
-  const n = await agregarHoy();
+router.post('/recalcular/hoy', requireAuth, requireCoordinadora, async (req, res) => {
+  const n = await conLockRecalculo(
+    { usuarioId: req.user?.userId, ip: req.ip, accion: 'recalcular_agregados_hoy', detalle: { alcance: 'hoy' } },
+    () => agregarHoy(),
+  );
   res.json({ ok: true, grupos: n });
 });
 
@@ -262,41 +332,45 @@ router.get('/sedes', requireAuth, requireCoordinadora, async (req, res) => {
 router.get('/heatmap', requireAuth, requireCoordinadora, async (req, res) => {
   const params = rangoSchema.parse(req.query);
 
-  // Query citas directly for granularity
-  const citas = await prisma.cita.findMany({
-    where: {
-      fecha: { gte: parseFechaStart(params.desde), lte: parseFechaEnd(params.hasta) },
-      deletedAt: null,
-      ...(params.sedeId ? { sedeId: params.sedeId } : {}),
-      ...(params.unidadNegocioId ? { unidadNegocioId: params.unidadNegocioId } : {}),
-      ...(params.profesionalId ? { profesionalId: params.profesionalId } : {}),
-    },
-    select: { fecha: true, horaInicio: true, estado: true, slotRol: true },
-  });
+  // Agregación en SQL: agrupamos por (día de semana civil × hora) directamente en Postgres
+  // en vez de traer las ~280k citas del rango a Node. `EXTRACT(DOW FROM fecha)` (0=Dom…6=Sáb)
+  // usa el día CIVIL almacenado en la columna @db.Date — correcto e independiente de la zona
+  // horaria del proceso (`fecha.getDay()` restaba 5h en America/Lima y desfasaba un día).
+  // La hora sale de "horaInicio" ("HH:mm" local Lima). Se excluyen cancelada/reprogramada y
+  // las mitades SECUNDARIO de bloques combinados (el heatmap mide demanda física = 1 hora).
+  //
+  // ⚠️ CAMBIO DE COMPORTAMIENTO (2026-07-11): esta corrección MUEVE cada total al día de la
+  // semana correcto. Respecto a versiones anteriores los conteos aparecen "corridos" una
+  // columna (el bug UTC−5 los atribuía al día previo). NO es una regresión: es el fix del
+  // día de semana. Ver memory `gate0-analytics-perf`.
+  const filtros: Prisma.Sql[] = [
+    Prisma.sql`"deletedAt" IS NULL`,
+    Prisma.sql`fecha >= ${params.desde}::date AND fecha <= ${params.hasta}::date`,
+    Prisma.sql`estado::text NOT IN ('cancelada', 'reprogramada')`,
+    Prisma.sql`("slotRol" IS NULL OR "slotRol"::text <> 'SECUNDARIO')`,
+  ];
+  if (params.sedeId) filtros.push(Prisma.sql`"sedeId" = ${params.sedeId}::uuid`);
+  if (params.unidadNegocioId) filtros.push(Prisma.sql`"unidadNegocioId" = ${params.unidadNegocioId}::uuid`);
+  if (params.profesionalId) filtros.push(Prisma.sql`"profesionalId" = ${params.profesionalId}::uuid`);
 
-  // dia 0=Dom…6=Sab, hora 8..19
-  type Cell = { total: number; completadas: number };
-  const grid: Record<string, Cell> = {};
+  // dia 0=Dom…6=Sab, hora 8..19 — Postgres devuelve solo las celdas con datos (≤ 84 filas).
+  const rows = await prisma.$queryRaw<{ dia: number; hora: number; total: number; completadas: number }[]>(Prisma.sql`
+    SELECT EXTRACT(DOW FROM fecha)::int AS dia,
+           LEFT("horaInicio", 2)::int   AS hora,
+           COUNT(*)::int                AS total,
+           COUNT(*) FILTER (WHERE estado::text = 'completada')::int AS completadas
+    FROM citas
+    WHERE ${Prisma.join(filtros, ' AND ')}
+      AND LEFT("horaInicio", 2)::int BETWEEN 8 AND 19
+    GROUP BY 1, 2
+  `);
 
-  for (const c of citas) {
-    if (c.estado === 'cancelada' || c.estado === 'reprogramada') continue;
-    // Bloque combinado: la mitad SECUNDARIA comparte la misma hora física que el ancla.
-    // El heatmap mide demanda física → el bloque cuenta como UNA hora (se omite el extra).
-    if (c.slotRol === 'SECUNDARIO') continue;
-    const dia = c.fecha.getDay();
-    const hora = parseInt(c.horaInicio.slice(0, 2), 10);
-    if (hora < 8 || hora > 19) continue;
-    const key = `${dia}:${hora}`;
-    if (!grid[key]) grid[key] = { total: 0, completadas: 0 };
-    grid[key].total++;
-    if (c.estado === 'completada') grid[key].completadas++;
-  }
-
+  const grid = new Map(rows.map((r) => [`${r.dia}:${r.hora}`, r]));
   const result: { dia: number; hora: number; total: number; completadas: number }[] = [];
   for (let dia = 0; dia <= 6; dia++) {
     for (let hora = 8; hora <= 19; hora++) {
-      const cell = grid[`${dia}:${hora}`] ?? { total: 0, completadas: 0 };
-      result.push({ dia, hora, ...cell });
+      const cell = grid.get(`${dia}:${hora}`);
+      result.push({ dia, hora, total: cell?.total ?? 0, completadas: cell?.completadas ?? 0 });
     }
   }
 

@@ -40,6 +40,8 @@ export interface RecordatorioMetricas {
   pctPidioReprogramar: number;
   cuotaUsadaHoy: number;
   cuotaLimiteDiario: number;
+  cuotaReservaManual: number;
+  cuotaLimiteAutomatico: number;
   tiempoPromedioConfirmacionMin: number | null;
   porSede: { sede: string; enviados: number; confirmados: number; tasaConfirmacion: number }[];
   porDia: { fecha: string; enviados: number; confirmados: number }[];

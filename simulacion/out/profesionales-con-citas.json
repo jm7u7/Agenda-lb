@@ -1,0 +1,99 @@
+[
+ {
+  "id": "8349b845-3ce5-424e-a7b5-0b79fd1eb30f",
+  "nombre": "Maximina Gutierrez Ñahuis",
+  "sedeId": "56e99005-2481-40a9-b8e7-2d46f92a387c",
+  "fechas": [
+   "2026-07-18",
+   "2026-07-20",
+   "2026-07-21",
+   "2026-07-30"
+  ],
+  "citas": 4
+ },
+ {
+  "id": "a7876dae-5f8c-438d-8771-c4c8b27757f8",
+  "nombre": "Jenny Rosario Chiclla Suehara",
+  "sedeId": "de18c68d-796a-49b4-a101-ccd43e3a01e5",
+  "fechas": [
+   "2026-07-23",
+   "2026-08-07"
+  ],
+  "citas": 2
+ },
+ {
+  "id": "dc103ea0-92ca-4ac4-9833-5cbeaacd9918",
+  "nombre": "Gissela Victoria Morote Carmona",
+  "sedeId": "38e39bdf-5fff-4450-999b-de50eddc68cd",
+  "fechas": [
+   "2026-07-20",
+   "2026-08-08"
+  ],
+  "citas": 2
+ },
+ {
+  "id": "e0a5988f-89ce-4ae9-ae05-8bb58cfb77f1",
+  "nombre": "Fiorella Rios Peñaherrera",
+  "sedeId": "c6ef0553-a209-4427-ba5e-d2a480ed0ca2",
+  "fechas": [
+   "2026-07-18",
+   "2026-07-23"
+  ],
+  "citas": 2
+ },
+ {
+  "id": "1f5b04e2-e1f6-4d4a-8a80-09104b8b9ed3",
+  "nombre": "Mirtha Chavez Vasquez",
+  "sedeId": "38e39bdf-5fff-4450-999b-de50eddc68cd",
+  "fechas": [
+   "2026-07-16",
+   "2026-07-24"
+  ],
+  "citas": 2
+ },
+ {
+  "id": "e7972316-3e91-43fc-b1c6-77aaad98939a",
+  "nombre": "Ivonne Jill Auris Asca",
+  "sedeId": "c6ef0553-a209-4427-ba5e-d2a480ed0ca2",
+  "fechas": [
+   "2026-07-20"
+  ],
+  "citas": 1
+ },
+ {
+  "id": "38ddbca4-fb59-448c-b8d4-2798203183d3",
+  "nombre": "Fiorella Estephany Bouisson Carbajal",
+  "sedeId": "de18c68d-796a-49b4-a101-ccd43e3a01e5",
+  "fechas": [
+   "2026-07-16"
+  ],
+  "citas": 1
+ },
+ {
+  "id": "93d8bd28-ff0f-4bf4-b2fc-91e15263a8c6",
+  "nombre": "DanielSim ZZSIM Prueba",
+  "sedeId": "8c1ecbe0-5323-4843-947a-f23c21208203",
+  "fechas": [
+   "2026-07-24"
+  ],
+  "citas": 1
+ },
+ {
+  "id": "94c728be-9906-49e8-8cfd-0bfe6811b58a",
+  "nombre": "Erika Maria Saavedra Carbajal",
+  "sedeId": "38e39bdf-5fff-4450-999b-de50eddc68cd",
+  "fechas": [
+   "2026-08-08"
+  ],
+  "citas": 1
+ },
+ {
+  "id": "1e487a0f-dc03-47b7-a444-f6a61746a561",
+  "nombre": "Erika Shabell Chamorro Pacheco",
+  "sedeId": "8c1ecbe0-5323-4843-947a-f23c21208203",
+  "fechas": [
+   "2026-08-03"
+  ],
+  "citas": 1
+ }
+]

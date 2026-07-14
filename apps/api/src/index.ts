@@ -1,6 +1,8 @@
 import 'express-async-errors';
 import dotenv from 'dotenv';
-dotenv.config();
+// Por defecto carga `.env` (producción). Con ENV_FILE=.env.e2e (u otro) carga ese archivo:
+// lo usa el entorno de pruebas E2E aislado. Prod-neutral: sin ENV_FILE, comportamiento idéntico.
+dotenv.config(process.env.ENV_FILE ? { path: process.env.ENV_FILE } : undefined);
 
 // Zona horaria del PROCESO fija a UTC: toda fecha @db.Date se ancla a UTC (mediodía
 // para días, ver utils/fechaLima). Así el sistema se comporta IGUAL en cualquier host
@@ -46,6 +48,7 @@ import { horariosRouter } from './routes/horarios';
 import analyticsRouter from './routes/analytics';
 import analyticsAgentesRouter from './routes/analyticsAgentes';
 import exportarRouter from './routes/exportar';
+import composicionSedeRouter from './routes/composicionSede';
 import movimientosRouter from './routes/movimientos';
 import notificacionesRouter from './routes/notificaciones';
 import almuerzosRouter from './routes/almuerzos';
@@ -119,6 +122,7 @@ app.use(`${v1}/horarios`, horariosRouter);
 app.use(`${v1}/analytics/agentes`, analyticsAgentesRouter); // antes que /analytics (prefijo más específico)
 app.use(`${v1}/analytics`, analyticsRouter);
 app.use(`${v1}/exportar`, exportarRouter);
+app.use(`${v1}/composicion-sede`, composicionSedeRouter);
 app.use(`${v1}/movimientos`, movimientosRouter);
 app.use(`${v1}/notificaciones`, notificacionesRouter);
 app.use(`${v1}/almuerzos`, almuerzosRouter);

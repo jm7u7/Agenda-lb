@@ -6,7 +6,7 @@ import { AppError } from '../middleware/errorHandler';
 import { turnosDelDia } from '../services/disponibilidad';
 import { fechaDb } from '../utils/fechaLima';
 import { auditEnTx } from '../services/audit';
-import { redis } from '../redis';
+import { setOverrideTurnoFecha, setPresenciaExcepcion, setHorarioBase, efectosCambioHorario } from '../services/horarioService';
 
 const router = Router();
 
@@ -59,6 +59,11 @@ router.get('/', requireAuth, async (req, res) => {
         fecha: new Date((fecha ?? new Date().toISOString().slice(0, 10)) + 'T12:00:00'),
         deletedAt: null,
         profesionalId: { not: null },
+        // Una cita CANCELADA/REPROGRAMADA no es presencia: sin este filtro, un profesional
+        // que ya NO está asignado a la sede ese día seguía apareciendo como columna
+        // fantasma solo porque le cancelaron una cita (Fiorella "seguía" en Paz Soldán
+        // el día que su movimiento la mandaba a Lince).
+        estado: { notIn: ['cancelada', 'reprogramada'] },
         ...(unidadNegocioId ? { unidadNegocioId } : {}),
       },
       select: { profesionalId: true },
@@ -99,22 +104,9 @@ router.get('/', requireAuth, async (req, res) => {
     orderBy: [{ apellidos: 'asc' }, { nombres: 'asc' }],
   });
 
-  // Día de la semana de la fecha mostrada (para devolver el turno de ese día).
-  const diaSemAgenda = (fecha ? new Date(fecha + 'T12:00:00Z') : new Date()).getUTCDay();
-
-  // Overrides de entrada (8/9) específicos de la fecha mostrada — gestionados por
-  // la Coordinadora de Sedes. Tienen prioridad sobre la entrada base del horario.
-  const fechaOverride = fecha
-    ? new Date(fecha + 'T00:00:00Z')
-    : (() => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); return d; })();
-  const overrides = await prisma.entradaPodologa.findMany({
-    where: { profesionalId: { in: profesionales.map((p) => p.id) }, fecha: fechaOverride },
-    select: { profesionalId: true, horaInicio: true },
-  });
-  const overrideMap = new Map(overrides.map((o) => [o.profesionalId, o.horaInicio]));
-
-  // Turno efectivo de cada profesional ese día (incluye DOMINGOS habilitados: excepción
-  // de sede abierta + EntradaPodologa). Para días normales devuelve el horario base.
+  // Turno efectivo del día — RESOLVEDOR ÚNICO (`turnosDelDia`): base semanal +
+  // override por fecha, recortado a la ventana de la sede. La agenda muestra
+  // EXACTAMENTE lo que el motor de reservas permite; aquí no se recalcula nada.
   const turnos = (sedeId && fecha)
     ? await turnosDelDia(sedeId, fecha, profesionales.map((p) => p.id))
     : new Map<string, { horaInicio: string; horaFin: string }>();
@@ -166,16 +158,9 @@ router.get('/', requireAuth, async (req, res) => {
       };
     })(),
     iniciales: `${p.nombres[0] ?? ''}${p.apellidos[0] ?? ''}`.toUpperCase(),
-    // Turno del día mostrado (para que la agenda atenúe las horas fuera de jornada).
-    // Sábado (diaSemana 6): la entrada es SIEMPRE 08:00. Lun-Vie: override ?? base.
-    // La entrada mostrada NUNCA es antes de que ABRA la sede ese día: se recorta a
-    // `turno.horaInicio` (que ya respeta la apertura de la excepción, ej. domingo 09:00).
-    // El override (elección 8/9) solo la RETRASA cuando es más tarde que la apertura.
-    horaEntrada: diaSemAgenda === 6
-      ? (turno ? '08:00' : null)
-      : (turno
-          ? ((() => { const ov = overrideMap.get(p.id); return ov && ov > turno.horaInicio ? ov : turno.horaInicio; })())
-          : (overrideMap.get(p.id) ?? null)),
+    // Turno del día mostrado, tal cual lo resuelve `turnosDelDia` (la misma verdad
+    // que usa el motor de reservas). Sin sede/fecha no hay turno que mostrar.
+    horaEntrada: turno?.horaInicio ?? null,
     horaSalida: turno?.horaFin ?? null,
     };
   });
@@ -184,9 +169,13 @@ router.get('/', requireAuth, async (req, res) => {
     lista = lista.filter((row) => turnos.has(row.id) || idsConCita.has(row.id));
   }
 
-  // Las podólogas "Adicional" (capacidad extra) van SIEMPRE al final de la lista (columnas
-  // a la derecha en la agenda). El sort de V8 es estable → el resto conserva su orden alfabético.
-  lista.sort((a, b) => (a.nombres === 'Adicional' ? 1 : 0) - (b.nombres === 'Adicional' ? 1 : 0));
+  // Orden de columnas (izq → der): normales alfabético, luego "Adicional" (capacidad
+  // extra), y al final los marcados con `ordenAgenda` (p.ej. Wenceslao al extremo
+  // derecho). El sort de V8 es estable → dentro de cada grupo se conserva el alfabético.
+  const ordenMap = new Map(profesionales.map((p) => [p.id, p.ordenAgenda]));
+  const peso = (row: { id: string; nombres: string }) =>
+    ordenMap.get(row.id) ?? (row.nombres === 'Adicional' ? 500 : 0);
+  lista.sort((a, b) => peso(a) - peso(b));
 
   res.json(lista);
 });
@@ -237,7 +226,40 @@ router.get('/seleccionables', requireAuth, async (req, res) => {
   const map = new Map<string, { id: string; nombres: string; apellidos: string; tipo: string; porSolicitud: boolean }>();
   for (const p of asignadosReales) map.set(p.id, { ...p, porSolicitud: false });
   for (const p of porSolicitud) map.set(p.id, { ...p, porSolicitud: true });
-  res.json([...map.values()]);
+
+  // BLOQUEOS del día por profesional (permisos puntuales + almuerzos recurrentes), para
+  // que el selector de especialista DESACTIVE a quien está bloqueado a la hora elegida
+  // (misma fuente que usa la disponibilidad; aquí solo se expone al front).
+  const fechaStr = fecha ?? new Date().toISOString().slice(0, 10);
+  const dayStart = new Date(`${fechaStr}T00:00:00`);
+  const dayEnd = new Date(`${fechaStr}T23:59:59`);
+  const ids = [...map.keys()];
+  const bloqueosDia = ids.length === 0 ? [] : await prisma.bloqueoAgenda.findMany({
+    where: {
+      profesionalId: { in: ids },
+      deletedAt: null,
+      OR: [
+        { esRecurrente: false, fechaInicio: { lt: dayEnd }, fechaFin: { gt: dayStart } },
+        { esRecurrente: true, fechaInicio: { lte: dayEnd }, fechaFin: { gte: dayStart } },
+      ],
+    },
+    select: { profesionalId: true, horaInicio: true, horaFin: true, motivo: true, tipo: true, fechaInicio: true, fechaFin: true },
+  });
+  const horaDe = (d: Date) => `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  const bloqueosPorProf = new Map<string, { horaInicio: string; horaFin: string; motivo: string; tipo: string }[]>();
+  for (const b of bloqueosDia) {
+    const arr = bloqueosPorProf.get(b.profesionalId) ?? [];
+    arr.push({
+      // Hora desde los campos STRING (TZ-safe); fallback a los DateTime para filas viejas.
+      horaInicio: b.horaInicio ?? horaDe(b.fechaInicio),
+      horaFin: b.horaFin ?? horaDe(b.fechaFin),
+      motivo: b.motivo,
+      tipo: b.tipo,
+    });
+    bloqueosPorProf.set(b.profesionalId, arr);
+  }
+
+  res.json([...map.values()].map((p) => ({ ...p, bloqueos: bloqueosPorProf.get(p.id) ?? [] })));
 });
 
 const profesionalSchema = z.object({
@@ -335,41 +357,32 @@ router.get('/horarios-entrada', requireAuth, requireRol('admin', 'coordinadora_s
       apellidos: p.apellidos,
       colorAvatar: p.colorAvatar,
       dias: dias.map(d => {
-        const base = p.horarios.find(h => h.diaSemana === d.diaSemana)?.horaInicio ?? '08:00';
+        const baseRow = p.horarios.find(h => h.diaSemana === d.diaSemana);
         const ov = ovMap.get(`${p.id}|${d.iso}`);
-        return { fecha: d.iso, diaSemana: d.diaSemana, horaEntrada: ov ?? base, esExcepcion: !!ov };
+        // `trabaja=false` = sin horario base ese día de la semana: el toggle 8/9 no aplica
+        // (el resolvedor lo ignora en días normales) y la UI lo muestra como "No trabaja".
+        return { fecha: d.iso, diaSemana: d.diaSemana, horaEntrada: ov ?? baseRow?.horaInicio ?? '08:00', esExcepcion: !!ov, trabaja: !!baseRow };
       }),
     })),
   });
 });
 
-// PATCH /profesionales/:id/entrada  { fechas: string[], horaInicio: '08:00'|'09:00' }
+// PATCH /profesionales/:id/entrada  { fechas: string[], horaInicio: '08:00'|'09:00', forzar? }
 // Fija la entrada de 1 o varias fechas (toda la semana = 5 fechas Lun-Vie; excepción = 1 fecha).
-// La entrada 8/9 SOLO aplica de lunes a viernes; los sábados se ignoran (siempre 08:00).
+// Es un OVERRIDE DE TURNO por fecha (capa 2): afecta la agenda Y los horarios reservables.
+// Si el recorte deja citas fuera del turno responde 409 (repetir con forzar:true para aplicar).
 router.patch('/:id/entrada', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
-  const { fechas, horaInicio } = z.object({
+  const { fechas, horaInicio, forzar } = z.object({
     fechas: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1).max(7),
     horaInicio: z.enum(HORAS_ENTRADA),
+    forzar: z.boolean().optional(),
   }).parse(req.body);
 
-  const prof = await prisma.profesional.findUnique({ where: { id: req.params.id, deletedAt: null }, select: { id: true, tipo: true } });
-  if (!prof) throw new AppError('Profesional no encontrado', 404);
-  if (prof.tipo !== 'podologa') throw new AppError('La hora de entrada solo aplica a podólogas', 400);
-
-  // Solo Lun-Vie: descartar sábados/domingos.
-  const fechasLV = fechas.filter(f => { const dow = new Date(f + 'T00:00:00Z').getUTCDay(); return dow >= 1 && dow <= 5; });
-
-  const usuarioId = req.user?.userId;
-  for (const f of fechasLV) {
-    const fecha = new Date(f + 'T00:00:00Z');
-    await prisma.entradaPodologa.upsert({
-      where: { profesionalId_fecha: { profesionalId: prof.id, fecha } },
-      create: { profesionalId: prof.id, fecha, horaInicio, creadoPor: usuarioId },
-      update: { horaInicio, creadoPor: usuarioId },
-    });
-  }
-
-  res.json({ ok: true, id: prof.id, fechas: fechasLV, horaInicio });
+  const resultado = await setOverrideTurnoFecha({
+    profesionalId: req.params.id, fechas, horaInicio, forzar,
+    actor: { usuarioId: req.user?.userId, ip: req.ip },
+  });
+  res.json({ ok: true, id: req.params.id, fechas: resultado.fechas, horaInicio });
 });
 
 // ─── Personal de un DÍA EXCEPCIONAL habilitado (domingo/feriado que la sede abre) ──
@@ -420,27 +433,11 @@ router.patch('/:id/presencia-excepcion', requireAuth, requireRol('admin', 'coord
     horaInicio: z.enum(HORAS_ENTRADA).optional(),
   }).parse(req.body);
 
-  const prof = await prisma.profesional.findUnique({ where: { id: req.params.id, deletedAt: null }, select: { id: true, tipo: true } });
-  if (!prof) throw new AppError('Profesional no encontrado', 404);
-  if (prof.tipo !== 'podologa') throw new AppError('Solo aplica a podólogas', 400);
-
-  const fechaPunto = fechaDb(fecha);
-  // El día debe estar HABILITADO (excepción de sede abierta) para poder marcar presencia.
-  const exc = await prisma.excepcionHorario.findUnique({ where: { sedeId_fecha: { sedeId, fecha: fechaPunto } } });
-  if (!(exc && exc.abierto && exc.horaApertura && exc.horaCierre)) {
-    throw new AppError('Ese día no está habilitado para la sede. Ábrelo primero en Horarios (excepción).', 400, 'DIA_NO_HABILITADO');
-  }
-
-  if (presente) {
-    await prisma.entradaPodologa.upsert({
-      where: { profesionalId_fecha: { profesionalId: prof.id, fecha: fechaPunto } },
-      create: { profesionalId: prof.id, fecha: fechaPunto, horaInicio: horaInicio ?? '08:00', creadoPor: req.user?.userId },
-      update: { horaInicio: horaInicio ?? '08:00', creadoPor: req.user?.userId },
-    });
-  } else {
-    await prisma.entradaPodologa.deleteMany({ where: { profesionalId: prof.id, fecha: fechaPunto } });
-  }
-  res.json({ ok: true, id: prof.id, fecha, presente });
+  await setPresenciaExcepcion({
+    profesionalId: req.params.id, sedeId, fecha, presente, horaInicio,
+    actor: { usuarioId: req.user?.userId, ip: req.ip },
+  });
+  res.json({ ok: true, id: req.params.id, fecha, presente });
 });
 
 // ─── DÍAS ESPECIALES / EXCEPCIONES — herramienta unificada ───────────────────
@@ -570,6 +567,10 @@ router.post('/dia-especial/set', requireAuth, requireRol('admin', 'coordinadora_
       errores.push({ fecha, error: e instanceof Error ? e.message : String(e) });
     }
   }
+  // Efectos comunes de todo cambio de horario: invalidar caché de disponibilidad + tiempo real.
+  if (resultados.length > 0) {
+    await efectosCambioHorario({ profesionalId, sedeId, fechas: resultados.map((r) => r.fecha) });
+  }
   res.json({ resultados, errores });
 });
 
@@ -626,56 +627,11 @@ const horarioDiaSchema = z.object({
   turno: z.enum(['manana', 'tarde', 'completo']).optional(),
 });
 router.put('/:id/horario', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
-  const data = z.object({ dias: z.array(horarioDiaSchema).max(7) }).parse(req.body);
-  const prof = await prisma.profesional.findFirst({ where: { id: req.params.id, deletedAt: null }, select: { id: true, nombres: true, apellidos: true } });
-  if (!prof) throw new AppError('Profesional no encontrado', 404);
-
-  const vistos = new Set<number>();
-  for (const d of data.dias) {
-    if (vistos.has(d.diaSemana)) throw new AppError('Hay un día repetido en el horario', 400, 'DIA_DUPLICADO');
-    vistos.add(d.diaSemana);
-    if (d.horaFin <= d.horaInicio) throw new AppError('La hora de fin debe ser mayor que la de inicio', 400, 'RANGO_INVALIDO');
-  }
-
-  const antes = await prisma.horarioProfesional.findMany({
-    where: { profesionalId: prof.id, activo: true },
-    select: { diaSemana: true, horaInicio: true, horaFin: true },
-    orderBy: { diaSemana: 'asc' },
+  const data = z.object({ dias: z.array(horarioDiaSchema).max(7), forzar: z.boolean().optional() }).parse(req.body);
+  const { horarios } = await setHorarioBase({
+    profesionalId: req.params.id, dias: data.dias, forzar: data.forzar,
+    actor: { usuarioId: req.user?.userId, ip: req.ip },
   });
-
-  await prisma.$transaction(async (tx) => {
-    for (let dia = 0; dia <= 6; dia++) {
-      const d = data.dias.find((x) => x.diaSemana === dia);
-      if (d) {
-        await tx.horarioProfesional.upsert({
-          where: { profesionalId_diaSemana: { profesionalId: prof.id, diaSemana: dia } },
-          create: { profesionalId: prof.id, diaSemana: dia, horaInicio: d.horaInicio, horaFin: d.horaFin, turno: (d.turno ?? 'completo') as never, activo: true },
-          update: { horaInicio: d.horaInicio, horaFin: d.horaFin, turno: (d.turno ?? 'completo') as never, activo: true },
-        });
-      } else {
-        // Día sin trabajar: desactiva la fila si existía (no atiende ese día).
-        await tx.horarioProfesional.updateMany({ where: { profesionalId: prof.id, diaSemana: dia }, data: { activo: false } });
-      }
-    }
-    await auditEnTx(tx, {
-      usuarioId: req.user?.userId,
-      accion: 'editar_horario_semanal',
-      entidad: 'profesional',
-      entidadId: prof.id,
-      antes: { dias: antes },
-      despues: { dias: data.dias },
-      ip: req.ip,
-    });
-  });
-
-  // El horario semanal afecta la disponibilidad de MUCHAS fechas futuras (no una sola),
-  // así que se limpia toda la caché de disponibilidad (acción admin poco frecuente).
-  try {
-    const keys = await redis.keys('cache:disponibilidad:*');
-    if (keys.length > 0) await redis.del(...keys);
-  } catch { /* la caché tiene TTL; no es crítico */ }
-
-  const horarios = await prisma.horarioProfesional.findMany({ where: { profesionalId: prof.id, activo: true }, orderBy: { diaSemana: 'asc' } });
   res.json({ ok: true, horarios });
 });
 

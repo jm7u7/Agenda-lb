@@ -1,0 +1,515 @@
+{
+ "disparados": 40,
+ "disparoOk": 0,
+ "disparoFallos": [
+  {
+   "status": 429,
+   "resp": "{\"error\":\"CUOTA_DIARIA\",\"message\":\"Se alcanzó el límite diario de correos. El recordatorio quedó en cola para el día siguiente.\",\"statusCode\":429}"
+  },
+  {
+   "status": 429,
+   "resp": "{\"error\":\"CUOTA_DIARIA\",\"message\":\"Se alcanzó el límite diario de correos. El recordatorio quedó en cola para el día siguiente.\",\"statusCode\":429}"
+  },
+  {
+   "status": 429,
+   "resp": "{\"error\":\"CUOTA_DIARIA\",\"message\":\"Se alcanzó el límite diario de correos. El recordatorio quedó en cola para el día siguiente.\",\"statusCode\":429}"
+  },
+  {
+   "status": 429,
+   "resp": "{\"error\":\"CUOTA_DIARIA\",\"message\":\"Se alcanzó el límite diario de correos. El recordatorio quedó en cola para el día siguiente.\",\"statusCode\":429}"
+  },
+  {
+   "status": 429,
+   "resp": "{\"error\":\"CUOTA_DIARIA\",\"message\":\"Se alcanzó el límite diario de correos. El recordatorio quedó en cola para el día siguiente.\",\"statusCode\":429}"
+  }
+ ],
+ "conResendId": 60,
+ "distribResend": {
+  "http_401": 60
+ },
+ "porPatronSandbox": {
+  "delivered": 50,
+  "bounced": 7,
+  "complained": 3
+ },
+ "muestra": [
+  {
+   "emailId": "d77e087a-6689-4fcd-9667-d5aa27f0493c",
+   "citaId": "ddb5a497-8d7f-4dcc-abf0-5383806c3e1f",
+   "email": "delivered+paciente318@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "acfddf2c-1fba-45b6-883d-a51ee4966afe",
+   "citaId": "f157d727-ed6e-4868-b679-1ae3ad6e0899",
+   "email": "delivered+paciente316@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "2ef8ea16-d075-40ca-9ba4-89186314104a",
+   "citaId": "109ab3d8-0f89-4702-bd92-ca403e8f6345",
+   "email": "delivered+paciente315@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "b04f7897-8916-42fe-bd1b-0a044d4d9e62",
+   "citaId": "50d91263-e9eb-4fd6-b411-4baa854cca11",
+   "email": "delivered+paciente306@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "a935fdc8-c977-4087-b032-3a680e876963",
+   "citaId": "2ce5f2a2-1f2e-4f75-bd5f-14159b701df5",
+   "email": "delivered+paciente302@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "707559a9-1eac-4e74-8e2b-af715b71fbc4",
+   "citaId": "a80e9dc8-c230-4e23-8e4e-52bfe301f2c5",
+   "email": "delivered+paciente301@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "d9b91fc9-ee3a-4678-87bd-3c51b870fbd4",
+   "citaId": "592272a8-6437-4f56-a76f-cdf3eaf3c2a5",
+   "email": "delivered+paciente309@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "1fdb2f73-5bd2-4479-9d0a-8f916141b5ec",
+   "citaId": "ecd5f940-3f68-44be-8338-51cfa9fc21df",
+   "email": "delivered+paciente303@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  }
+ ],
+ "tabla": [
+  {
+   "emailId": "d77e087a-6689-4fcd-9667-d5aa27f0493c",
+   "citaId": "ddb5a497-8d7f-4dcc-abf0-5383806c3e1f",
+   "email": "delivered+paciente318@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "acfddf2c-1fba-45b6-883d-a51ee4966afe",
+   "citaId": "f157d727-ed6e-4868-b679-1ae3ad6e0899",
+   "email": "delivered+paciente316@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "2ef8ea16-d075-40ca-9ba4-89186314104a",
+   "citaId": "109ab3d8-0f89-4702-bd92-ca403e8f6345",
+   "email": "delivered+paciente315@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "b04f7897-8916-42fe-bd1b-0a044d4d9e62",
+   "citaId": "50d91263-e9eb-4fd6-b411-4baa854cca11",
+   "email": "delivered+paciente306@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "a935fdc8-c977-4087-b032-3a680e876963",
+   "citaId": "2ce5f2a2-1f2e-4f75-bd5f-14159b701df5",
+   "email": "delivered+paciente302@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "707559a9-1eac-4e74-8e2b-af715b71fbc4",
+   "citaId": "a80e9dc8-c230-4e23-8e4e-52bfe301f2c5",
+   "email": "delivered+paciente301@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "d9b91fc9-ee3a-4678-87bd-3c51b870fbd4",
+   "citaId": "592272a8-6437-4f56-a76f-cdf3eaf3c2a5",
+   "email": "delivered+paciente309@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "1fdb2f73-5bd2-4479-9d0a-8f916141b5ec",
+   "citaId": "ecd5f940-3f68-44be-8338-51cfa9fc21df",
+   "email": "delivered+paciente303@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "c0661407-282d-467b-b4c3-9e9f141983d4",
+   "citaId": "c47f675d-96f2-4eaf-8073-f7902bdb95d4",
+   "email": "delivered+paciente313@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "568a760b-a346-4acf-988a-9e4b241e2a8c",
+   "citaId": "d711d45b-7f6c-44b1-917c-23d6736fd8f3",
+   "email": "delivered+paciente292@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "14ff94f8-2de2-4bc9-823f-d8676231cb6c",
+   "citaId": "238e1df1-5f41-4fbf-94ce-dcc65458733e",
+   "email": "bounced+paciente285@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "9fed28e8-9dda-4d3d-903c-63dcc89728c8",
+   "citaId": "971ebd61-5509-4f9a-b88b-f0416fa4e94c",
+   "email": "delivered+paciente292@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "a064a06d-85d2-4466-bd90-dab8259c4162",
+   "citaId": "ab84c081-1078-474e-8971-bfbbe764b240",
+   "email": "bounced+paciente294@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "32acf5f8-282f-4895-a4f2-2a9b1eba937e",
+   "citaId": "4b2ef314-aa78-42ef-a716-a8ce8ea5dc11",
+   "email": "delivered+paciente273@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "6b07e276-1b48-4d25-91b4-40bc88073cf3",
+   "citaId": "76e79bcd-7194-4f2e-89e7-c8cc7ca135d3",
+   "email": "delivered+paciente291@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "3207b9ae-fac1-4bd1-b4e2-c5261f898725",
+   "citaId": "fa11f578-f2bb-4010-b954-66c4a952b4ba",
+   "email": "delivered+paciente290@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "e77e34a5-be40-448a-9f49-f36182f83bb9",
+   "citaId": "bf4d6280-4841-4522-b32e-ed1c5dfa58a7",
+   "email": "delivered+paciente286@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "2d2ba9f7-780b-43b2-9c88-ca9d13278b71",
+   "citaId": "359f8a89-bb67-4cc8-82c5-5ec8a9fc18c2",
+   "email": "delivered+paciente298@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "b1444b4c-5231-483c-8123-b45727752c2e",
+   "citaId": "be30d09d-320f-4430-a52f-feb832775357",
+   "email": "bounced+paciente250@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "c0d06e1e-5e05-4bf2-becb-bdf06656ad26",
+   "citaId": "9019b47b-cbc1-4aa6-a4b7-b9f441ed137c",
+   "email": "delivered+paciente232@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "65246f97-ca1b-4c3e-8e1f-bea9b5d7c6d6",
+   "citaId": "28158b27-7382-4109-a1fc-e659ca8a705e",
+   "email": "delivered+paciente210@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "930cdf8d-acad-4355-bd90-b4ea3886dd51",
+   "citaId": "107347e4-f0cc-4c7b-acb2-6469d2c6e8d3",
+   "email": "delivered+paciente276@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "995fefbe-ca04-44b4-bfd5-93c1ecfe5931",
+   "citaId": "964095a6-4a37-4039-8c01-5bcfda1953e7",
+   "email": "delivered+paciente276@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "6d58d501-d488-44c7-a642-0d604c341035",
+   "citaId": "2868891f-4f7f-4238-9a05-1d533eb45beb",
+   "email": "delivered+paciente268@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "5fe8ae7c-fd9e-40d0-b35d-bd6f649ce35e",
+   "citaId": "4c2cd3bb-67ab-4530-a672-21e04e8e9e9f",
+   "email": "delivered+paciente267@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "c6e42fa2-8b23-40a8-a1f9-a2684bacff3f",
+   "citaId": "91ccdc7a-9633-448e-aa1d-efc01fc5d43b",
+   "email": "delivered+paciente260@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "a277cc00-c2e6-4f9d-8b25-0f209f0c0c5b",
+   "citaId": "c2120d6c-2fa4-4f7b-96a7-40e977eb8ac4",
+   "email": "delivered+paciente283@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "5de2c25f-2b74-4305-8db7-feb786c5d3ff",
+   "citaId": "07d2e23d-2170-4839-86ea-726aa07890d2",
+   "email": "delivered+paciente252@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "dcf167bd-b1b8-4107-9d43-6c3a4443d2de",
+   "citaId": "b3c7943d-ed1d-483d-b1fb-aad7cb4fefe4",
+   "email": "delivered+paciente255@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "130468f8-1112-4cb6-b14f-a4ca91cb02e1",
+   "citaId": "68a95cc0-886f-43af-ad68-0f5e7d05a7ca",
+   "email": "delivered+paciente249@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "97485038-1b6e-4e5a-bb1b-86775fc433d2",
+   "citaId": "d9a8192c-650c-435c-827b-d7c9668a54cb",
+   "email": "bounced+paciente238@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "103e3257-e007-4719-aacc-180b0d2cafb5",
+   "citaId": "3cc8dc00-d194-48de-8fec-17119b0fee6d",
+   "email": "delivered+paciente234@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "47c609d5-f10d-4659-b3fd-ebdc59859337",
+   "citaId": "7c2eb358-9b15-4cc8-9b05-12539caa480a",
+   "email": "delivered+paciente232@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "44822f45-580d-4e35-928b-4ccdf5555ed6",
+   "citaId": "5fc7ca0d-a286-45e0-b8c6-2ababf615658",
+   "email": "delivered+paciente224@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "60bbbc6e-531f-4515-aaab-549afc713447",
+   "citaId": "8c056324-181c-4a13-b3cf-bdc8d6f9f96b",
+   "email": "delivered+paciente251@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "32a84749-9fbc-4202-be0f-69e6937c02e9",
+   "citaId": "51a8cd4d-1918-4870-aea0-ece1b8865742",
+   "email": "delivered+paciente237@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "18b181d4-62e2-484c-ba20-8f20a0955337",
+   "citaId": "3e246534-8e7b-48c4-bcdc-3113d44484d1",
+   "email": "delivered+paciente274@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "30c31f2f-7300-4b5b-8530-67bb3cf9221e",
+   "citaId": "4fef81d8-a919-4a0d-80ea-40da6feb28cb",
+   "email": "complained+paciente186@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "2803d0f5-cca0-425f-9b64-74d800916310",
+   "citaId": "a665631c-80d7-4428-9473-50c932db406e",
+   "email": "delivered+paciente204@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "91405f5c-b366-4d72-8a61-62aba974ce4e",
+   "citaId": "92abf7bc-6724-443d-8ac1-3da761b964f6",
+   "email": "delivered+paciente201@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "0ae108a8-45c4-4c86-aed7-878db071eba3",
+   "citaId": "0b6c9a1e-e08d-4550-ba59-043e43cf92f4",
+   "email": "delivered+paciente207@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "1b941b71-b703-42bb-aaca-efdf919d589d",
+   "citaId": "8090b328-ee4e-420e-87ca-09b583e6f6d6",
+   "email": "bounced+paciente238@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "728db86a-783e-4990-b698-db9cb9e370bd",
+   "citaId": "6e2e0071-8843-4477-ac62-640a785a6057",
+   "email": "delivered+paciente194@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "5d72b65f-c986-4b57-abc8-fcb6f3f60e32",
+   "citaId": "f9b83c99-d721-4571-864e-b5f27dc85c9d",
+   "email": "delivered+paciente226@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "fe5abb51-9e6c-48fe-bc40-d5cebdf684a3",
+   "citaId": "60fd5474-d047-4d6b-912b-1f31ea25d23f",
+   "email": "delivered+paciente239@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "db5f743f-73fa-4736-9eae-d52460aa9a00",
+   "citaId": "506c305b-b8e9-47b6-a193-8e2d6a9535a7",
+   "email": "delivered+paciente224@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "ef739623-5dae-4699-ae75-4ad1820800e2",
+   "citaId": "81d3a01e-894a-4a1c-ae65-1f32b58c26cd",
+   "email": "complained+paciente248@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "057ef756-c720-4865-bb83-97de846f9d03",
+   "citaId": "be60b3e8-f1f8-47a9-a775-f2d1b91c5af8",
+   "email": "delivered+paciente193@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "81a54fb8-7136-43e1-bca2-c989290251af",
+   "citaId": "09fd1370-e95c-4ecc-b8cd-1341eec8fb91",
+   "email": "bounced+paciente200@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "8f7c80cb-4903-4791-8493-2988f02f3f3f",
+   "citaId": "6063e186-fa2d-444e-b0fc-d769e4cc52d0",
+   "email": "delivered+paciente190@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "e880e14c-65d5-4b77-baf0-61439042147b",
+   "citaId": "e4c30c50-502a-4d6e-9e65-09eb52ec5e80",
+   "email": "delivered+paciente175@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "8552192c-1f5a-4178-8676-5e2f44d77e27",
+   "citaId": "d7358b96-3c0d-4476-9b2d-2b213c42a3c2",
+   "email": "delivered+paciente189@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "fb4d682b-0f28-46fc-b60a-5f824c7b5464",
+   "citaId": "d2a8373f-4280-4b59-b048-e78b8779e239",
+   "email": "delivered+paciente191@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "1266b9e0-55b5-4f3a-865c-e325f1c642d6",
+   "citaId": "ac718063-a1a4-4a7a-82e4-4df1173e11db",
+   "email": "delivered+paciente180@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "0af3da58-a4a3-4446-b3e8-8e9f32c51b6c",
+   "citaId": "5e0c43a5-f884-4888-88b9-b7561addc18b",
+   "email": "bounced+paciente218@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "7c55fc6f-aee6-4c61-beb6-ae14fd8662d6",
+   "citaId": "d63e9c11-b90e-4da4-b846-016a27bedf1a",
+   "email": "delivered+paciente199@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "bf109cc5-8df1-4f25-b0c6-ad36f5ba1dce",
+   "citaId": "6a853f60-dc58-4f66-952a-bcd77d9b0c78",
+   "email": "complained+paciente186@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "73d74af4-9cac-4345-b020-833ee06073cd",
+   "citaId": "969172d8-af57-4b96-ab38-bbe8ef84a03d",
+   "email": "delivered+paciente262@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "ddde1501-b067-4117-94ac-b15e539dc951",
+   "citaId": "1d1f8074-17ba-47f7-8008-d12c42d80e90",
+   "email": "delivered+paciente192@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  },
+  {
+   "emailId": "9d253d8e-d89d-4c56-918e-30b02abece8c",
+   "citaId": "048b5b77-83db-403f-a66f-0294ad5ceabb",
+   "email": "delivered+paciente157@resend.dev",
+   "estadoBD": "ENVIADO",
+   "resendEvento": "http_401"
+  }
+ ]
+}

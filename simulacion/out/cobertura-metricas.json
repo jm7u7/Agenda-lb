@@ -1,0 +1,152 @@
+{
+ "plantillas": {
+  "/auth/login": {
+   "200": 21
+  },
+  "/sedes": {
+   "200": 8
+  },
+  "/users": {
+   "201": 20,
+   "403": 1
+  },
+  "/pacientes [crear]": {
+   "201": 500,
+   "422": 1
+  },
+  "/horarios/:sedeId/excepciones": {
+   "200": 5
+  },
+  "/analytics/unidades": {
+   "200": 5
+  },
+  "/servicios": {
+   "200": 9
+  },
+  "/promociones": {
+   "200": 2
+  },
+  "/canales": {
+   "200": 2
+  },
+  "/combinaciones/config": {
+   "200": 3
+  },
+  "/disponibilidad": {
+   "200": 1415,
+   "400": 32
+  },
+  "/citas [crear]": {
+   "201": 789,
+   "409": 1044,
+   "422": 3,
+   "400": 7
+  },
+  "/citas/:id [DELETE]": {
+   "200": 38
+  },
+  "/citas/:id/estado": {
+   "200": 2903,
+   "404": 1,
+   "422": 1,
+   "400": 1
+  },
+  "/citas/:id/mover": {
+   "200": 243,
+   "409": 7,
+   "404": 1,
+   "400": 1
+  },
+  "/citas [lista]": {
+   "200": 8,
+   "401": 1
+  },
+  "/permisos [crear]": {
+   "409": 10,
+   "201": 4
+  },
+  "/profesionales/:id/horario [PUT]": {
+   "409": 1
+  },
+  "/profesionales/:id/horario [PUT forzar]": {
+   "200": 1
+  },
+  "/citas/combinada": {
+   "201": 19,
+   "409": 40,
+   "400": 25
+  },
+  "/paquetes [plantillas]": {
+   "200": 1
+  },
+  "/membresias/vendibles": {
+   "200": 1
+  },
+  "/paquetes/paciente/:id [vender]": {
+   "201": 75
+  },
+  "/citas [crear c/paquete]": {
+   "201": 179,
+   "409": 47
+  },
+  "/consumos/cita/:citaId": {
+   "201": 159,
+   "409": 93,
+   "400": 1
+  },
+  "/membresias/:id/vender": {
+   "201": 15
+  },
+  "/pacientes/:id/paquetes": {
+   "200": 1
+  },
+  "/pacientes/:id": {
+   "404": 1
+  },
+  "/analytics/kpis": {
+   "403": 1
+  },
+  "/paquetes": {
+   "200": 1
+  },
+  "/paquetes/paciente/:id": {
+   "201": 50
+  },
+  "/citas/:id/confirmar-mail": {
+   "429": 40
+  },
+  "/citas/:id/gestionar-movimiento": {
+   "200": 3
+  }
+ },
+ "rutas_ejercitadas": [
+  "/analytics/kpis",
+  "/analytics/unidades",
+  "/auth/login",
+  "/canales",
+  "/citas",
+  "/citas/:id",
+  "/citas/:id/confirmar-mail",
+  "/citas/:id/estado",
+  "/citas/:id/gestionar-movimiento",
+  "/citas/:id/mover",
+  "/citas/combinada",
+  "/combinaciones/config",
+  "/consumos/cita/:citaId",
+  "/disponibilidad",
+  "/horarios/:sedeId/excepciones",
+  "/membresias/:id/vender",
+  "/membresias/vendibles",
+  "/pacientes",
+  "/pacientes/:id",
+  "/pacientes/:id/paquetes",
+  "/paquetes",
+  "/paquetes/paciente/:id",
+  "/permisos",
+  "/profesionales/:id/horario",
+  "/promociones",
+  "/sedes",
+  "/servicios",
+  "/users"
+ ]
+}

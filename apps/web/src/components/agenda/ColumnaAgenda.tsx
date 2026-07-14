@@ -10,9 +10,10 @@ import type { Profesional } from '../../api';
 import type { BloqueoAlmuerzo } from '../../api/almuerzos';
 import type { Permiso } from '../../api/permisos';
 import { MOTIVO_LABELS } from '../../api/movimientos';
-import { generarSlotsDelDia, timeToMinutes, getTurno } from '@limablue/shared';
+import { generarSlotsDelDia, timeToMinutes, getTurno, esCitaInactiva } from '@limablue/shared';
 
 const SLOT_HEIGHT = 40; // px
+const minutesToTime = (m: number) => `${Math.floor(m / 60).toString().padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}`;
 
 interface SlotDroppableProps {
   id: string;
@@ -31,6 +32,7 @@ function SlotDroppable({ id, hora, cita, onSlotClick }: SlotDroppableProps) {
     <div
       ref={setNodeRef}
       style={{ height: SLOT_HEIGHT }}
+      data-testid={`slot-${String(id).split('::').join('-')}`}
       className={cn(
         'agenda-slot transition-colors relative',
         isOver && 'bg-limablue-50 border-l-2 border-limablue-400',
@@ -77,9 +79,11 @@ function FranjaAlmuerzo({ horaInicio, horaFin, slotHeight }: { horaInicio: strin
 }
 
 // ── Franja visual de permiso / bloqueo (rango horario manual) ─────────────────
-// Verde = reunión administrativa (Daniel/Yasica); Rojo = permiso que bloquea pacientes.
-function FranjaPermiso({ horaInicio, horaFin, motivo, alturaSlots, slotHeight, esReunion = false }: { horaInicio: string; horaFin: string; motivo: string; alturaSlots: number; slotHeight: number; esReunion?: boolean }) {
-  const c = esReunion
+// Teal = vacaciones (día completo); Verde = reunión administrativa (Daniel/Yasica); Rojo = permiso.
+function FranjaPermiso({ horaInicio, horaFin, motivo, alturaSlots, slotHeight, esReunion = false, esVacaciones = false }: { horaInicio: string; horaFin: string; motivo: string; alturaSlots: number; slotHeight: number; esReunion?: boolean; esVacaciones?: boolean }) {
+  const c = esVacaciones
+    ? { bg: 'repeating-linear-gradient(135deg, #CCFBF1 0px, #CCFBF1 8px, #99F6E4 8px, #99F6E4 10px)', borde: '#0D9488', titulo: '#115E59', sub: '#0F766E', icono: '🌴', etiqueta: 'Vacaciones', tip: 'Vacaciones' }
+    : esReunion
     ? { bg: 'repeating-linear-gradient(135deg, #DCFCE7 0px, #DCFCE7 8px, #BBF7D0 8px, #BBF7D0 10px)', borde: '#16A34A', titulo: '#166534', sub: '#15803D', icono: '🤝', etiqueta: 'Reunión', tip: 'Reunión' }
     : { bg: 'repeating-linear-gradient(135deg, #FEE2E2 0px, #FEE2E2 8px, #FECACA 8px, #FECACA 10px)', borde: '#E11D48', titulo: '#9F1239', sub: '#BE123C', icono: '🚫', etiqueta: 'Permiso', tip: 'Permiso' };
   return (
@@ -130,7 +134,7 @@ export function ColumnaAgenda({ profesional, citas, bloqueos = [], permisos = []
   const HORAS_DIA = generarSlotsDelDia(apertura, cierre, 30);
   // Mapa slot → ítem (cita individual o bloque combinado). Usa la FUENTE ÚNICA de
   // agrupamiento para que un bloque cuente como UNA unidad de altura (no 2).
-  const visibles = citas.filter((c) => !['cancelada', 'no_show'].includes(c.estado));
+  const visibles = citas.filter((c) => !esCitaInactiva(c.estado));
   const itemPorSlot = new Map<string, ReturnType<typeof agruparCitasPorSlot>[number]>();
   const slotsOcupados = new Set<string>();
 
@@ -160,19 +164,28 @@ export function ColumnaAgenda({ profesional, citas, bloqueos = [], permisos = []
     }
   }
 
-  // Mapa slot → permiso (rango horario manual); marcar sub-slots y altura en slots
-  const permisosPorSlot = new Map<string, { permiso: Permiso; alturaSlots: number }>();
+  // Mapa slot → permiso (rango horario manual); marcar sub-slots y altura en slots.
+  // Los sub-slots de vacaciones se rastrean aparte para pintarlos teal (no rojo de permiso).
+  // El rango del bloqueo se CLAMPEA a la ventana visible de la grilla (apertura–cierre) para que
+  // la franja y su etiqueta SIEMPRE se pinten, aunque el bloqueo empiece antes de la apertura o
+  // termine tras el cierre (p.ej. vacaciones/enfermedad 08:00–20:00 en una sede que abre 09:00).
+  const aperturaMin = timeToMinutes(apertura);
+  const cierreMin = timeToMinutes(cierre);
+  const permisosPorSlot = new Map<string, { permiso: Permiso; alturaSlots: number; horaInicioLabel: string; horaFinLabel: string }>();
   const slotsPermiso = new Set<string>();
+  const slotsVacaciones = new Set<string>();
 
   for (const pm of permisos) {
     if (!pm.horaInicio || !pm.horaFin) continue;
-    const start = timeToMinutes(pm.horaInicio);
-    const end = timeToMinutes(pm.horaFin);
+    const start = Math.max(timeToMinutes(pm.horaInicio), aperturaMin);
+    const end = Math.min(timeToMinutes(pm.horaFin), cierreMin);
+    if (end <= start) continue; // el bloqueo no intersecta la grilla visible → no se pinta
     const alturaSlots = Math.max(1, Math.round((end - start) / 30));
-    permisosPorSlot.set(pm.horaInicio, { permiso: pm, alturaSlots });
+    const anchor = minutesToTime(start); // primer slot visible del bloqueo
+    permisosPorSlot.set(anchor, { permiso: pm, alturaSlots, horaInicioLabel: minutesToTime(start), horaFinLabel: minutesToTime(end) });
+    const destino = pm.esVacaciones ? slotsVacaciones : slotsPermiso;
     for (let m = start + 30; m < end; m += 30) {
-      const h = `${Math.floor(m / 60).toString().padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}`;
-      slotsPermiso.add(h);
+      destino.add(minutesToTime(m));
     }
   }
 
@@ -195,7 +208,12 @@ export function ColumnaAgenda({ profesional, citas, bloqueos = [], permisos = []
   // Turno del día: horas fuera de [entrada, salida) se bloquean para reservar.
   const entradaMin = profesional.horaEntrada ? timeToMinutes(profesional.horaEntrada) : null;
   const salidaMin = profesional.horaSalida ? timeToMinutes(profesional.horaSalida) : null;
+  // SIN TURNO ese día (entrada y salida null, p.ej. horario semanal solo Mié/Vie):
+  // TODA la columna queda fuera de turno. El backend ya rechaza reservas ese día
+  // (SIN_HORARIO); antes la columna se pintaba 100% abierta y mentía.
+  const sinTurnoHoy = entradaMin == null && salidaMin == null;
   const fueraDeTurno = (hora: string) => {
+    if (sinTurnoHoy) return true;
     const m = timeToMinutes(hora);
     if (entradaMin != null && m < entradaMin) return true;
     if (salidaMin != null && m >= salidaMin) return true;
@@ -235,7 +253,7 @@ export function ColumnaAgenda({ profesional, citas, bloqueos = [], permisos = []
   })();
 
   return (
-    <div className="w-44 shrink-0 flex flex-col border-r border-slate-100 last:border-r-0">
+    <div className="w-44 shrink-0 flex flex-col border-r border-slate-100 last:border-r-0" data-testid={`agenda-columna-${profesional.id}`}>
       {/* Cabecera */}
       {/* Altura FIJA (h-16) siempre — con o sin badge — para que TODAS las columnas y el
           eje de horas queden alineados y el badge no descuadre ni "coma" el slot de las 8am. */}
@@ -267,6 +285,11 @@ export function ColumnaAgenda({ profesional, citas, bloqueos = [], permisos = []
             return <div key={hora} style={{ height: SLOT_HEIGHT }} className="agenda-slot bg-[#F5F0E8]" />;
           }
 
+          // Sub-slot de vacaciones: renderizar vacío con tinte teal
+          if (slotsVacaciones.has(hora)) {
+            return <div key={hora} style={{ height: SLOT_HEIGHT }} className="agenda-slot bg-[#CCFBF1]" />;
+          }
+
           // Sub-slot de permiso: renderizar vacío con tinte rojo
           if (slotsPermiso.has(hora)) {
             return <div key={hora} style={{ height: SLOT_HEIGHT }} className="agenda-slot bg-[#FEE2E2]" />;
@@ -289,12 +312,13 @@ export function ColumnaAgenda({ profesional, citas, bloqueos = [], permisos = []
             return (
               <div key={hora} style={{ height: SLOT_HEIGHT }} className="relative">
                 <FranjaPermiso
-                  horaInicio={permiso.permiso.horaInicio ?? hora}
-                  horaFin={permiso.permiso.horaFin ?? hora}
+                  horaInicio={permiso.horaInicioLabel}
+                  horaFin={permiso.horaFinLabel}
                   motivo={permiso.permiso.motivo}
                   alturaSlots={permiso.alturaSlots}
                   slotHeight={SLOT_HEIGHT}
                   esReunion={permiso.permiso.esReunion ?? false}
+                  esVacaciones={permiso.permiso.esVacaciones ?? false}
                 />
               </div>
             );
@@ -323,7 +347,9 @@ export function ColumnaAgenda({ profesional, citas, bloqueos = [], permisos = []
             const m = timeToMinutes(hora);
             const esFinTurno = salidaMin != null && m === salidaMin;          // primer slot tras la salida
             const esAntesEntrada = entradaMin != null && m === entradaMin - 30; // último slot antes de entrar
-            const etiqueta = esFinTurno
+            const etiqueta = sinTurnoHoy
+              ? (m % 240 === 0 ? 'No atiende hoy' : null) // recordatorio cada 4 h en la columna vacía
+              : esFinTurno
               ? `Fin de turno · ${profesional.horaSalida ?? ''}`
               : esAntesEntrada
                 ? `Entra ${profesional.horaEntrada ?? ''}`
@@ -333,7 +359,9 @@ export function ColumnaAgenda({ profesional, citas, bloqueos = [], permisos = []
                 key={hora}
                 style={{ height: SLOT_HEIGHT, backgroundImage: 'repeating-linear-gradient(45deg,#f1f5f9 0,#f1f5f9 6px,#e9eef4 6px,#e9eef4 8px)' }}
                 className="agenda-slot cursor-not-allowed flex items-center justify-center px-1 text-center"
-                title={`Fuera del turno de ${profesional.nombres.split(' ')[0]}${profesional.horaEntrada && profesional.horaSalida ? ` (atiende ${profesional.horaEntrada}–${profesional.horaSalida})` : ''}`}
+                title={sinTurnoHoy
+                  ? `${profesional.nombres.split(' ')[0]} no atiende este día (ver Horarios del personal)`
+                  : `Fuera del turno de ${profesional.nombres.split(' ')[0]}${profesional.horaEntrada && profesional.horaSalida ? ` (atiende ${profesional.horaEntrada}–${profesional.horaSalida})` : ''}`}
               >
                 {etiqueta && (
                   <span style={{ fontSize: '9px', fontWeight: 600, color: '#94a3b8', lineHeight: 1.1 }}>{etiqueta}</span>

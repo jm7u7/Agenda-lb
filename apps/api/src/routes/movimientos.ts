@@ -4,9 +4,10 @@ import { MotivoMovimiento } from '@prisma/client';
 import { prisma } from '../db';
 import { requireAuth, requireRol } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
-import { crearMovimiento, previewMovimiento, notificarCambioMovimiento, MOTIVO_LABELS } from '../services/asignacionService';
+import { crearMovimiento, crearMovimientoEnTx, eliminarMovimientoEnTx, hallarPredecesor, previewMovimiento, notificarCambioMovimiento, MOTIVO_LABELS } from '../services/asignacionService';
 import { CitasPendientesError } from '../middleware/errorHandler';
 import { fechaDb } from '../utils/fechaLima';
+import { auditEnTx } from '../services/audit';
 import { addDays } from 'date-fns';
 
 const router = Router();
@@ -24,6 +25,9 @@ const crearSchema = z.object({
 });
 
 const editarSchema = z.object({
+  profesionalId: z.string().uuid().optional(),
+  sedeId: z.string().uuid().optional(),
+  fechaInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   fechaFin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   motivo: motivoEnum.optional(),
   notas: z.string().max(500).nullable().optional(),
@@ -41,27 +45,8 @@ const INCLUDE_COMPLETO = {
   creadoPorUsuario: { select: { id: true, nombre: true } },
 } as const;
 
-// Halla la asignación PREVIA que este movimiento cerró (la que se restauraría al
-// eliminarlo). Si no hay → el movimiento es la asignación BASE: eliminarlo deja
-// a la profesional sin sede. Misma lógica que usa el DELETE.
-async function hallarPredecesor(asignacion: {
-  profesionalId: string; fechaInicio: Date; cierraAsignacionId: string | null; cierraFechaFin: Date | null;
-}): Promise<{ predecesorId: string; predecesorSedeId: string; restaurarFechaFin: Date | null; exacto: boolean } | null> {
-  if (asignacion.cierraAsignacionId) {
-    const prev = await prisma.asignacionSede.findUnique({ where: { id: asignacion.cierraAsignacionId } });
-    if (prev) return { predecesorId: prev.id, predecesorSedeId: prev.sedeId, restaurarFechaFin: asignacion.cierraFechaFin, exacto: true };
-  }
-  // Fallback para movimientos antiguos: asignación cerrada el día anterior al inicio.
-  const diaAntes = addDays(asignacion.fechaInicio, -1);
-  const d0 = new Date(Date.UTC(diaAntes.getUTCFullYear(), diaAntes.getUTCMonth(), diaAntes.getUTCDate(), 0, 0, 0));
-  const d1 = new Date(Date.UTC(diaAntes.getUTCFullYear(), diaAntes.getUTCMonth(), diaAntes.getUTCDate(), 23, 59, 59));
-  const prev = await prisma.asignacionSede.findFirst({
-    where: { profesionalId: asignacion.profesionalId, activa: false, fechaFin: { gte: d0, lte: d1 } },
-    orderBy: { fechaInicio: 'desc' },
-  });
-  if (prev) return { predecesorId: prev.id, predecesorSedeId: prev.sedeId, restaurarFechaFin: null, exacto: false };
-  return null;
-}
+// (hallarPredecesor y la eliminación transaccional viven en asignacionService —
+//  las comparten el DELETE y la edición estructural del PUT.)
 
 // ─── GET /movimientos/verificar-citas ─────────────────────────────────────────
 router.get('/verificar-citas', requireAuth, async (req, res) => {
@@ -136,7 +121,7 @@ router.get('/:id/impacto', requireAuth, async (req, res) => {
   });
   if (!asignacion) throw new AppError('Movimiento no encontrado', 404);
 
-  const pred = await hallarPredecesor(asignacion);
+  const pred = await hallarPredecesor(prisma, asignacion);
   let sedeAnteriorNombre: string | null = null;
   if (pred) {
     const s = await prisma.sede.findUnique({ where: { id: pred.predecesorSedeId }, select: { nombre: true } });
@@ -262,6 +247,12 @@ router.post('/', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (
 });
 
 // ─── PUT /movimientos/:id ──────────────────────────────────────────────────────
+// Edita un movimiento: SEDE DESTINO, fecha fin, motivo y notas.
+// - Cambiar la SEDE exige gestionar antes las citas activas del período (igual que al
+//   crear) → 409 CITAS_PENDIENTES. Si no, quedarían citas huérfanas en la sede vieja.
+// - Cambiar la FECHA FIN de un movimiento temporal SINCRONIZA su RETORNO automático
+//   (la asignación que devuelve a la sede matriz): se corre su inicio, se crea si el
+//   movimiento pasa de indefinido a temporal, o se elimina si pasa a indefinido.
 router.put('/:id', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
   const data = editarSchema.parse(req.body);
 
@@ -270,16 +261,231 @@ router.put('/:id', requireAuth, requireRol('admin', 'coordinadora_sedes'), async
   });
   if (!existente) throw new AppError('Movimiento no encontrado', 404);
 
-  const actualizado = await prisma.asignacionSede.update({
-    where: { id: req.params.id },
-    data: {
-      ...(data.fechaFin !== undefined
-        ? { fechaFin: data.fechaFin ? fechaDb(data.fechaFin) : null }
-        : {}),
-      ...(data.motivo !== undefined ? { motivo: data.motivo } : {}),
-      ...(data.notas !== undefined ? { notas: data.notas } : {}),
-    },
-    include: INCLUDE_COMPLETO,
+  // ── Edición ESTRUCTURAL (cambia la podóloga o la fecha de inicio) ────────────
+  // No se puede parchear la fila: al crear el movimiento se CERRÓ la asignación previa
+  // en fechaInicio-1 (y quizá se creó un retorno). La forma correcta y atómica es
+  // RECREAR: deshacer el movimiento (restaurando el estado previo exacto) y volver a
+  // crearlo con los datos nuevos — ambas cosas en UNA transacción, reusando la lógica
+  // ya probada de DELETE y POST (incluye chequeo de citas, solapes y retorno).
+  const cambiaProfesional = data.profesionalId !== undefined && data.profesionalId !== existente.profesionalId;
+  const cambiaFechaInicio = data.fechaInicio !== undefined
+    && fechaDb(data.fechaInicio).getTime() !== fechaDb(existente.fechaInicio.toISOString().slice(0, 10)).getTime();
+
+  if (cambiaProfesional || cambiaFechaInicio) {
+    try {
+      const { asignacion: recreado, sedeAnteriorId } = await prisma.$transaction(async (tx) => {
+        await eliminarMovimientoEnTx(tx, existente, { usuarioId: req.user?.userId, ip: req.ip });
+        const creado = await crearMovimientoEnTx(tx, {
+          profesionalId: data.profesionalId ?? existente.profesionalId,
+          sedeId: data.sedeId ?? existente.sedeId,
+          fechaInicio: data.fechaInicio ?? existente.fechaInicio.toISOString().slice(0, 10),
+          fechaFin: data.fechaFin !== undefined
+            ? data.fechaFin
+            : (existente.fechaFin?.toISOString().slice(0, 10) ?? null),
+          motivo: data.motivo ?? existente.motivo,
+          reemplazaA: existente.reemplazaA,
+          notas: data.notas !== undefined ? data.notas : existente.notas,
+          creadoPor: req.user!.userId,
+        });
+        await auditEnTx(tx, {
+          usuarioId: req.user?.userId, ip: req.ip,
+          accion: 'MOVIMIENTO_EDITADO',
+          entidad: 'asignacion_sede',
+          entidadId: creado.asignacion.id,
+          antes: {
+            recreadoDesde: existente.id,
+            profesionalId: existente.profesionalId, sedeId: existente.sedeId,
+            fechaInicio: existente.fechaInicio.toISOString().slice(0, 10),
+            fechaFin: existente.fechaFin?.toISOString().slice(0, 10) ?? null,
+          },
+          despues: {
+            profesionalId: creado.asignacion.profesionalId, sedeId: creado.asignacion.sedeId,
+            fechaInicio: creado.asignacion.fechaInicio.toISOString().slice(0, 10),
+            fechaFin: creado.asignacion.fechaFin?.toISOString().slice(0, 10) ?? null,
+          },
+          sedeId: creado.asignacion.sedeId,
+        });
+        return creado;
+      });
+
+      // Refrescar agenda: sede/rango viejos y nuevos (y sedes previas restauradas).
+      await notificarCambioMovimiento({
+        profesionalId: existente.profesionalId,
+        sedeId: existente.sedeId,
+        sedeAnteriorId: null,
+        fechaInicio: existente.fechaInicio,
+        fechaFin: existente.fechaFin,
+      });
+      await notificarCambioMovimiento({
+        profesionalId: recreado.profesionalId,
+        sedeId: recreado.sedeId,
+        sedeAnteriorId: sedeAnteriorId ?? null,
+        fechaInicio: recreado.fechaInicio,
+        fechaFin: recreado.fechaFin,
+      });
+
+      const completo = await prisma.asignacionSede.findUnique({ where: { id: recreado.id }, include: INCLUDE_COMPLETO });
+      return res.json(completo);
+    } catch (err) {
+      if (err instanceof CitasPendientesError) {
+        return res.status(409).json({
+          error: 'CITAS_PENDIENTES',
+          message: err.message,
+          totalCitas: err.totalCitas,
+          sedeOrigenId: err.sedeOrigenId,
+        });
+      }
+      throw err;
+    }
+  }
+
+  const cambiaSede = data.sedeId !== undefined && data.sedeId !== existente.sedeId;
+  const nuevaFechaFin = data.fechaFin !== undefined
+    ? (data.fechaFin ? fechaDb(data.fechaFin) : null)
+    : existente.fechaFin;
+  const cambiaFechaFin = data.fechaFin !== undefined
+    && (nuevaFechaFin?.getTime() ?? null) !== (existente.fechaFin?.getTime() ?? null);
+
+  if (cambiaSede) {
+    const totalCitas = await prisma.cita.count({
+      where: {
+        profesionalId: existente.profesionalId,
+        fecha: { gte: existente.fechaInicio, lte: nuevaFechaFin ?? addDays(existente.fechaInicio, 365) },
+        estado: { in: ['agendada', 'confirmada', 'llego', 'en_atencion'] },
+        deletedAt: null,
+      },
+    });
+    if (totalCitas > 0) {
+      return res.status(409).json({
+        error: 'CITAS_PENDIENTES',
+        message: `Hay ${totalCitas} cita(s) activa(s) en el período; gestiónalas antes de cambiar la sede.`,
+        totalCitas,
+        sedeOrigenId: existente.sedeId,
+      });
+    }
+  }
+
+  // Localizar el RETORNO automático asociado (si este movimiento es temporal y cerró
+  // una asignación previa): la fila que devuelve a la sede matriz al día siguiente del fin.
+  const pred = await hallarPredecesor(prisma, existente);
+  let retorno: { id: string; fechaFin: Date | null } | null = null;
+  if (existente.fechaFin && pred) {
+    const rIni = addDays(existente.fechaFin, 1);
+    const d0 = new Date(Date.UTC(rIni.getUTCFullYear(), rIni.getUTCMonth(), rIni.getUTCDate(), 0, 0, 0));
+    const d1 = new Date(Date.UTC(rIni.getUTCFullYear(), rIni.getUTCMonth(), rIni.getUTCDate(), 23, 59, 59));
+    retorno = await prisma.asignacionSede.findFirst({
+      // SOLO filas con la marca esRetorno (un movimiento real nunca se confunde con el
+      // retorno). SIN filtro de sede: aunque el usuario haya REDIRIGIDO el retorno a otra
+      // sede, sigue siendo el retorno de este movimiento y debe sincronizarse/borrarse.
+      where: { profesionalId: existente.profesionalId, esRetorno: true, fechaInicio: { gte: d0, lte: d1 } },
+      select: { id: true, fechaFin: true },
+    });
+  }
+
+  // Nuevo rango no puede solapar OTRA asignación (se excluyen este movimiento y su retorno,
+  // que se sincroniza abajo). Mismo chequeo que al crear.
+  if (cambiaFechaFin) {
+    const conflicto = await prisma.asignacionSede.findFirst({
+      where: {
+        profesionalId: existente.profesionalId,
+        activa: true,
+        id: { notIn: [existente.id, ...(retorno ? [retorno.id] : [])] },
+        ...(nuevaFechaFin ? { fechaInicio: { lte: nuevaFechaFin } } : {}),
+        OR: [{ fechaFin: null }, { fechaFin: { gte: existente.fechaInicio } }],
+      },
+      include: { sede: { select: { nombre: true } } },
+    });
+    if (conflicto) {
+      throw new AppError(
+        `Conflicto: ya hay una asignación en ${conflicto.sede.nombre} que se solapa con el nuevo rango`,
+        409, 'CONFLICTO_ASIGNACION',
+      );
+    }
+  }
+
+  const actualizado = await prisma.$transaction(async (tx) => {
+    // Sincronizar el retorno automático con la nueva fecha fin (antes de tocar este
+    // movimiento, para respetar el índice "una sola asignación abierta por profesional").
+    if (cambiaFechaFin) {
+      if (retorno && nuevaFechaFin) {
+        const nuevoIni = addDays(nuevaFechaFin, 1);
+        if (retorno.fechaFin && retorno.fechaFin < nuevoIni) {
+          // La base original terminaba antes del nuevo retorno → el retorno ya no aplica.
+          await tx.asignacionSede.delete({ where: { id: retorno.id } });
+        } else {
+          await tx.asignacionSede.update({ where: { id: retorno.id }, data: { fechaInicio: nuevoIni } });
+        }
+      } else if (retorno && !nuevaFechaFin) {
+        // El movimiento pasa a INDEFINIDO → el retorno sobra (y no pueden quedar dos abiertas).
+        await tx.asignacionSede.delete({ where: { id: retorno.id } });
+      } else if (!retorno && nuevaFechaFin && pred) {
+        // Era indefinido y ahora es TEMPORAL → crear el retorno a la sede matriz.
+        const nuevoIni = addDays(nuevaFechaFin, 1);
+        if (existente.cierraFechaFin === null || existente.cierraFechaFin >= nuevoIni) {
+          const sedeMatriz = await tx.sede.findUnique({ where: { id: pred.predecesorSedeId }, select: { nombre: true } });
+          const motivoRet = (data.motivo ?? existente.motivo) as MotivoMovimiento;
+          await tx.asignacionSede.create({
+            data: {
+              profesionalId: existente.profesionalId,
+              sedeId: pred.predecesorSedeId,
+              fechaInicio: nuevoIni,
+              fechaFin: existente.cierraFechaFin,
+              activa: true,
+              esRetorno: true,
+              motivo: motivoRet,
+              notas: `Retorno automático a ${sedeMatriz?.nombre ?? 'su sede'} tras ${MOTIVO_LABELS[motivoRet]}`,
+              creadoPor: req.user?.userId,
+            },
+          });
+        }
+      }
+    }
+
+    const upd = await tx.asignacionSede.update({
+      where: { id: req.params.id },
+      data: {
+        ...(cambiaSede ? { sedeId: data.sedeId } : {}),
+        ...(data.fechaFin !== undefined ? { fechaFin: nuevaFechaFin } : {}),
+        // Editar las FECHAS de una fila es afirmar su vigencia: se reactiva. Es seguro
+        // porque el chequeo de solape de arriba ya garantizó que no pisa otra activa.
+        // (Sin esto, editar una fila cerrada dejaba un "zombi": rango vivo + activa=false,
+        // visible en la agenda pero invisible en el tablero de movimientos.)
+        ...(cambiaFechaFin ? { activa: true } : {}),
+        ...(data.motivo !== undefined ? { motivo: data.motivo } : {}),
+        ...(data.notas !== undefined ? { notas: data.notas } : {}),
+      },
+      include: INCLUDE_COMPLETO,
+    });
+
+    await auditEnTx(tx, {
+      usuarioId: req.user?.userId,
+      accion: 'MOVIMIENTO_EDITADO',
+      entidad: 'asignacion_sede',
+      entidadId: existente.id,
+      antes: {
+        sedeId: existente.sedeId,
+        fechaFin: existente.fechaFin?.toISOString().slice(0, 10) ?? null,
+        motivo: existente.motivo, notas: existente.notas,
+      },
+      despues: {
+        sedeId: upd.sedeId,
+        fechaFin: upd.fechaFin?.toISOString().slice(0, 10) ?? null,
+        motivo: upd.motivo, notas: upd.notas,
+      },
+      sedeId: upd.sedeId,
+      ip: req.ip,
+    });
+
+    return upd;
+  });
+
+  // Refrescar agenda al instante: sede nueva y, si cambió, también la vieja.
+  await notificarCambioMovimiento({
+    profesionalId: existente.profesionalId,
+    sedeId: actualizado.sedeId,
+    sedeAnteriorId: cambiaSede ? existente.sedeId : null,
+    fechaInicio: existente.fechaInicio,
+    fechaFin: nuevaFechaFin,
   });
 
   res.json(actualizado);
@@ -292,49 +498,39 @@ router.delete('/:id', requireAuth, requireRol('admin', 'coordinadora_sedes'), as
   });
   if (!asignacion) throw new AppError('Movimiento no encontrado', 404);
 
-  // Se puede eliminar tanto un movimiento futuro como uno ACTIVO (ya iniciado):
-  // en ambos casos se restaura la asignación previa y se refresca la agenda.
-  //  1) Restaurar EXACTO la asignación previa que ESTE movimiento cerró, usando los datos
-  //     guardados al crearlo (`cierraAsignacionId` + `cierraFechaFin` = su fechaFin original,
-  //     null = era indefinida). Para movimientos antiguos sin esos campos, fallback heurístico
-  //     (la asignación cerrada con fechaFin = fechaInicio-1) restaurada como indefinida.
-  //  2) Eliminar la fila del movimiento → desaparece de la agenda (que lista por rango de
-  //     fechas). No hay FK de Cita→AsignacionSede, así que es seguro.
-  const pred = await hallarPredecesor(asignacion);
-  const predecesorSedeId = pred?.predecesorSedeId ?? null;
-
-  await prisma.$transaction(async (tx) => {
-    // Borrar el movimiento ANTES de restaurar el predecesor: si el predecesor
-    // vuelve a quedar indefinido (fechaFin=null), no debe coexistir un instante
-    // con el movimiento (también abierto) → respeta el índice "una sola abierta".
-    await tx.asignacionSede.delete({ where: { id: asignacion.id } });
-    // Si el movimiento era TEMPORAL, se creó una asignación de RETORNO a la sede previa
-    // (desde el día siguiente al fin). Hay que eliminarla también, si no al reabrir el
-    // predecesor quedarían DOS asignaciones abiertas de la misma sede (viola el índice).
-    if (asignacion.fechaFin && pred) {
-      const rIni = addDays(asignacion.fechaFin, 1);
-      const d0 = new Date(Date.UTC(rIni.getUTCFullYear(), rIni.getUTCMonth(), rIni.getUTCDate(), 0, 0, 0));
-      const d1 = new Date(Date.UTC(rIni.getUTCFullYear(), rIni.getUTCMonth(), rIni.getUTCDate(), 23, 59, 59));
-      await tx.asignacionSede.deleteMany({
-        where: { profesionalId: asignacion.profesionalId, sedeId: pred.predecesorSedeId, fechaInicio: { gte: d0, lte: d1 } },
-      });
-    }
-    if (pred) {
-      await tx.asignacionSede.update({ where: { id: pred.predecesorId }, data: { activa: true, fechaFin: pred.restaurarFechaFin } });
-    }
-    await tx.auditLog.create({
-      data: {
-        usuarioId: req.user?.userId,
-        accion: 'MOVIMIENTO_ELIMINADO',
-        entidad: 'asignacion_sede',
-        entidadId: asignacion.id,
-        antes: { profesionalId: asignacion.profesionalId, sedeId: asignacion.sedeId, fechaInicio: asignacion.fechaInicio.toISOString().slice(0, 10), fechaFin: asignacion.fechaFin?.toISOString().slice(0, 10) ?? null },
-        despues: { eliminado: true, predecesorRestaurado: !!pred, restauradoExacto: pred?.exacto ?? false, fechaFinRestaurada: pred?.restaurarFechaFin ? pred.restaurarFechaFin.toISOString().slice(0, 10) : null },
+  // Igual que al CREAR un movimiento: si hay citas activas del profesional en el período
+  // (de hoy en adelante), eliminarlo las dejaría huérfanas en una sede donde ya no estará.
+  // Se exige gestionarlas primero — misma regla y mismo código de error que el POST.
+  const hoy = fechaDb(new Date().toISOString().slice(0, 10));
+  const desde = asignacion.fechaInicio > hoy ? asignacion.fechaInicio : hoy;
+  const hasta = asignacion.fechaFin ?? addDays(desde, 365);
+  if (hasta >= desde) {
+    const citasPendientes = await prisma.cita.count({
+      where: {
+        profesionalId: asignacion.profesionalId,
         sedeId: asignacion.sedeId,
-        ip: req.ip,
+        fecha: { gte: desde, lte: hasta },
+        estado: { in: ['agendada', 'confirmada', 'llego', 'en_atencion'] },
+        deletedAt: null,
       },
     });
-  });
+    if (citasPendientes > 0) {
+      return res.status(409).json({
+        error: 'CITAS_PENDIENTES',
+        message: `Hay ${citasPendientes} cita(s) activa(s) del período en esa sede; gestiónalas antes de eliminar el movimiento.`,
+        totalCitas: citasPendientes,
+        sedeOrigenId: asignacion.sedeId,
+      });
+    }
+  }
+
+  // Se puede eliminar tanto un movimiento futuro como uno ACTIVO (ya iniciado):
+  // en ambos casos se restaura la asignación previa (a su estado EXACTO), se borra
+  // el retorno automático si era temporal, y se refresca la agenda. La lógica vive
+  // en asignacionService.eliminarMovimientoEnTx (compartida con la edición estructural).
+  const { predecesorSedeId } = await prisma.$transaction((tx) =>
+    eliminarMovimientoEnTx(tx, asignacion, { usuarioId: req.user?.userId, ip: req.ip }),
+  );
 
   // Refrescar la agenda al instante: invalida caché y emite socket para la sede
   // del movimiento (donde se quita la columna) y la sede previa (a donde vuelve).

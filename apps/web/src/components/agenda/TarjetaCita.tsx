@@ -54,7 +54,7 @@ export function TarjetaCita({ cita, onClick, slotHeight = 40 }: TarjetaCitaProps
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: cita.id,
     data: { cita },
-    disabled: cita.estado === 'completada' || cita.estado === 'cancelada' || cita.estado === 'no_show',
+    disabled: cita.estado === 'completada' || cita.estado === 'cancelada' || cita.estado === 'no_show' || cita.estado === 'reprogramada',
   });
 
   const bgColor = es30min
@@ -95,6 +95,7 @@ export function TarjetaCita({ cita, onClick, slotHeight = 40 }: TarjetaCitaProps
       role="button"
       tabIndex={0}
       aria-label={`Cita de ${nombrePaciente} — ${cita.servicio.nombre}`}
+      data-testid={`cita-${cita.id}`}
     >
       {/* Indicador de canal (WhatsApp / web) */}
       {cita.canal !== 'recepcion' && !es30min && (

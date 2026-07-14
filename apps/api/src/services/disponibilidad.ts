@@ -64,23 +64,31 @@ export async function turnosDelDia(sedeId: string, fecha: string, profIds: strin
     return horaInicio < horaFin ? { horaInicio, horaFin } : null;       // ventana vacía → sin turno
   };
 
-  // Solo si hay excepción abierta importa quién está marcado (EntradaPodologa de esa fecha).
-  const entradaMap = new Map<string, string>();
-  if (excAbierta) {
-    const entradas = await prisma.entradaPodologa.findMany({
-      where: { profesionalId: { in: profIds }, fecha: fechaPunto },
-      select: { profesionalId: true, horaInicio: true },
-    });
-    for (const e of entradas) entradaMap.set(e.profesionalId, e.horaInicio);
-  }
+  // CAPA 2 — override de turno POR FECHA (EntradaPodologa). Aplica SIEMPRE, no solo
+  // en excepciones: si la coordinadora fijó entrada 09:00 ese día, la agenda Y las
+  // reservas parten de las 09:00 (una sola verdad). En días de excepción abierta la
+  // fila además marca PRESENCIA: sin fila (y sin base) no se atiende ese día.
+  const overrides = await prisma.entradaPodologa.findMany({
+    where: { profesionalId: { in: profIds }, fecha: fechaPunto },
+    select: { profesionalId: true, horaInicio: true, horaFin: true },
+  });
+  const ovMap = new Map(overrides.map((o) => [o.profesionalId, o]));
 
   for (const id of profIds) {
     const base = baseMap.get(id);
+    const ov = ovMap.get(id);
     let turno: TurnoDia | null = null;
     if (base) {
-      turno = recortar(base.horaInicio, base.horaFin);
-    } else if (excAbierta && entradaMap.has(id)) {
-      turno = recortar(entradaMap.get(id)!, excAbierta.horaCierre!);
+      // Turno del día = base ajustada por el override. La entrada del override solo
+      // RETRASA (máx con la base): el toggle 8/9 nunca abre a alguien ANTES de su
+      // horario real (una part-timer de 11:00 no se abre a las 8:00 por un toggle masivo).
+      const ini = ov && ov.horaInicio > base.horaInicio ? ov.horaInicio : base.horaInicio;
+      turno = recortar(ini, ov?.horaFin ?? base.horaFin);
+    } else if (ov && excAbierta) {
+      // Sin horario base ese día de la semana: el override SOLO habilita el día cuando es
+      // una EXCEPCIÓN de sede abierta (domingo/feriado — la fila marca presencia). En un
+      // día normal, una fila suelta de 8/9 NO convierte un día libre en día laborable.
+      turno = recortar(ov.horaInicio, ov.horaFin ?? excAbierta.horaCierre!);
     }
     if (turno) out.set(id, turno);
   }

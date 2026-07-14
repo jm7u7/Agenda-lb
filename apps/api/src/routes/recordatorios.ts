@@ -4,7 +4,7 @@ import { requireAuth, requireRol } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { registrarAudit } from '../services/audit';
 import { programarJobRecordatorio } from '../queue/recordatorioQueue';
-import { enviosHoy, LIMITE_DIARIO } from '../services/mailQuota';
+import { enviosHoy, LIMITE_DIARIO, RESERVA_MANUAL, LIMITE_AUTOMATICO } from '../services/mailQuota';
 
 const router = Router();
 
@@ -122,6 +122,10 @@ router.get('/metricas', requireAuth, async (req, res) => {
     confirmados, pidioReprogramar, conClic, sinRespuesta,
     cuotaUsadaHoy: await enviosHoy(),
     cuotaLimiteDiario: LIMITE_DIARIO,
+    // Colchón reservado para reenvíos manuales de recepción (los automáticos se
+    // detienen en `cuotaLimiteAutomatico`, dejando esta reserva libre).
+    cuotaReservaManual: RESERVA_MANUAL,
+    cuotaLimiteAutomatico: LIMITE_AUTOMATICO,
     tasaEnvioExitoso: pct(nEnv, total),
     tasaRespuesta: pct(conClic, nEnv),
     tasaConfirmacionEfectiva: pct(confirmados, nEnv),
@@ -155,7 +159,9 @@ router.post('/:citaId/reenviar', requireAuth, requireRol('admin', 'coordinadora_
     where: { id: rec.id },
     data: { estado: 'PROGRAMADO', programadoPara: ahora, errorMensaje: null },
   });
-  await programarJobRecordatorio(req.params.citaId, ahora);
+  // Reenvío manual del admin: usa el cupo 'manual' (reserva propia) para que no
+  // lo frene la cuota consumida por los recordatorios automáticos del día.
+  await programarJobRecordatorio(req.params.citaId, ahora, 'manual');
   await registrarAudit({
     citaId: req.params.citaId, usuarioId: req.user?.userId, accion: 'recordatorio_reenvio_manual',
     entidad: 'cita', entidadId: req.params.citaId, ip: req.ip,

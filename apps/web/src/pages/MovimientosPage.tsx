@@ -121,7 +121,9 @@ function PodologaCard({ mov, canWrite, onEditar, onEliminar }: {
         <p className="font-semibold text-[13px] text-slate-900 leading-tight truncate">
           {mov.profesional.nombres} {mov.profesional.apellidos}
         </p>
-        {cobertura ? (
+        {mov.esRetorno ? (
+          <p className="text-[11px] text-sky-600 mt-0.5">↩ Retorno a sede matriz · {rangoFechas(mov)}</p>
+        ) : cobertura ? (
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <BadgeMotivo motivo={mov.motivo} />
             <span className="text-[11px] text-slate-500">{rangoFechas(mov)}</span>
@@ -357,10 +359,6 @@ export function MovimientosPage() {
 
   const { data: sedes } = useQuery({ queryKey: ['sedes'], queryFn: sedesApi.listar });
 
-  const activosQ = useQuery({
-    queryKey: ['movimientos', 'activo'],
-    queryFn: () => movimientosApi.listar({ estado: 'activo' }),
-  });
   const proximosQ = useQuery({
     queryKey: ['movimientos', 'proximo'],
     queryFn: () => movimientosApi.listar({ estado: 'proximo' }),
@@ -369,6 +367,14 @@ export function MovimientosPage() {
     queryKey: ['movimientos', 'historial'],
     queryFn: () => movimientosApi.listar({ estado: 'historial' }),
     enabled: vista === 'historial',
+  });
+  // TODAS las asignaciones (sin filtro de estado) — el tablero por día resuelve la sede
+  // vigente SOLO por rango de fechas, igual que la agenda (una sola semántica de vigencia).
+  // Sin esto, una asignación cerrada cuyo rango aún cubre el día (p.ej. la base que termina
+  // hoy) desaparecía del tablero aunque la agenda sí la mostrara.
+  const todosQ = useQuery({
+    queryKey: ['movimientos', 'todos'],
+    queryFn: () => movimientosApi.listar({}),
   });
 
   const abrirNuevo = (sedeId?: string) => {
@@ -423,21 +429,18 @@ export function MovimientosPage() {
   const coincide = (m: Movimiento) =>
     !query || `${m.profesional.nombres} ${m.profesional.apellidos}`.toLowerCase().includes(query);
 
-  // Tablero: unión de asignaciones activas + próximas (todas las activa:true de hoy en
-  // adelante). Proyectamos a la fecha elegida sin pedir nada al backend.
-  const todasActivas = (() => {
-    const mapa = new Map<string, Movimiento>();
-    [...(activosQ.data ?? []), ...(proximosQ.data ?? [])].forEach(m => mapa.set(m.id, m));
-    return [...mapa.values()];
-  })();
+  // Tablero: quién está en cada sede el día elegido. VIGENCIA = SOLO el rango de fechas
+  // (misma regla que usa la agenda al pintar columnas) — los rangos nunca se solapan, así
+  // que la respuesta es única. `activa` es solo contabilidad interna (fila reemplazada por
+  // un movimiento posterior), NO participa en la resolución del día.
+  const todas = todosQ.data ?? [];
   const enFecha = (m: Movimiento) =>
-    m.activa &&
     m.fechaInicio.slice(0, 10) <= fechaVista &&
     (!m.fechaFin || m.fechaFin.slice(0, 10) >= fechaVista);
 
-  const tableroMovs = todasActivas.filter(enFecha).filter(coincide);
+  const tableroMovs = todas.filter(enFecha).filter(coincide);
   // Cambios programados relativos a la fecha vista (arranca después del día elegido).
-  const cambiosPorSede = todasActivas
+  const cambiosPorSede = todas
     .filter(m => m.activa && m.fechaInicio.slice(0, 10) > fechaVista)
     .reduce<Record<string, number>>((acc, m) => {
       acc[m.sedeId] = (acc[m.sedeId] ?? 0) + 1;
@@ -449,7 +452,7 @@ export function MovimientosPage() {
   const historial = (historialQ.data ?? []).filter(coincide)
     .sort((a, b) => b.fechaInicio.localeCompare(a.fechaInicio));
 
-  const cargando = vista === 'hoy' ? (activosQ.isLoading || proximosQ.isLoading)
+  const cargando = vista === 'hoy' ? todosQ.isLoading
     : vista === 'proximo' ? proximosQ.isLoading
     : historialQ.isLoading;
 

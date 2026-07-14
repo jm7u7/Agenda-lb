@@ -7,6 +7,8 @@ import { auditEnTx } from '../services/audit';
 import { alertaDePaciente, alertasDePacientes } from '../services/alertaPaciente';
 import { familiaresDePaciente, familiaresDePacientes } from '../services/familiaresPaciente';
 import { normalizarPaciente } from '../utils/normalizarPaciente';
+import { UBIGEO_EXTRANJERO, esPaisValido } from '@limablue/shared';
+import { redis } from '../redis';
 import { datosFaltantes, faltanDatosPaciente } from '../utils/datosPaciente';
 
 const router = Router();
@@ -25,6 +27,12 @@ const crearPacienteSchema = z.object({
   fechaNacimiento: z.string().optional(),
   sexo: z.enum(['masculino', 'femenino', 'otro']).optional(),
   notas: z.string().trim().optional(),
+  // Distrito de residencia (código UBIGEO INEI de 6 dígitos, o las filas especiales
+  // 999999 Extranjero / 999998 No precisa). `null` = borrar intencionalmente;
+  // ausente (`undefined`) = no tocar (semántica del PATCH parcial).
+  ubigeoId: z.union([z.string().regex(/^\d{6}$/, 'ubigeoId debe ser un código UBIGEO de 6 dígitos'), z.null()]).optional(),
+  // País ISO 3166-1 alpha-2, SOLO válido junto a ubigeoId=999999 (Extranjero).
+  paisResidencia: z.union([z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, 'paisResidencia debe ser código ISO de 2 letras'), z.null()]).optional(),
 });
 
 // ─── Búsqueda con trigram ─────────────────────────────────────────────────────
@@ -64,6 +72,44 @@ router.get('/buscar', requireAuth, requireScope('patients:read'), async (req, re
 });
 
 // ─── GET /pacientes/:id ───────────────────────────────────────────────────────
+// ─── GET /pacientes/distritos-frecuentes ──────────────────────────────────────
+// Top 8 de distritos (ubigeoId) más frecuentes entre pacientes vivos, para los
+// chips del autocomplete. Excluye las filas especiales (Extranjero / No precisa —
+// esas son chips FIJOS en el frontend). `?sedeId=` opcional: frecuentes entre
+// pacientes con al menos una cita en esa sede. Cache Redis 24h por sede.
+router.get('/distritos-frecuentes', requireAuth, requireScope('patients:read'), async (req, res) => {
+  const { sedeId } = req.query as { sedeId?: string };
+  const cacheKey = `cache:distritos-frecuentes:${sedeId ?? 'todas'}`;
+
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) { res.json(JSON.parse(cached)); return; }
+  } catch { /* Redis caído → se calcula directo */ }
+
+  const grupos = await prisma.paciente.groupBy({
+    by: ['ubigeoId'],
+    where: {
+      deletedAt: null,
+      ubigeoId: { not: null, notIn: ['999999', '999998'] },
+      ...(sedeId ? { citas: { some: { sedeId, deletedAt: null } } } : {}),
+    },
+    _count: { ubigeoId: true },
+    orderBy: { _count: { ubigeoId: 'desc' } },
+    take: 8,
+  });
+  const ids = grupos.map((g) => g.ubigeoId!).filter(Boolean);
+  const ubigeos = ids.length
+    ? await prisma.ubigeo.findMany({ where: { id: { in: ids } }, select: { id: true, distrito: true, provincia: true, departamento: true } })
+    : [];
+  const porId = new Map(ubigeos.map((u) => [u.id, u]));
+  const resultado = grupos
+    .filter((g) => g.ubigeoId && porId.has(g.ubigeoId))
+    .map((g) => ({ ...porId.get(g.ubigeoId!)!, total: g._count.ubigeoId }));
+
+  try { await redis.set(cacheKey, JSON.stringify(resultado), 'EX', 86400); } catch { /* no crítico */ }
+  res.json(resultado);
+});
+
 router.get('/:id', requireAuth, requireScope('patients:read'), async (req, res) => {
   const paciente = await prisma.paciente.findUnique({
     where: { id: req.params.id, deletedAt: null },
@@ -166,6 +212,9 @@ router.get('/:id', requireAuth, requireScope('patients:read'), async (req, res) 
 // ─── GET /pacientes/:id/paquetes — ENDPOINT ÚNICO de saldos (módulo Sesiones) ──
 // Alimenta TODAS las variantes de SaldoPaquetes (compact | chip | detalle).
 // Saldo SIEMPRE derivado de ConsumoSesion vivos — nunca editable.
+// ⚠ Vista de SALDO de paquetes (consumos reales). Su vista HERMANA de AGENDAMIENTO
+// (cupo por citas programadas + Genexis) vive en /paquetes/paciente/:id — ver la nota
+// allá antes de cambiar reglas de conteo en cualquiera de las dos.
 router.get('/:id/paquetes', requireAuth, requireScope('patients:read'), async (req, res) => {
   const paquetes = await prisma.paquetePaciente.findMany({
     where: { pacienteId: req.params.id, deletedAt: null },
@@ -319,6 +368,38 @@ router.get('/:id/historial-genexis', requireAuth, requireScope('patients:read'),
 });
 
 // ─── POST /pacientes ──────────────────────────────────────────────────────────
+// ─── Residencia (distrito UBIGEO + país para extranjeros) ─────────────────────
+// Regla dura (A4): `paisResidencia` SOLO puede existir cuando el distrito es la fila
+// especial 999999 (Extranjero); en cualquier otro caso se fuerza a null al persistir.
+// Distingue `undefined` (no tocar) de `null` (borrar intencional) — semántica del
+// PATCH parcial. Devuelve SOLO las claves que deben escribirse.
+async function resolverResidencia(
+  data: { ubigeoId?: string | null; paisResidencia?: string | null },
+  antes?: { ubigeoId: string | null; paisResidencia: string | null },
+): Promise<{ ubigeoId?: string | null; paisResidencia?: string | null }> {
+  if (typeof data.ubigeoId === 'string') {
+    const u = await prisma.ubigeo.findFirst({ where: { id: data.ubigeoId, deletedAt: null } });
+    if (!u) throw new AppError(`El código de distrito ${data.ubigeoId} no existe en el catálogo UBIGEO`, 400, 'UBIGEO_INVALIDO');
+  }
+  const ubigeoFinal = data.ubigeoId !== undefined ? data.ubigeoId : (antes?.ubigeoId ?? null);
+  const out: { ubigeoId?: string | null; paisResidencia?: string | null } = {};
+  if (data.ubigeoId !== undefined) out.ubigeoId = data.ubigeoId;
+
+  if (ubigeoFinal === UBIGEO_EXTRANJERO) {
+    const paisFinal = data.paisResidencia !== undefined ? data.paisResidencia : (antes?.paisResidencia ?? null);
+    if (!paisFinal || !esPaisValido(paisFinal)) {
+      throw new AppError('Un paciente Extranjero requiere un país de residencia válido del catálogo', 400, 'PAIS_REQUERIDO');
+    }
+    out.paisResidencia = paisFinal;
+  } else if ((antes?.paisResidencia ?? null) !== null || data.paisResidencia != null) {
+    // Distrito peruano, "No precisa" o sin distrito → el país se LIMPIA (nunca debe
+    // quedar distrito peruano + país extranjero a la vez). Solo se escribe si hay
+    // algo que limpiar o el cliente intentó fijar uno.
+    out.paisResidencia = null;
+  }
+  return out;
+}
+
 router.post('/', requireAuth, async (req, res) => {
   const data = normalizarPaciente(crearPacienteSchema.parse(req.body));
 
@@ -327,6 +408,9 @@ router.post('/', requireAuth, async (req, res) => {
     where: { tipoDocumento: data.tipoDocumento as never, numeroDocumento: data.numeroDocumento, deletedAt: null },
   });
   if (existente) throw new AppError('Ya existe un paciente con este documento', 409, 'PACIENTE_DUPLICADO');
+
+  // Distrito de residencia + país (extranjeros): validación y regla A4.
+  const residencia = await resolverResidencia(data);
 
   // Creación + audit en la MISMA transacción (historial inmutable). La última
   // línea de defensa es el índice DB `pacientes_documento_unico`: si dos altas
@@ -351,6 +435,7 @@ router.post('/', requireAuth, async (req, res) => {
           telefono: data.telefono,
           fechaNacimiento: data.fechaNacimiento ? new Date(data.fechaNacimiento) : null,
         }),
+        ...residencia,
       },
     });
     await auditEnTx(tx, {
@@ -358,7 +443,7 @@ router.post('/', requireAuth, async (req, res) => {
       accion: 'crear_paciente',
       entidad: 'paciente',
       entidadId: p.id,
-      despues: { nombres: p.nombres, apellidoPaterno: p.apellidoPaterno, apellidoMaterno: p.apellidoMaterno, tipoDocumento: p.tipoDocumento, numeroDocumento: p.numeroDocumento, telefono: p.telefono, email: p.email },
+      despues: { nombres: p.nombres, apellidoPaterno: p.apellidoPaterno, apellidoMaterno: p.apellidoMaterno, tipoDocumento: p.tipoDocumento, numeroDocumento: p.numeroDocumento, telefono: p.telefono, email: p.email, ubigeoId: p.ubigeoId, paisResidencia: p.paisResidencia },
       ip: req.ip,
     });
     return p;
@@ -392,13 +477,20 @@ router.patch('/:id', requireAuth, async (req, res) => {
     fechaNacimiento: data.fechaNacimiento ? new Date(data.fechaNacimiento) : antes.fechaNacimiento,
   });
 
+  // Distrito + país: valida existencia, exige país si el estado FINAL es Extranjero,
+  // y fuerza país=null en cualquier otro caso (A4). Los valores crudos del payload
+  // NO se spreadéan: solo lo que resuelve el helper.
+  const { ubigeoId: _ubigeoCrudo, paisResidencia: _paisCrudo, ...datosSinResidencia } = data;
+  const residencia = await resolverResidencia(data, { ubigeoId: antes.ubigeoId, paisResidencia: antes.paisResidencia });
+
   // Update + audit en la misma transacción. `.partial()` + spread: los campos NO
   // enviados quedan `undefined` → Prisma NO los toca (nunca se pisan con vacío).
   const paciente = await prisma.$transaction(async (tx) => {
     const p = await tx.paciente.update({
       where: { id: req.params.id, deletedAt: null },
       data: {
-        ...data,
+        ...datosSinResidencia,
+        ...residencia,
         tipoDocumento: data.tipoDocumento as never,
         sexo: data.sexo as never,
         fechaNacimiento: data.fechaNacimiento ? new Date(data.fechaNacimiento) : undefined,
@@ -410,8 +502,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
       accion: 'editar_paciente',
       entidad: 'paciente',
       entidadId: p.id,
-      antes: { nombres: antes.nombres, apellidoPaterno: antes.apellidoPaterno, apellidoMaterno: antes.apellidoMaterno, numeroDocumento: antes.numeroDocumento, telefono: antes.telefono, email: antes.email },
-      despues: { nombres: p.nombres, apellidoPaterno: p.apellidoPaterno, apellidoMaterno: p.apellidoMaterno, numeroDocumento: p.numeroDocumento, telefono: p.telefono, email: p.email },
+      antes: { nombres: antes.nombres, apellidoPaterno: antes.apellidoPaterno, apellidoMaterno: antes.apellidoMaterno, numeroDocumento: antes.numeroDocumento, telefono: antes.telefono, email: antes.email, ubigeoId: antes.ubigeoId, paisResidencia: antes.paisResidencia },
+      despues: { nombres: p.nombres, apellidoPaterno: p.apellidoPaterno, apellidoMaterno: p.apellidoMaterno, numeroDocumento: p.numeroDocumento, telefono: p.telefono, email: p.email, ubigeoId: p.ubigeoId, paisResidencia: p.paisResidencia },
       ip: req.ip,
     });
     return p;

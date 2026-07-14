@@ -1,0 +1,20 @@
+{
+ "slotDorado": {
+  "rondas": 50,
+  "exitos": 37,
+  "rechazos": 963,
+  "quinientos": 0,
+  "duplicados": 0
+ },
+ "sesionDoble": {
+  "rondas": 10,
+  "dobleConsumoAceptado": 0,
+  "saldoNegativo": 0,
+  "quinientos": 0
+ },
+ "combinadaVsSimple": {
+  "rondas": 50,
+  "mitadPisada": 3,
+  "quinientos": 0
+ }
+}

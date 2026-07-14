@@ -7,10 +7,11 @@ import { citasApi } from '../../api/citas';
 import { api } from '../../api/client';
 import { combinacionesApi } from '../../api/combinaciones';
 import { cn } from '../../utils/cn';
+import { DistritoAutocomplete, PaisAutocomplete } from '../ui/DistritoAutocomplete';
 import { usePaquetesPaciente, paquetesElegibles, paquetesOtraSede } from '../../api/paquetesSesiones';
 import { format } from 'date-fns';
 import { useAuthStore } from '../../stores/authStore';
-import { horaInicioValidaParaDuracion } from '@limablue/shared';
+import { horaInicioValidaParaDuracion, esCitaInactiva, UBIGEO_EXTRANJERO } from '@limablue/shared';
 import { useCanales } from '../../hooks/useCanales';
 import { usePromociones } from '../../hooks/usePromociones';
 import { formatPromoValor } from '../../api/promociones';
@@ -104,6 +105,8 @@ export function DrawerNuevaCita({
   const [npTel, setNpTel] = useState('');
   const [npEmail, setNpEmail] = useState('');
   const [npFechaNac, setNpFechaNac] = useState('');
+  const [npUbigeoId, setNpUbigeoId] = useState<string | null>(null); // distrito de residencia (REQUERIDO)
+  const [npPais, setNpPais] = useState<string | null>(null);         // solo si npUbigeoId = Extranjero
   // Autollenado RENIEC: estado de la consulta y último DNI consultado (evita repetir).
   const [dniConsultando, setDniConsultando] = useState(false);
   const dniConsultadoRef = useRef('');
@@ -297,6 +300,10 @@ export function DrawerNuevaCita({
   // por error "sin paquete" una sesión que sí debía descontar del paquete. Si hay varios o
   // ninguno disponible, queda en "Sin paquete" (la recepción elige).
   useEffect(() => {
+    // En el flujo MEMBRESÍA-PRIMERO el servicio lo fijó la propia membresía: este efecto
+    // no debe pisar la selección (`inst:<membresía>`) con su auto-propuesta de paquetes
+    // normales — ese pisotón hacía que la cita no descontara la sesión de la membresía.
+    if (membSel && membItem !== '') return;
     setPaqueteSel(instanciasDisponibles.length === 1 ? `inst:${instanciasDisponibles[0].id}` : '');
     setSesionManual('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -404,10 +411,29 @@ export function DrawerNuevaCita({
     if (!profesionalId) return [] as { hora: string; unidad: string }[];
     return citasDiaSede
       .filter(c => (c.profesionalId === profesionalId || c.solicitadoProfesional?.id === profesionalId)
-        && !['cancelada', 'no_show', 'reprogramada'].includes(c.estado))
+        && !esCitaInactiva(c.estado))
       .map(c => ({ hora: c.horaInicio, unidad: c.unidadNegocio.nombre }))
       .sort((a, b) => a.hora.localeCompare(b.hora));
   }, [citasDiaSede, profesionalId]);
+
+  // ¿El profesional está BLOQUEADO (permiso/almuerzo) a la hora elegida? Devuelve el
+  // bloqueo que solapa [hora, hora+duración) o null. El selector desactiva la opción —
+  // el backend igual rechazaría (SLOT_BLOQUEADO), pero mejor no ofrecer lo imposible.
+  const bloqueoEnHora = (
+    p: { bloqueos?: { horaInicio: string; horaFin: string; motivo: string }[] },
+    horaSel: string,
+    duracionMin: number,
+  ) => {
+    if (!p.bloqueos?.length || !horaSel) return null;
+    const [h, m] = horaSel.split(':').map(Number);
+    const ini = (h || 0) * 60 + (m || 0);
+    const fin = ini + duracionMin;
+    return p.bloqueos.find(b => {
+      const [bh, bm] = b.horaInicio.split(':').map(Number);
+      const [fh, fm] = b.horaFin.split(':').map(Number);
+      return ini < (fh || 0) * 60 + (fm || 0) && fin > (bh || 0) * 60 + (bm || 0);
+    }) ?? null;
+  };
   // Horario efectivo de la sede para esa fecha (para distinguir "sede cerrada ese día"
   // de "abierta pero sin cupos"). `abierto=false` → no se atiende; `esExcepcion` → día especial.
   const { data: horarioEf } = useQuery({
@@ -435,7 +461,9 @@ export function DrawerNuevaCita({
       telefono: npTel.trim(),
       email: npEmail.trim() || undefined,
       fechaNacimiento: npFechaNac || undefined,
-    }),
+      ubigeoId: npUbigeoId ?? undefined,
+      paisResidencia: npUbigeoId === UBIGEO_EXTRANJERO ? (npPais ?? undefined) : undefined,
+    } as never),
     onSuccess: (p) => {
       setPacienteSeleccionado({ id: p.id, nombreCompleto: `${p.nombres} ${p.apellidoPaterno} ${p.apellidoMaterno}`, telefono: p.telefono });
       setPasoPaciente('elegir');
@@ -501,6 +529,12 @@ export function DrawerNuevaCita({
           ...(item?.subcategoriaId ? { subcategorias: [{ servicioId: item.servicioId, subcategoriaId: item.subcategoriaId }] } : {}),
         });
         membPpId = r.id;
+      }
+      // Membresía EXISTENTE elegida (flujo membresía-primero): el paquete a consumir es la
+      // propia membresía, SIN depender de `paqueteSel` (un efecto de auto-propuesta podía
+      // pisarlo y la cita se creaba desconectada de la membresía → no descontaba sesión).
+      if (!membPpId && membSel.startsWith('inst:') && membItem !== '') {
+        membPpId = membSel.slice('inst:'.length);
       }
       const paquetePacienteId = membPpId ?? await resolverPaquete(paqueteSel);
 
@@ -598,7 +632,14 @@ export function DrawerNuevaCita({
   // Flujo membresía: si eligió una membresía, debe elegir el servicio (ítem); si ACTIVA una nueva,
   // la vigencia debe ser válida (fin > inicio).
   const membValido = !membSel || (membItem !== '' && (!membSel.startsWith('tpl:') || (!!membInicio && !!membFin && membFin > membInicio)));
+  // El profesional elegido NO puede estar bloqueado (permiso/almuerzo) a la hora elegida.
+  // Las opciones ya salen desactivadas; esto cubre el caso de quedar elegido y luego
+  // cambiar la hora a una bloqueada (el backend igual rechazaría con SLOT_BLOQUEADO).
+  const bloqueoProfSel = profesionalId
+    ? bloqueoEnHora(profesionales?.find(p => p.id === profesionalId) ?? {}, hora, servicioSeleccionado?.duracionMinutos ?? 30)
+    : null;
   const valido = !!pacienteSeleccionado && !!servicioId && !!hora && !slotInvalidoParaServicio &&
+    !bloqueoProfSel && // profesional bloqueado a esa hora → no se puede agendar
     (!requiereSubcategoria || !!subcategoriaId) && // subcategoría obligatoria si el servicio la tiene
     (modoReserva === 'sin_eleccion' || modoReserva === 'preferencia_opcional' || !!profesionalId) &&
     (!paqueteElegible || paqueteSel !== '' || !!membSel) && // la membresía cubre el consumo
@@ -671,6 +712,7 @@ export function DrawerNuevaCita({
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setPasoPaciente('existente')}
+                  data-testid="drawer-paciente-existente"
                   className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-slate-200 hover:border-limablue-400 hover:bg-limablue-50 transition-all text-center group"
                 >
                   <svg className="w-7 h-7 text-slate-400 group-hover:text-limablue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -730,6 +772,7 @@ export function DrawerNuevaCita({
                     value={pacienteQuery}
                     onChange={e => setPacienteQuery(e.target.value)}
                     autoFocus
+                    data-testid="drawer-paciente-buscar"
                   />
 
                   {/* Resultados dropdown */}
@@ -739,6 +782,7 @@ export function DrawerNuevaCita({
                         <button
                           key={p.id}
                           onClick={() => { setPacienteSeleccionado(p); setPacienteQuery(''); }}
+                          data-testid={`drawer-paciente-result-${p.id}`}
                           className="w-full text-left px-3 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-0 flex items-center gap-2.5"
                         >
                           <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 text-xs font-bold shrink-0">
@@ -852,9 +896,23 @@ export function DrawerNuevaCita({
                   <input type="email" className="input text-sm" placeholder="correo@ejemplo.com" value={npEmail} onChange={e => setNpEmail(e.target.value)} />
                 </div>
 
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">Distrito de residencia <span className="text-red-500">*</span></label>
+                  <DistritoAutocomplete
+                    value={npUbigeoId}
+                    onChange={(id) => { setNpUbigeoId(id); if (id !== UBIGEO_EXTRANJERO) setNpPais(null); }}
+                  />
+                </div>
+                {npUbigeoId === UBIGEO_EXTRANJERO && (
+                  <div>
+                    <label className="block text-[10px] text-slate-500 mb-0.5">País de residencia <span className="text-red-500">*</span></label>
+                    <PaisAutocomplete value={npPais} onChange={setNpPais} />
+                  </div>
+                )}
+
                 <button
                   onClick={() => crearPacienteMutation.mutate()}
-                  disabled={!npNombres || !npApellidoPat || !npApellidoMat || !npNumDoc || !npTel || crearPacienteMutation.isPending}
+                  disabled={!npNombres || !npApellidoPat || !npApellidoMat || !npNumDoc || !npTel || !npUbigeoId || (npUbigeoId === UBIGEO_EXTRANJERO && !npPais) || crearPacienteMutation.isPending}
                   className="btn-primary btn-sm w-full mt-1"
                 >
                   {crearPacienteMutation.isPending ? 'Guardando...' : 'Crear paciente'}
@@ -929,6 +987,7 @@ export function DrawerNuevaCita({
               value={servicioId}
               disabled={membItem !== ''}
               onChange={e => { setServicioId(e.target.value); setSubcategoriaId(''); }}
+              data-testid="drawer-servicio"
             >
               <option value="">Seleccionar servicio...</option>
               {servicios?.map(s => (
@@ -1099,14 +1158,27 @@ export function DrawerNuevaCita({
                 {modoReserva === 'preferencia_obligatoria' && (
                   <option value="">Seleccionar fisioterapeuta...</option>
                 )}
-                {profesionales?.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.tipo === 'medico' ? 'Dr(a). ' : ''}{p.nombres} {p.apellidos}{p.porSolicitud ? ' — por solicitud' : ''}
-                  </option>
-                ))}
+                {profesionales?.map(p => {
+                  const bloq = bloqueoEnHora(p, hora, servicioSeleccionado?.duracionMinutos ?? 30);
+                  return (
+                    <option key={p.id} value={p.id} disabled={!!bloq}>
+                      {p.tipo === 'medico' ? 'Dr(a). ' : ''}{p.nombres} {p.apellidos}
+                      {p.porSolicitud ? ' — por solicitud' : ''}
+                      {bloq ? ` — 🚫 bloqueado ${bloq.horaInicio}–${bloq.horaFin}` : ''}
+                    </option>
+                  );
+                })}
               </select>
               {modoReserva === 'preferencia_opcional' && !profesionalId && (
                 <p className="text-xs text-slate-500 mt-1">Por defecto se asigna automáticamente. Elige un médico o a Daniel solo si el paciente lo pidió.</p>
+              )}
+              {/* Aviso: el profesional elegido está BLOQUEADO (permiso/almuerzo) a la hora elegida. */}
+              {bloqueoProfSel && (
+                <div className="mt-1.5 rounded-lg border border-red-300 bg-red-50 px-2.5 py-1.5">
+                  <p className="text-xs text-red-700 font-medium leading-snug">
+                    🚫 Está bloqueado de {bloqueoProfSel.horaInicio} a {bloqueoProfSel.horaFin} ({bloqueoProfSel.motivo}). Elige otra hora u otro profesional.
+                  </p>
+                </div>
               )}
               {/* Aviso: el profesional elegido ya está ocupado a ciertas horas (otra unidad incluida). */}
               {profesionalId && horasOcupadasProf.length > 0 && (
@@ -1158,6 +1230,7 @@ export function DrawerNuevaCita({
               value={hora}
               onChange={e => setHora(e.target.value)}
               disabled={!servicioId || dispoCargando}
+              data-testid="drawer-hora"
             >
               {!servicioId ? (
                 <option value="">Elige primero un servicio…</option>
@@ -1222,9 +1295,14 @@ export function DrawerNuevaCita({
                       <label className="block text-xs font-semibold text-slate-700 mb-1.5">Profesional del extra</label>
                       <select className="input text-sm" value={extraProfesionalId} onChange={e => setExtraProfesionalId(e.target.value)}>
                         <option value="">Misma profesional del ancla</option>
-                        {(profesionalesExtra ?? []).map(p => (
-                          <option key={p.id} value={p.id}>{p.nombres} {p.apellidos}</option>
-                        ))}
+                        {(profesionalesExtra ?? []).map(p => {
+                          const bloq = bloqueoEnHora(p, hora, extraServicio?.duracionMinutos ?? 30);
+                          return (
+                            <option key={p.id} value={p.id} disabled={!!bloq}>
+                              {p.nombres} {p.apellidos}{bloq ? ` — 🚫 bloqueado ${bloq.horaInicio}–${bloq.horaFin}` : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                   )}
@@ -1353,10 +1431,11 @@ export function DrawerNuevaCita({
           <button onClick={onClose} className="btn-secondary flex-1">Cancelar</button>
           <button
             onClick={() => crearCitaMutation.mutate()}
-            disabled={!valido || crearCitaMutation.isPending}
+            disabled={!valido || crearCitaMutation.isPending || dispoCargando}
             className="btn-primary flex-1"
+            data-testid="drawer-submit"
           >
-            {crearCitaMutation.isPending ? 'Agendando...' : 'Agendar cita'}
+            {crearCitaMutation.isPending ? 'Agendando...' : dispoCargando ? 'Verificando horarios…' : 'Agendar cita'}
           </button>
         </div>
       </div>

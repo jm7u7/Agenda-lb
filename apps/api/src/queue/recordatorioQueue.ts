@@ -37,7 +37,7 @@ export function jobIdDeCita(citaId: string): string {
  * un job para esa cita, lo elimina y crea el nuevo con el delay correcto.
  * Devuelve el jobId o null si la cola está desactivada.
  */
-export async function programarJobRecordatorio(citaId: string, programadoPara: Date): Promise<string | null> {
+export async function programarJobRecordatorio(citaId: string, programadoPara: Date, tipo: 'auto' | 'manual' = 'auto'): Promise<string | null> {
   const q = getRecordatorioQueue();
   if (!q) return null;
 
@@ -48,7 +48,7 @@ export async function programarJobRecordatorio(citaId: string, programadoPara: D
   const delay = Math.max(0, programadoPara.getTime() - Date.now());
   await q.add(
     JOB_ENVIAR,
-    { citaId },
+    { citaId, tipo },
     {
       jobId,
       delay,

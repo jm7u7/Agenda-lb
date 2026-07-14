@@ -35,6 +35,14 @@ export function emitirEventoCita(event: WSEvent): void {
   io.to(`sede:${event.sedeId}`).emit('agenda:actualizada', event);
 }
 
+// Cambio de horario del personal (base semanal u override por fecha). Broadcast GLOBAL:
+// afecta columnas de agenda y disponibilidad, y el emisor no siempre conoce la sede.
+// Es una acción administrativa poco frecuente; el costo del broadcast es despreciable.
+export function emitirHorarioActualizado(event: { profesionalId: string; fechas: string[] | null; global: boolean }): void {
+  if (!io) return;
+  io.emit('horario:actualizado', event);
+}
+
 export function getIO(): SocketServer {
   return io;
 }

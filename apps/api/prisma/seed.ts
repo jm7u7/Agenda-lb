@@ -4,6 +4,7 @@ import { subDays, format } from 'date-fns';
 import * as path from 'path';
 import { aplicarListaFinal } from '../scripts/aplicar-csv-final';
 import { sembrarPromociones } from '../scripts/seed-promociones';
+import { sembrarUbigeo } from '../scripts/seed-ubigeo';
 
 const prisma = new PrismaClient();
 
@@ -309,6 +310,7 @@ async function main() {
   // ── Promociones (15 del Excel; TRIFIT inactiva) — misma lógica que el script CLI ──
   console.log('  → Promociones...');
   const promoRes = await sembrarPromociones(prisma);
+ await sembrarUbigeo(prisma);
   console.log(`     ✓ promociones creadas: ${promoRes.creadas}`);
 
   // ── Profesionales ───────────────────────────────────────────────────────────

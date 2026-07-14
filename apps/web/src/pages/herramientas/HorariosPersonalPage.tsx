@@ -1,10 +1,11 @@
-// Horarios del personal (admin + coordinadora). Define el horario semanal PERMANENTE
+// Semana tipo (antes "Horarios del personal"). Define el horario semanal PERMANENTE
 // de cada trabajador: qué días y en qué rango horario trabaja, vigente hasta editarlo.
-// Distinto de Permisos/Bloqueos (excepciones puntuales) y de Días especiales.
-// Usa el endpoint aditivo PUT /profesionales/:id/horario (reusa HorarioProfesional).
+// Es la CAPA 1 del modelo de horarios; se muestra dentro de la herramienta unificada
+// HorariosPage. Distinto de Permisos/Bloqueos (ausencias puntuales) y de los ajustes
+// por fecha (capa 2: entrada 8/9 y días especiales).
+// Usa PUT /profesionales/:id/horario (horarioService: audit + caché + tiempo real).
 
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { profesionalesApi } from '../../api';
@@ -17,8 +18,7 @@ const DIAS = [
 ];
 const TIPO_LABEL: Record<string, string> = { podologa: 'Podólogas', medico: 'Médicos', fisioterapeuta: 'Fisioterapeutas' };
 
-export function HorariosPersonalPage() {
-  const navigate = useNavigate();
+export function SemanaTipoContent() {
   const [q, setQ] = useState('');
   const [abierto, setAbierto] = useState<string | null>(null);
 
@@ -46,49 +46,44 @@ export function HorariosPersonalPage() {
   }, [personal, q]);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-3 sticky top-0 z-10">
-        <button onClick={() => navigate('/herramientas')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100" title="Volver">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center shrink-0"><span className="text-white text-lg">🗓️</span></div>
-        <div>
-          <h1 className="text-base font-bold text-slate-900">Horarios del personal</h1>
-          <p className="text-xs text-slate-500">Días y horas de trabajo permanentes de cada persona (hasta cambiarlo). Los bloqueos puntuales van en Permisos.</p>
-        </div>
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+      <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex gap-3">
+        <span className="text-lg leading-none">💡</span>
+        <p className="text-xs text-teal-800 leading-relaxed">
+          Este es el horario <strong>permanente</strong> de cada persona (hasta volver a editarlo) y define
+          los horarios <strong>reservables</strong> en la agenda. Para cambiar la entrada de un día concreto
+          usa la pestaña <strong>Ajustes por fecha</strong>; para ausencias puntuales usa <strong>Permisos</strong>.
+        </p>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
-        <input className="input text-sm w-full" placeholder="Buscar por nombre…" value={q} onChange={(e) => setQ(e.target.value)} />
+      <input className="input text-sm w-full" placeholder="Buscar por nombre…" value={q} onChange={(e) => setQ(e.target.value)} />
 
-        {isLoading ? (
-          <p className="text-sm text-slate-400 text-center py-12">Cargando…</p>
-        ) : grupos.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-12">Sin personal que coincida.</p>
-        ) : grupos.map(([tipo, lista]) => (
-          <div key={tipo} className="space-y-2">
-            <p className="text-xxs font-semibold text-slate-400 uppercase tracking-widest">{TIPO_LABEL[tipo] ?? tipo} · {lista.length}</p>
-            <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
-              {lista.map((p) => (
-                <div key={p.id}>
-                  <button
-                    onClick={() => setAbierto(abierto === p.id ? null : p.id)}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-slate-50/70"
-                  >
-                    <span className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xxs font-bold shrink-0" style={{ backgroundColor: p.colorAvatar }}>
-                      {`${p.nombres} ${p.apellidos}`.split(' ').map((x) => x[0]).slice(0, 2).join('')}
-                    </span>
-                    <span className="flex-1 text-sm font-medium text-slate-800">{p.nombres} {p.apellidos}</span>
-                    <span className="text-slate-400 text-xs">{abierto === p.id ? '▲' : '▼'}</span>
-                  </button>
-                  {abierto === p.id && <EditorHorario profesionalId={p.id} nombre={`${p.nombres} ${p.apellidos}`} />}
-                </div>
-              ))}
-            </div>
+      {isLoading ? (
+        <p className="text-sm text-slate-400 text-center py-12">Cargando…</p>
+      ) : grupos.length === 0 ? (
+        <p className="text-sm text-slate-400 text-center py-12">Sin personal que coincida.</p>
+      ) : grupos.map(([tipo, lista]) => (
+        <div key={tipo} className="space-y-2">
+          <p className="text-xxs font-semibold text-slate-400 uppercase tracking-widest">{TIPO_LABEL[tipo] ?? tipo} · {lista.length}</p>
+          <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+            {lista.map((p) => (
+              <div key={p.id}>
+                <button
+                  onClick={() => setAbierto(abierto === p.id ? null : p.id)}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-slate-50/70"
+                >
+                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xxs font-bold shrink-0" style={{ backgroundColor: p.colorAvatar }}>
+                    {`${p.nombres} ${p.apellidos}`.split(' ').map((x) => x[0]).slice(0, 2).join('')}
+                  </span>
+                  <span className="flex-1 text-sm font-medium text-slate-800">{p.nombres} {p.apellidos}</span>
+                  <span className="text-slate-400 text-xs">{abierto === p.id ? '▲' : '▼'}</span>
+                </button>
+                {abierto === p.id && <EditorHorario profesionalId={p.id} nombre={`${p.nombres} ${p.apellidos}`} />}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -113,16 +108,27 @@ function EditorHorario({ profesionalId, nombre }: { profesionalId: string; nombr
   const ed = estado ?? base;
 
   const guardar = useMutation({
-    mutationFn: () => {
+    mutationFn: ({ forzar }: { forzar?: boolean }) => {
       const dias = DIAS.filter((d) => ed[d.n].activo).map((d) => ({ diaSemana: d.n, horaInicio: ed[d.n].horaInicio, horaFin: ed[d.n].horaFin }));
-      return profesionalesApi.setHorarioSemanal(profesionalId, dias);
+      return profesionalesApi.setHorarioSemanal(profesionalId, dias, forzar);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['horario-semanal', profesionalId] });
+      qc.invalidateQueries({ queryKey: ['profesionales-sede'] });
       qc.invalidateQueries({ queryKey: ['disponibilidad'] });
       toast.success(`Horario de ${nombre.split(' ')[0]} guardado`);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      // Salvaguarda del backend: hay citas que quedarían FUERA del nuevo turno.
+      // Se muestra el detalle y se ofrece aplicar de todos modos (forzar).
+      if ((e as Error & { data?: { error?: string } }).data?.error === 'HORARIO_CONFLICTO_CITAS') {
+        if (window.confirm(`${e.message}\n\n¿Aplicar el horario de todos modos?`)) {
+          guardar.mutate({ forzar: true });
+          return;
+        }
+      }
+      toast.error(e.message);
+    },
   });
 
   const set = (n: number, patch: Partial<DiaEstado>) => setEstado((prev) => ({ ...(prev ?? base), [n]: { ...(prev ?? base)[n], ...patch } }));
@@ -158,14 +164,14 @@ function EditorHorario({ profesionalId, nombre }: { profesionalId: string; nombr
       })}
       <div className="flex items-center gap-2 pt-1.5">
         <button
-          onClick={() => guardar.mutate()}
+          onClick={() => guardar.mutate({})}
           disabled={guardar.isPending || invalido || sinDias}
           className="btn btn-primary btn-sm disabled:opacity-50"
         >
           {guardar.isPending ? 'Guardando…' : 'Guardar horario'}
         </button>
         {sinDias && <span className="text-xxs text-amber-600">Marca al menos un día.</span>}
-        <span className="text-xxs text-slate-400 ml-auto">Cambia la disponibilidad desde hoy en adelante.</span>
+        <span className="text-xxs text-slate-400 ml-auto">Cambia la agenda y la disponibilidad desde hoy en adelante.</span>
       </div>
     </div>
   );

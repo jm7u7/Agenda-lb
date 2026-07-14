@@ -13,6 +13,9 @@ import { BotonHistorialGenexis } from '../components/pacientes/HistorialGenexis'
 import { SaldoPaquetes } from '../components/pacientes/SaldoPaquetes';
 import { Skeleton } from '../components/ui/Skeleton';
 import { cn } from '../utils/cn';
+import { DistritoAutocomplete, PaisAutocomplete } from '../components/ui/DistritoAutocomplete';
+import { etiquetaDistrito } from '../data/ubigeo';
+import { UBIGEO_EXTRANJERO, nombrePais } from '@limablue/shared';
 
 // ─── Lista/búsqueda ───────────────────────────────────────────────────────────
 
@@ -141,9 +144,14 @@ export function FichaPacientePage() {
   // ── Edición de los DATOS del paciente (fuente única: el registro Paciente; las
   //    citas lo referencian por FK, así que al guardar se refresca toda la agenda) ──
   const [editandoDatos, setEditandoDatos] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    nombres: string; apellidoPaterno: string; apellidoMaterno: string; tipoDocumento: string;
+    numeroDocumento: string; telefono: string; email: string; fechaNacimiento: string; sexo: string;
+    ubigeoId: string | null; paisResidencia: string | null;
+  }>({
     nombres: '', apellidoPaterno: '', apellidoMaterno: '', tipoDocumento: 'DNI',
     numeroDocumento: '', telefono: '', email: '', fechaNacimiento: '', sexo: '',
+    ubigeoId: null, paisResidencia: null,
   });
   // Autollenado RENIEC (no destructivo: solo rellena campos de nombre vacíos).
   const [dniConsultando, setDniConsultando] = useState(false);
@@ -156,6 +164,8 @@ export function FichaPacientePage() {
       apellidoMaterno: paciente.apellidoMaterno ?? '', tipoDocumento: paciente.tipoDocumento ?? 'DNI',
       numeroDocumento: paciente.numeroDocumento ?? '', telefono: paciente.telefono ?? '',
       email: paciente.email ?? '', fechaNacimiento: (paciente.fechaNacimiento ?? '').slice(0, 10), sexo: paciente.sexo ?? '',
+      // Paciente legado sin distrito → null (el componente queda vacío, sin crash).
+      ubigeoId: paciente.ubigeoId ?? null, paisResidencia: paciente.paisResidencia ?? null,
     });
     // Si el registro ya trae los 3 nombres completos, no re-consultamos RENIEC al
     // abrir (solo lo hará si el usuario CAMBIA el DNI). Si faltan nombres, dejamos
@@ -225,6 +235,10 @@ export function FichaPacientePage() {
       numeroDocumento: form.numeroDocumento.trim(), telefono: form.telefono.trim(),
       email: form.email.trim() || undefined, fechaNacimiento: form.fechaNacimiento || undefined,
       sexo: form.sexo || undefined,
+      // Distrito: se envía SIEMPRE el valor del form (string = fijar, null = borrar con la X).
+      // El backend hace la regla de país (A4) y solo audita si realmente cambió.
+      ubigeoId: form.ubigeoId,
+      paisResidencia: form.ubigeoId === UBIGEO_EXTRANJERO ? form.paisResidencia : null,
     } as never),
     onSuccess: () => {
       // Una sola fuente de verdad → refrescar TODO lo que muestra al paciente.
@@ -377,11 +391,24 @@ export function FichaPacientePage() {
                         <option value="otro">Otro</option>
                       </select>
                     </label>
+                    <div className="col-span-2">
+                      <span className="text-xs text-slate-400 block mb-0.5">Distrito de residencia</span>
+                      <DistritoAutocomplete
+                        value={form.ubigeoId}
+                        onChange={(id) => setForm(f => ({ ...f, ubigeoId: id, paisResidencia: id === UBIGEO_EXTRANJERO ? f.paisResidencia : null }))}
+                      />
+                    </div>
+                    {form.ubigeoId === UBIGEO_EXTRANJERO && (
+                      <div className="col-span-2">
+                        <span className="text-xs text-slate-400 block mb-0.5">País de residencia *</span>
+                        <PaisAutocomplete value={form.paisResidencia} onChange={(c) => setForm(f => ({ ...f, paisResidencia: c }))} />
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => guardarDatosMutation.mutate()}
-                      disabled={guardarDatosMutation.isPending || !form.nombres.trim() || !form.apellidoPaterno.trim() || !form.numeroDocumento.trim() || !form.telefono.trim()}
+                      disabled={guardarDatosMutation.isPending || !form.nombres.trim() || !form.apellidoPaterno.trim() || !form.numeroDocumento.trim() || !form.telefono.trim() || (form.ubigeoId === UBIGEO_EXTRANJERO && !form.paisResidencia)}
                       className="btn-primary btn-sm disabled:opacity-50"
                     >
                       {guardarDatosMutation.isPending ? 'Guardando…' : 'Guardar'}
@@ -400,6 +427,9 @@ export function FichaPacientePage() {
                     ['Teléfono', paciente.telefono],
                     ['Email', paciente.email ?? '—'],
                     ['Fecha nac.', paciente.fechaNacimiento ? format(new Date(paciente.fechaNacimiento as string), 'd/MM/yyyy') : '—'],
+                    ['Distrito', paciente.ubigeoId
+                      ? `${etiquetaDistrito(paciente.ubigeoId)}${paciente.ubigeoId === UBIGEO_EXTRANJERO && paciente.paisResidencia ? ` · ${nombrePais(paciente.paisResidencia)}` : ''}`
+                      : '—'],
                   ].map(([label, val]) => (
                     <div key={label}>
                       <p className="text-xs text-slate-400">{label}</p>

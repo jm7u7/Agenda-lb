@@ -38,6 +38,7 @@ export function HeaderAgenda({ sedes, stats, onExportar, exportando }: HeaderAge
             <button
               key={sede.id}
               onClick={() => setSedeId(sede.id)}
+              data-testid={`sede-btn-${sede.id}`}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 sedeId === sede.id
                   ? 'text-white shadow-sm'
@@ -111,6 +112,7 @@ export function HeaderAgenda({ sedes, stats, onExportar, exportando }: HeaderAge
             }}
             className="input w-auto text-xs cursor-pointer"
             aria-label="Seleccionar fecha"
+            data-testid="agenda-fecha-input"
           />
         </div>
 

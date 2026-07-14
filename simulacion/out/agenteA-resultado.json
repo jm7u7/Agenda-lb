@@ -1,0 +1,121 @@
+{
+ "enfermas": [
+  {
+   "profesional": "Maximina Gutierrez Ñahuis",
+   "profesionalId": "8349b845-3ce5-424e-a7b5-0b79fd1eb30f",
+   "sedeId": "56e99005-2481-40a9-b8e7-2d46f92a387c",
+   "fechas": [
+    "2026-07-18",
+    "2026-07-20"
+   ],
+   "citasEncima": [
+    {
+     "fecha": "2026-07-18",
+     "activas": 1,
+     "ids": [
+      "a54e6573-a3ba-4c2b-80bc-8977124f43d7"
+     ]
+    },
+    {
+     "fecha": "2026-07-20",
+     "activas": 1,
+     "ids": [
+      "a3ce5cde-66bb-4cec-ab4d-62f2ccf8dbf8"
+     ]
+    }
+   ],
+   "permisos": [
+    {
+     "fecha": "2026-07-18",
+     "status": 409,
+     "resp": "{\"error\":\"CITAS_EN_RANGO\",\"message\":\"No se puede bloquear 08:00–20:00: hay 1 cita(s) agendada(s) en ese rango (08:00 José Zztest Cruz Ríos). Reprograma o cancela esas citas antes de bloquear el horari"
+    },
+    {
+     "fecha": "2026-07-20",
+     "status": 409,
+     "resp": "{\"error\":\"CITAS_EN_RANGO\",\"message\":\"No se puede bloquear 08:00–20:00: hay 1 cita(s) agendada(s) en ese rango (11:30 Flor Zztest Huamán Fernández). Reprograma o cancela esas citas antes de bloquear el"
+    }
+   ]
+  },
+  {
+   "profesional": "Jenny Rosario Chiclla Suehara",
+   "profesionalId": "a7876dae-5f8c-438d-8771-c4c8b27757f8",
+   "sedeId": "de18c68d-796a-49b4-a101-ccd43e3a01e5",
+   "fechas": [
+    "2026-07-23"
+   ],
+   "citasEncima": [
+    {
+     "fecha": "2026-07-23",
+     "activas": 1,
+     "ids": [
+      "e4b0b6d6-2295-42db-8783-6f2e42880a86"
+     ]
+    }
+   ],
+   "permisos": [
+    {
+     "fecha": "2026-07-23",
+     "status": 409,
+     "resp": "{\"error\":\"CITAS_EN_RANGO\",\"message\":\"No se puede bloquear 08:00–20:00: hay 1 cita(s) agendada(s) en ese rango (14:00 Miguel Pedro Zztest Bravo Espinoza). Reprograma o cancela esas citas antes de bloqu"
+    }
+   ]
+  },
+  {
+   "profesional": "Gissela Victoria Morote Carmona",
+   "profesionalId": "dc103ea0-92ca-4ac4-9833-5cbeaacd9918",
+   "sedeId": "38e39bdf-5fff-4450-999b-de50eddc68cd",
+   "fechas": [
+    "2026-07-20",
+    "2026-08-08"
+   ],
+   "citasEncima": [
+    {
+     "fecha": "2026-07-20",
+     "activas": 1,
+     "ids": [
+      "a43edc59-8fcb-4cc6-a20b-7d1516cfe07c"
+     ]
+    },
+    {
+     "fecha": "2026-08-08",
+     "activas": 1,
+     "ids": [
+      "d2a8373f-4280-4b59-b048-e78b8779e239"
+     ]
+    }
+   ],
+   "permisos": [
+    {
+     "fecha": "2026-07-20",
+     "status": 409,
+     "resp": "{\"error\":\"CITAS_EN_RANGO\",\"message\":\"No se puede bloquear 08:00–20:00: hay 1 cita(s) agendada(s) en ese rango (11:30 Néstor Zztest Aguilar Palomino). Reprograma o cancela esas citas antes de bloquear "
+    },
+    {
+     "fecha": "2026-08-08",
+     "status": 409,
+     "resp": "{\"error\":\"CITAS_EN_RANGO\",\"message\":\"No se puede bloquear 08:00–20:00: hay 1 cita(s) agendada(s) en ese rango (11:00 Patricia Julia Zztest Bravo Condori). Reprograma o cancela esas citas antes de bloq"
+    }
+   ]
+  }
+ ],
+ "parciales": [
+  {
+   "profesional": "Fiorella Rios Peñaherrera",
+   "fecha": "2026-07-23",
+   "status": 409
+  },
+  {
+   "profesional": "Mirtha Chavez Vasquez",
+   "fecha": "2026-07-24",
+   "status": 409
+  }
+ ],
+ "cambioHorario": {
+  "profesional": "Ivonne Jill Auris Asca",
+  "id": "e7972316-3e91-43fc-b1c6-77aaad98939a",
+  "status": 409,
+  "detalle409": "{\"error\":\"HORARIO_CONFLICTO_CITAS\",\"message\":\"Hay 14 cita(s) que quedarían FUERA del nuevo turno: 2026-07-18 13:00, 2026-07-17 16:00, 2026-07-21 16:00, 2026-07-25 09:30, 2026-07-24 16:30 (+9 más). Muévelas primero, o repite la operación con \\\"forzar\\\" para aplicar de todos modos.\",\"statusCode\":409}",
+  "forzadoStatus": 200
+ }
+}

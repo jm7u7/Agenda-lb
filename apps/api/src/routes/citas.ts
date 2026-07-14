@@ -11,6 +11,7 @@ import { dispararWebhooks } from '../services/webhooks';
 import { emitirEventoCita } from '../socket';
 import { requireAuth, requireScope, requireRol } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
+import { withDeadlockRetry, esDeadlockTransitorio, esConflictoDeSlot } from '../utils/dbRetry';
 import { agregarRango } from '../services/agregacion';
 import { uploadComprobante } from '../middleware/uploadComprobante';
 import { construirIcsDeCita, logoAdjunto } from '../services/emailTemplates';
@@ -94,6 +95,7 @@ const crearCombinadaSchema = z.object({
     servicioId: z.string().uuid(),
     profesionalId: z.string().uuid().optional(), // default: profesional del ancla
     paquetePacienteId: z.string().uuid().optional(),
+    subcategoriaId: z.string().uuid().optional(), // obligatoria si el servicio extra tiene subcategorías
     comentarioRecepcion: z.string().optional(),
   }),
 });
@@ -901,8 +903,17 @@ router.post('/', requireAuth, requireScope('appointments:write'), async (req: Re
     }
 
     // Creación + audit en la MISMA transacción (historial inmutable y atómico).
-    const cita = await prisma.$transaction(async (tx) => {
-      // REANCLAJE GENEXIS: ajustar la apertura para que las sesiones previas a la
+    // `withDeadlockRetry` + Serializable: bajo alta concurrencia dos INSERT de citas que
+    // referencian filas padre compartidas por FK (profesional/sede/servicio/promoción)
+    // pueden deadlockear (Postgres 40P01 → Prisma P2034). El retry reintenta la víctima
+    // ya sin contención; el índice único parcial sigue siendo la última defensa real. El
+    // retry vive DENTRO del try/finally externo → el lock Redis se sostiene entre intentos
+    // y se libera una sola vez al final (nunca huérfano). Igual patrón que /citas/combinada.
+    let cita;
+    try {
+      cita = await withDeadlockRetry(
+        () => prisma.$transaction(async (tx) => {
+          // REANCLAJE GENEXIS: ajustar la apertura para que las sesiones previas a la
       // elegida queden como tomadas en Genexis (recepción manda sobre la conciliación).
       if (reanclajeGenexis) {
         const aperturaVivos = await tx.consumoSesion.findMany({
@@ -977,8 +988,24 @@ router.post('/', requireAuth, requireScope('appointments:write'), async (req: Re
       if (comentarioInicial) {
         await crearComentarioEnTx(tx, { citaId: c.id, sedeId: data.sedeId, autorId: usuarioId ?? null, texto: comentarioInicial, ip: req.ip });
       }
-      return c;
-    });
+          return c;
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }),
+        {
+          onRetry: ({ intento, esperaMs }) =>
+            console.warn(`[citas] deadlock al crear cita — reintento ${intento} en ${esperaMs}ms (slot ${data.sedeId}/${profesionalId}/${data.fecha} ${data.horaInicio})`),
+        },
+      );
+    } catch (err) {
+      // Unicidad (P2002) o deadlock que agotó los reintentos → 409 limpio, nunca 500. El
+      // índice único parcial es la última defensa; un AppError de negocio (slot ocupado,
+      // horario inválido…) pasa intacto sin convertirse en SLOT_OCUPADO. `esConflictoDeSlot`
+      // cubre tanto el P2034 clasificado por Prisma como el 40P01/40001 CRUDO que Prisma
+      // re-lanza como PrismaClientUnknownRequestError (que antes caía al 500, ver Gate 0).
+      if (esConflictoDeSlot(err)) {
+        throw new AppError('Ese horario acaba de ocuparse. Refresque e intente otra vez.', 409, 'SLOT_OCUPADO');
+      }
+      throw err;
+    }
 
     // Invalidar cache
     await invalidateDisponibilidadCache(data.sedeId, data.fecha);
@@ -1052,9 +1079,31 @@ async function validarLegBloque(opts: {
 
 // Calcula el siguiente número de sesión de un paquete DENTRO de una transacción
 // (mismo criterio que el POST individual: usadas + programadas + 1, sin pasarse del total).
-async function calcularSesionNumeroTx(tx: Prisma.TransactionClient, paquetePacienteId: string): Promise<number | null> {
+async function calcularSesionNumeroTx(tx: Prisma.TransactionClient, paquetePacienteId: string, sedeIdCita: string): Promise<number | null> {
   const paquetePac = await tx.paquetePaciente.findUnique({ where: { id: paquetePacienteId } });
   if (!paquetePac) return null;
+  // Candado de sede — MISMA regla que el create individual: el paquete se atiende
+  // donde se compró. Antes el bloque combinado se saltaba este candado.
+  if (paquetePac.sedeId && paquetePac.sedeId !== sedeIdCita) {
+    const sedePaquete = await tx.sede.findUnique({ where: { id: paquetePac.sedeId }, select: { nombre: true } });
+    throw new AppError(
+      `El paquete de este paciente pertenece a ${sedePaquete?.nombre ?? 'otra sede'} — agenda la sesión allá o usa consumo manual auditado.`,
+      409,
+      'PAQUETE_OTRA_SEDE',
+    );
+  }
+  // Un paquete Genexis SIN ANCLAR exige adjudicación manual de la sesión (desplegable del
+  // create individual). El bloque combinado no tiene ese flujo → se pide agendar la
+  // PRIMERA sesión como cita individual, en vez de auto-numerar mal.
+  const citasVivas = await tx.cita.count({
+    where: { paquetePacienteId, deletedAt: null, estado: { notIn: ['cancelada', 'no_show', 'reprogramada'] } },
+  });
+  if (paquetePac.origen === 'GENEXIS_APERTURA' && citasVivas === 0) {
+    throw new AppError(
+      'Este paquete viene de Genexis y su primera sesión requiere adjudicación manual: agéndala como cita individual (no en bloque combinado).',
+      400, 'SESION_MANUAL_REQUERIDA',
+    );
+  }
   const citasProgramadas = await tx.cita.count({
     where: {
       paquetePacienteId, estado: { in: ['agendada', 'confirmada', 'llego', 'en_atencion'] }, deletedAt: null,
@@ -1105,6 +1154,9 @@ router.post('/combinada', requireAuth, requireScope('appointments:write'), async
 
   // Subcategoría del ANCLA (profilaxis → Regular/Premium/…): obligatoria si la tiene.
   const subcategoriaAncla = await resolverSubcategoria(data.servicioId, data.subcategoriaId);
+  // El EXTRA también respeta la obligatoriedad de subcategoría (misma regla que el
+  // create individual): si su servicio tiene subcategorías activas, debe venir una.
+  const subcategoriaExtra = await resolverSubcategoria(data.extra.servicioId, data.extra.subcategoriaId);
 
   // Profesional del ANCLA: si la recepción no eligió una, se asigna automáticamente
   // (igual que una profilaxis normal "Sin preferencia"). El extra usa la suya o, por
@@ -1155,8 +1207,8 @@ router.post('/combinada', requireAuth, requireScope('appointments:write'), async
     let citas: { anclaId: string; extraId: string };
     try {
       citas = await prisma.$transaction(async (tx) => {
-        const sesionAncla = data.paquetePacienteId ? await calcularSesionNumeroTx(tx, data.paquetePacienteId) : null;
-        const sesionExtra = data.extra.paquetePacienteId ? await calcularSesionNumeroTx(tx, data.extra.paquetePacienteId) : null;
+        const sesionAncla = data.paquetePacienteId ? await calcularSesionNumeroTx(tx, data.paquetePacienteId, data.sedeId) : null;
+        const sesionExtra = data.extra.paquetePacienteId ? await calcularSesionNumeroTx(tx, data.extra.paquetePacienteId, data.sedeId) : null;
 
         const ancla = await tx.cita.create({
           data: {
@@ -1174,7 +1226,7 @@ router.post('/combinada', requireAuth, requireScope('appointments:write'), async
         const extra = await tx.cita.create({
           data: {
             pacienteId: data.pacienteId, profesionalId: extraProfesionalId, sedeId: data.sedeId,
-            unidadNegocioId: extraSrv.unidadNegocioId, servicioId: data.extra.servicioId, fecha: fechaDate,
+            unidadNegocioId: extraSrv.unidadNegocioId, servicioId: data.extra.servicioId, subcategoriaId: subcategoriaExtra, fecha: fechaDate,
             horaInicio: data.horaInicio, duracionMinutos: duracionSlot, estado: 'agendada',
             canal: data.canal, origenAsignacion: 'elegida_por_paciente', creadoPorUsuarioId: usuarioId ?? null,
             paquetePacienteId: data.extra.paquetePacienteId, sesionNumero: sesionExtra,
@@ -1196,7 +1248,8 @@ router.post('/combinada', requireAuth, requireScope('appointments:write'), async
         return { anclaId: ancla.id, extraId: extra.id };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && (err.code === 'P2002' || err.code === 'P2034')) {
+      // Idéntico a POST /citas: unicidad o deadlock exhausto (incluido el 40P01 crudo) → 409.
+      if (esConflictoDeSlot(err)) {
         throw new AppError('Ese horario acaba de ocuparse para una de las citas del bloque. Refresque e intente otra vez.', 409, 'SLOT_OCUPADO');
       }
       throw err;
@@ -1259,27 +1312,33 @@ router.patch('/:id/estado', requireAuth, async (req, res) => {
   }
 
   // Bloque combinado: un cambio de estado se PROPAGA a las citas hermanas del grupo (mismo
-  // slotGrupoId) — son UNA sola visita física de 1 h (profilaxis + extra). Así, marcar
-  // "llegó"/"en atención"/"completada" en una arrastra a la otra (y consume/reembolsa la
-  // sesión de paquete del extra). Reglas:
+  // slotGrupoId) — son UNA sola visita física de 1 h (profilaxis + extra). Reglas:
+  //  - Solo cascadea un CAMBIO REAL de estado (re-enviar el mismo estado para agregar un
+  //    comentario NO debe mover a las hermanas ni re-consumir sesiones).
   //  - Nunca se resucita una hermana ya 'cancelada'.
   //  - Al CANCELAR, no se tocan hermanas ya finalizadas (completada/no_show) — se respeta lo hecho.
-  //  - Para otros estados (incl. revertir completada→en_atencion) sí se sincroniza la hermana.
+  //  - Para otros estados, la hermana solo se sincroniza si SU transición es válida en la
+  //    máquina de estados (una hermana en no_show NO se resucita a completada; una desfasada
+  //    no salta pasos — se queda como está en vez de forzarla).
   const esCancelacion = estado === 'cancelada';
-  const hermanas = cita.slotGrupoId
+  const cambioReal = estado !== cita.estado;
+  const hermanas = (cita.slotGrupoId && cambioReal)
     ? (await prisma.cita.findMany({
         where: { slotGrupoId: cita.slotGrupoId, id: { not: cita.id }, deletedAt: null },
       })).filter((c) =>
         c.estado !== estado &&
         c.estado !== 'cancelada' &&
-        (!esCancelacion || !ESTADOS_FINALES.includes(c.estado))
+        (esCancelacion
+          ? !ESTADOS_FINALES.includes(c.estado)
+          : (TRANSICIONES_VALIDAS[c.estado] ?? []).includes(estado))
       )
     : [];
 
   const antes = { estado: cita.estado };
   // Ancla del auto-completado por tiempo: se (re)inicia al marcar 'llego' y al REVERTIR una
   // cita atendida (completada→en_atencion), para que el reloj de 90 min cuente de nuevo.
-  const reiniciaLlegoEn = estado === 'llego' || (cita.estado === 'completada' && estado === 'en_atencion');
+  // Solo en cambios REALES: comentar una cita que ya está en 'llego' no reinicia el reloj.
+  const reiniciaLlegoEn = cambioReal && (estado === 'llego' || (cita.estado === 'completada' && estado === 'en_atencion'));
   const llegoEnData = reiniciaLlegoEn ? { llegoEn: new Date() } : {};
   const updatedCita = await prisma.$transaction(async (tx) => {
     const u = await tx.cita.update({
@@ -1325,22 +1384,28 @@ router.patch('/:id/estado', requireAuth, async (req, res) => {
   await sincronizarSesionPaquete(cita.id);
 
   // Side-effects de las hermanas sincronizadas en cascada. El conteo de sesiones se
-  // recalcula SIEMPRE (consume al completar el extra, reembolsa si se revierte).
+  // recalcula SIEMPRE (consume al completar el extra, reembolsa si se revierte). Los
+  // webhooks/Outlook siguen las MISMAS reglas que la cita principal — las integraciones
+  // externas también deben enterarse del servicio extra del bloque.
   for (const h of hermanas) {
     await sincronizarSesionPaquete(h.id);
     if (esCancelacion) {
       void sincronizarCitaOutlook('cancelar', h.id);
       void cancelarRecordatoriosDeCita(h.id);
       void cancelarVideosDeCita(h.id);
+      await dispararWebhooks('appointment.cancelled', h.sedeId, await getCitaCompleta(h.id));
       emitirEventoCita({
         tipo: 'cita:cancelada', sedeId: h.sedeId, fecha: h.fecha.toISOString().split('T')[0]!,
         cita: { id: h.id, estado: 'cancelada' } as never, cambiadoPor: usuarioId ?? 'sistema',
       });
     } else {
       if (['no_show', 'reprogramada'].includes(estado)) { void cancelarRecordatoriosDeCita(h.id); void cancelarVideosDeCita(h.id); }
+      if (estado === 'confirmada') void sincronizarCitaOutlook('crear', h.id);
+      const hCompleta = await getCitaCompleta(h.id);
+      if (estado === 'completada') await dispararWebhooks('appointment.completed', h.sedeId, hCompleta);
       emitirEventoCita({
         tipo: 'cita:estadoCambiado', sedeId: h.sedeId, fecha: h.fecha.toISOString().split('T')[0]!,
-        cita: await getCitaCompleta(h.id) as never, cambiadoPor: usuarioId ?? 'sistema',
+        cita: hCompleta as never, cambiadoPor: usuarioId ?? 'sistema',
       });
     }
   }
@@ -1369,6 +1434,12 @@ router.patch('/:id/estado', requireAuth, async (req, res) => {
 
   // Recordatorio: si la cita pasa a un estado inactivo, cancelar el envío programado.
   if (['cancelada', 'no_show', 'reprogramada'].includes(estado)) { void cancelarRecordatoriosDeCita(cita.id); void cancelarVideosDeCita(cita.id); }
+
+  // Un slot LIBERADO (cancelación) debe volver a ofrecerse de inmediato: sin esto, la
+  // caché de disponibilidad seguía mostrando la hora como ocupada hasta expirar.
+  if (esCancelacion && cambioReal) {
+    await invalidateDisponibilidadCache(cita.sedeId, fecha);
+  }
 
   // Reagregar en background sin bloquear la respuesta
   const fechaCita = cita.fecha;
@@ -1400,6 +1471,14 @@ router.patch('/:id/gestionar-movimiento', requireAuth, requireRol('admin', 'coor
   }
 
   const estadoAnterior = cita.estado;
+  // El bloque combinado se gestiona COMPLETO: si se cancela/reprograma la ancla, el
+  // servicio extra del mismo slot corre la misma suerte (siguen siendo UNA visita).
+  const hermanas = cita.slotGrupoId
+    ? (await prisma.cita.findMany({
+        where: { slotGrupoId: cita.slotGrupoId, id: { not: cita.id }, deletedAt: null },
+      })).filter((c) => ESTADOS_ACTIVOS.includes(c.estado))
+    : [];
+
   await prisma.$transaction(async (tx) => {
     await tx.cita.update({
       where: { id: req.params.id },
@@ -1419,15 +1498,42 @@ router.patch('/:id/gestionar-movimiento', requireAuth, requireRol('admin', 'coor
       sedeId: cita.sedeId,
       ip: req.ip,
     });
+    for (const h of hermanas) {
+      await tx.cita.update({
+        where: { id: h.id },
+        data: { estado, ...(motivo && estado === 'cancelada' ? { motivoCancelacion: motivo } : {}) },
+      });
+      await auditEnTx(tx, {
+        citaId: h.id, usuarioId: req.user?.userId, accion: 'ESTADO_CAMBIADO_POR_MOVIMIENTO',
+        entidad: 'cita', entidadId: h.id,
+        antes: { estado: h.estado }, despues: { estado, slotGrupoId: cita.slotGrupoId, cascada: true },
+        sedeId: h.sedeId, ip: req.ip,
+      });
+    }
   });
 
-  emitirEventoCita({
-    tipo: 'cita:estadoCambiado',
-    sedeId: cita.sedeId,
-    fecha: cita.fecha.toISOString().split('T')[0]!,
-    cita: { id: cita.id, estado } as never,
-    cambiadoPor: req.user?.userId ?? 'sistema',
-  });
+  const fechaStr = cita.fecha.toISOString().split('T')[0]!;
+  // Mismos efectos que una cancelación normal: reembolso de sesión, recordatorios y
+  // videos cancelados, evento de Outlook eliminado, slot liberado en la caché y
+  // webhook a integraciones. Sin esto, el paciente seguía recibiendo el recordatorio
+  // de una cita que ya se había cancelado desde Movimientos.
+  for (const c of [cita, ...hermanas]) {
+    await sincronizarSesionPaquete(c.id);
+    void cancelarRecordatoriosDeCita(c.id);
+    void cancelarVideosDeCita(c.id);
+    void sincronizarCitaOutlook('cancelar', c.id);
+    if (estado === 'cancelada') {
+      await dispararWebhooks('appointment.cancelled', c.sedeId, await getCitaCompleta(c.id));
+    }
+    emitirEventoCita({
+      tipo: 'cita:estadoCambiado',
+      sedeId: c.sedeId,
+      fecha: fechaStr,
+      cita: { id: c.id, estado } as never,
+      cambiadoPor: req.user?.userId ?? 'sistema',
+    });
+  }
+  await invalidateDisponibilidadCache(cita.sedeId, fechaStr);
 
   setImmediate(() => {
     const d = new Date(cita.fecha); d.setHours(0, 0, 0, 0);
@@ -1436,6 +1542,144 @@ router.patch('/:id/gestionar-movimiento', requireAuth, requireRol('admin', 'coor
   });
 
   res.json({ ok: true, id: cita.id, estadoAnterior, estadoNuevo: estado });
+});
+
+// ─── POST /citas/reportar-enfermedad ──────────────────────────────────────────
+// Acción COMPUESTA (B-2): reporta que un profesional se enfermó/ausenta un día y
+// libera su agenda en UN paso. En una sola transacción: (1) cancela en lote sus
+// citas ACTIVAS del rango y (2) crea el bloqueo (permiso) del rango. Devuelve la
+// lista de pacientes afectados (con teléfono) para que recepción los contacte y
+// reagende. Reemplaza el flujo manual de dos pasos (cancelar cita por cita → luego
+// bloquear, que además fallaba con 409 CITAS_EN_RANGO mientras quedara una).
+router.post('/reportar-enfermedad', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
+  const data = z.object({
+    profesionalId: z.string().uuid(),
+    sedeId: z.string().uuid(),
+    fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    // Rango a liberar. Por defecto, el día completo de atención (08:00–20:00).
+    horaInicio: z.string().regex(/^\d{2}:\d{2}$/).default('08:00'),
+    horaFin: z.string().regex(/^\d{2}:\d{2}$/).default('20:00'),
+    motivo: z.string().min(3).max(200).default('Enfermedad'),
+  }).parse(req.body);
+  if (data.horaFin <= data.horaInicio) throw new AppError('La hora de fin debe ser mayor que la de inicio', 400);
+
+  const usuarioId = req.user?.userId;
+  const prof = await prisma.profesional.findUnique({
+    where: { id: data.profesionalId },
+    select: { tipo: true, activo: true, deletedAt: true, nombres: true, apellidos: true },
+  });
+  if (!prof || !prof.activo || prof.deletedAt) throw new AppError('Profesional no encontrado', 404);
+  if (prof.tipo !== 'podologa' && prof.tipo !== 'fisioterapeuta' && prof.tipo !== 'medico') {
+    throw new AppError('Solo se puede reportar enfermedad de podólogas, fisioterapeutas o baropodometría', 400, 'TIPO_NO_BLOQUEABLE');
+  }
+
+  // Citas ACTIVAS del profesional en el rango (mismo criterio que el bloqueo de permisos:
+  // no cuentan canceladas/no-show/reprogramadas ni ya completadas). Se incluye
+  // `solicitadoProfesionalId` para el caso baro "Solo X" (la cita ocupa una máquina pero
+  // pide a un médico). Un bloque combinado comparte profesional+slot → sus hermanas ya
+  // caen en esta consulta.
+  const toMin = (s: string) => { const [h, m] = s.split(':').map(Number); return h! * 60 + m!; };
+  const desdeMin = toMin(data.horaInicio);
+  const hastaMin = toMin(data.horaFin);
+  const dayStart = new Date(`${data.fecha}T00:00:00`);
+  const dayEnd = new Date(`${data.fecha}T23:59:59`);
+  const citasDelDia = await prisma.cita.findMany({
+    where: {
+      OR: [{ profesionalId: data.profesionalId }, { solicitadoProfesionalId: data.profesionalId }],
+      sedeId: data.sedeId,
+      fecha: { gte: dayStart, lte: dayEnd },
+      deletedAt: null,
+      estado: { notIn: ['cancelada', 'no_show', 'reprogramada', 'completada'] },
+    },
+    select: {
+      id: true, estado: true, horaInicio: true, duracionMinutos: true, sedeId: true, motivoCancelacion: true,
+      paciente: { select: { nombres: true, apellidoPaterno: true, apellidoMaterno: true, telefono: true } },
+      servicio: { select: { nombre: true } },
+    },
+    orderBy: { horaInicio: 'asc' },
+  });
+  const enRango = citasDelDia.filter((c) => {
+    const ini = toMin(c.horaInicio);
+    return ini < hastaMin && ini + c.duracionMinutos > desdeMin; // solape [ini, ini+dur) con [desde, hasta)
+  });
+
+  const fechaInicio = new Date(`${data.fecha}T${data.horaInicio}:00`);
+  const fechaFin = new Date(`${data.fecha}T${data.horaFin}:00`);
+
+  // Transacción atómica: o quedan canceladas TODAS las citas + creado el bloqueo, o nada.
+  // Serializable + retry ante deadlock, coherente con el resto de escrituras de citas.
+  const bloqueo = await withDeadlockRetry(() => prisma.$transaction(async (tx) => {
+    for (const c of enRango) {
+      await tx.cita.update({ where: { id: c.id }, data: { estado: 'cancelada', motivoCancelacion: data.motivo } });
+      await auditEnTx(tx, {
+        citaId: c.id, usuarioId, accion: 'ENFERMEDAD_CANCELAR_CITA', entidad: 'cita', entidadId: c.id,
+        antes: { estado: c.estado }, despues: { estado: 'cancelada', motivo: data.motivo, contexto: 'Reporte de enfermedad — liberar día' },
+        sedeId: c.sedeId, ip: req.ip,
+      });
+    }
+    const b = await tx.bloqueoAgenda.create({
+      data: {
+        profesionalId: data.profesionalId, sedeId: data.sedeId, tipo: 'PERMISO', esRecurrente: false,
+        fechaInicio, fechaFin, horaInicio: data.horaInicio, horaFin: data.horaFin,
+        motivo: `🤒 ${data.motivo}`, creadoPor: usuarioId,
+      },
+    });
+    await auditEnTx(tx, {
+      usuarioId, accion: 'ENFERMEDAD_BLOQUEO_CREADO', entidad: 'bloqueo_agenda', entidadId: b.id,
+      despues: { profesionalId: data.profesionalId, horaInicio: data.horaInicio, horaFin: data.horaFin, motivo: data.motivo, citasCanceladas: enRango.length },
+      sedeId: data.sedeId, ip: req.ip,
+    });
+    return b;
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })).catch((err) => {
+    // A diferencia de reservar un slot, aquí no hay unicidad en juego: un deadlock que agotó
+    // los reintentos (P2034 o el 40P01/40001 CRUDO que Prisma no clasifica) es un choque
+    // transitorio de locks al cancelar el día. Se mapea a un 409 "reintente" en vez de dejar
+    // escapar un 500 opaco al errorHandler. Cualquier otro error se propaga intacto.
+    if (esDeadlockTransitorio(err)) {
+      throw new AppError('El sistema está ocupado procesando esa agenda. Reintente en unos segundos.', 409, 'CONFLICTO_TRANSITORIO');
+    }
+    throw err;
+  });
+
+  // Side-effects best-effort de cada cita cancelada (idénticos a gestionar-movimiento):
+  // reembolso de sesión, recordatorios y videos cancelados, evento Outlook eliminado,
+  // webhook a integraciones y evento en tiempo real.
+  const fechaStr = data.fecha;
+  for (const c of enRango) {
+    await sincronizarSesionPaquete(c.id);
+    void cancelarRecordatoriosDeCita(c.id);
+    void cancelarVideosDeCita(c.id);
+    void sincronizarCitaOutlook('cancelar', c.id);
+    await dispararWebhooks('appointment.cancelled', c.sedeId, await getCitaCompleta(c.id));
+    emitirEventoCita({
+      tipo: 'cita:estadoCambiado', sedeId: c.sedeId, fecha: fechaStr,
+      cita: { id: c.id, estado: 'cancelada' } as never, cambiadoPor: usuarioId ?? 'sistema',
+    });
+  }
+  await invalidateDisponibilidadCache(data.sedeId, fechaStr);
+
+  setImmediate(() => {
+    const d = new Date(`${data.fecha}T00:00:00`); d.setHours(0, 0, 0, 0);
+    const h = new Date(`${data.fecha}T00:00:00`); h.setHours(23, 59, 59, 999);
+    agregarRango(d, h).catch(() => {/* silencioso */});
+  });
+
+  // Lista de pacientes afectados para que recepción los contacte y reagende.
+  const pacientes = enRango.map((c) => ({
+    horaInicio: c.horaInicio,
+    estado: c.estado as string,
+    servicio: c.servicio.nombre,
+    paciente: `${c.paciente.nombres} ${c.paciente.apellidoPaterno} ${c.paciente.apellidoMaterno}`.trim(),
+    telefono: c.paciente.telefono,
+  }));
+
+  res.status(201).json({
+    ok: true,
+    bloqueoId: bloqueo.id,
+    profesional: `${prof.nombres.split(' ')[0]} ${prof.apellidos.split(' ')[0]}`.trim(),
+    citasCanceladas: enRango.length,
+    pacientes,
+  });
 });
 
 // ─── PATCH /citas/:id/mover ───────────────────────────────────────────────────
@@ -1478,17 +1722,39 @@ router.patch('/:id/mover', requireAuth, async (req, res) => {
   // Re-validar AsignacionSede: el profesional destino debe estar asignado a esta sede en la fecha destino
   if (nuevoProfesionalId) {
     const fechaDestino = fechaDb(data.fecha);
-    const asignacion = await prisma.asignacionSede.findFirst({
-      where: {
-        profesionalId: nuevoProfesionalId,
-        sedeId: cita.sedeId,
-        activa: true,
-        fechaInicio: { lte: fechaDestino },
-        OR: [{ fechaFin: null }, { fechaFin: { gte: fechaDestino } }],
-      },
+    // Misma regla que el CREATE: si la competencia usada es "solo por solicitud"
+    // (médicos de baro, Daniel en baro), el profesional atiende en cualquier sede
+    // sin asignación fija — no se le exige asignación al mover.
+    const competenciaMover = await prisma.competenciaProfesional.findFirst({
+      where: { profesionalId: nuevoProfesionalId, servicioId: cita.servicioId, activa: true },
     });
-    if (!asignacion) {
-      throw new AppError('El profesional destino no está asignado a esta sede en la fecha indicada', 400, 'SIN_ASIGNACION_SEDE');
+    if (!competenciaMover?.soloPorSolicitud) {
+      const asignacion = await prisma.asignacionSede.findFirst({
+        where: {
+          profesionalId: nuevoProfesionalId,
+          sedeId: cita.sedeId,
+          activa: true,
+          fechaInicio: { lte: fechaDestino },
+          OR: [{ fechaFin: null }, { fechaFin: { gte: fechaDestino } }],
+        },
+      });
+      if (!asignacion) {
+        throw new AppError('El profesional destino no está asignado a esta sede en la fecha indicada', 400, 'SIN_ASIGNACION_SEDE');
+      }
+    }
+
+    // TURNO del profesional destino — misma validación que el CREATE. Sin esto se podía
+    // reprogramar una cita a una hora en que la profesional ya salió o a un día que no
+    // atiende, y la cita quedaba fuera de horario sin que nadie lo notara.
+    const turnosDestino = await turnosDelDia(cita.sedeId, data.fecha, [nuevoProfesionalId]);
+    const turnoDestino = turnosDestino.get(nuevoProfesionalId);
+    if (!turnoDestino) throw new AppError('El profesional no atiende este día', 400, 'SIN_HORARIO');
+    if (data.horaInicio < turnoDestino.horaInicio || data.horaInicio >= turnoDestino.horaFin) {
+      throw new AppError(
+        `El slot ${data.horaInicio} está fuera del horario del profesional (${turnoDestino.horaInicio}–${turnoDestino.horaFin})`,
+        400,
+        'SLOT_FUERA_HORARIO',
+      );
     }
   }
 
@@ -1508,6 +1774,9 @@ router.patch('/:id/mover', requireAuth, async (req, res) => {
     await validarProfesionalLibre(nuevoProfesionalId!, data.fecha, data.horaInicio, cita.duracionMinutos, cita.id);
     if (cita.solicitadoProfesionalId) {
       await validarProfesionalLibre(cita.solicitadoProfesionalId, data.fecha, data.horaInicio, cita.duracionMinutos, cita.id);
+      // El médico solicitado ("Solo Daniel") tampoco puede quedar sobre un bloqueo suyo
+      // (reunión/permiso) — el CREATE ya lo validaba; el MOVER lo omitía.
+      await validarSinBloqueo(cita.solicitadoProfesionalId, data.fecha, data.horaInicio, cita.duracionMinutos);
     }
 
     const antes = {
@@ -1609,6 +1878,19 @@ router.patch('/grupo/:slotGrupoId/mover', requireAuth, async (req, res) => {
       where: { profesionalId: nuevoProfesionalId, sedeId, activa: true, fechaInicio: { lte: fechaDestino }, OR: [{ fechaFin: null }, { fechaFin: { gte: fechaDestino } }] },
     });
     if (!asignacion) throw new AppError('El profesional destino no está asignado a esta sede en la fecha indicada', 400, 'SIN_ASIGNACION_SEDE');
+
+    // TURNO del profesional destino — misma validación que el CREATE y que el mover
+    // individual: el bloque completo debe caber dentro de su jornada de ese día.
+    const turnosDestino = await turnosDelDia(sedeId, data.fecha, [nuevoProfesionalId]);
+    const turnoDestino = turnosDestino.get(nuevoProfesionalId);
+    if (!turnoDestino) throw new AppError('El profesional no atiende este día', 400, 'SIN_HORARIO');
+    if (data.horaInicio < turnoDestino.horaInicio || data.horaInicio >= turnoDestino.horaFin) {
+      throw new AppError(
+        `El slot ${data.horaInicio} está fuera del horario del profesional (${turnoDestino.horaInicio}–${turnoDestino.horaFin})`,
+        400,
+        'SLOT_FUERA_HORARIO',
+      );
+    }
   }
 
   const lockId = uuidv4();
@@ -1693,9 +1975,10 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
   // Para cada cita cancelada: devolver sesión de paquete (helper canónico idempotente),
   // sincronizar Outlook, cancelar recordatorios y emitir evento. Mismo trato que el
-  // DELETE individual, aplicado a ambas mitades del bloque.
+  // DELETE individual, aplicado a ambas mitades del bloque. El reembolso de sesión se
+  // AWAITEA (como en PATCH /estado): un fallo debe verse, no perderse en silencio.
   for (const c of aCancelar) {
-    void sincronizarSesionPaquete(c.id);
+    await sincronizarSesionPaquete(c.id);
     void sincronizarCitaOutlook('cancelar', c.id);
     void cancelarRecordatoriosDeCita(c.id);
     void cancelarVideosDeCita(c.id);
@@ -1707,6 +1990,8 @@ router.delete('/:id', requireAuth, async (req, res) => {
       cambiadoPor: req.user?.userId ?? 'sistema',
     });
   }
+  // El slot liberado vuelve a ofrecerse de inmediato.
+  await invalidateDisponibilidadCache(cita.sedeId, cita.fecha.toISOString().split('T')[0]!);
 
   res.json({ ok: true, canceladas: aCancelar.map((c) => c.id) });
 });
@@ -1947,7 +2232,8 @@ export async function autocompletarCitasPorTiempo(minutos = AUTOCOMPLETAR_MIN): 
 
   // Reagregar los KPIs de los días afectados (las completadas cambian los agregados).
   for (const fecha of diasAfectados) {
-    const d = new Date(`${fecha}T00:00:00`); const h = new Date(`${fecha}T23:59:59`);
+    // Anclas UTC explícitas (@db.Date vive a medianoche UTC) — no depender de la TZ del proceso.
+    const d = new Date(`${fecha}T00:00:00Z`); const h = new Date(`${fecha}T23:59:59Z`);
     agregarRango(d, h).catch(() => {/* silencioso */});
   }
   if (completadas) console.log(`[autocompletar] ${completadas} cita(s) completadas por tiempo (${minutos} min)`);

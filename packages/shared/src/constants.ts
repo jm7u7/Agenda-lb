@@ -36,3 +36,11 @@ export const DURACIONES_SERVICIO = {
 export const LOCK_TTL_SECONDS = 30;
 
 export const UNDO_TIMEOUT_MS = 8000;
+
+// ─── Estados "inactivos" de una cita ──────────────────────────────────────────
+// FUENTE ÚNICA: una cita en estos estados NO ocupa slot, NO se pinta en la grilla
+// y NO cuenta como presencia/ocupación. Usar SIEMPRE esta lista — había 4 copias
+// divergentes y las que omitían 'reprogramada' dejaban tarjetas fantasma.
+export const ESTADOS_CITA_INACTIVOS = ['cancelada', 'no_show', 'reprogramada'] as const;
+export const esCitaInactiva = (estado: string): boolean =>
+  (ESTADOS_CITA_INACTIVOS as readonly string[]).includes(estado);

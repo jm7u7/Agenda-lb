@@ -15,7 +15,7 @@
  *  - valorAsistido / brecha económica: NO disponibles (Servicio.precioReferencial sin poblar);
  *    se marca `disponible: false`, jamás se estima.
  */
-import { AreaAgente } from '@prisma/client';
+import { AreaAgente, Prisma } from '@prisma/client';
 import { prisma } from '../db';
 import { fechaAStr, LIMA_OFFSET_H } from '../utils/fechaLima';
 
@@ -181,6 +181,77 @@ function percentil(valores: number[], v: number): number {
   return Math.round(((menores + (iguales - 1) / 2) / (valores.length - 1)) * 100);
 }
 
+// ─── Agregados de recitación (empujados a SQL) ─────────────────────────────────
+interface AgregadosRecitacion {
+  /** Atenciones físicas (completadas, bloque = 1) por sede. */
+  atencionesPorSede: Map<string, number>;
+  /** Atenciones que tuvieron recita (próxima cita creada el mismo día civil), por sede. */
+  atencionesConRecitaPorSede: Map<string, number>;
+  /** Recitas acreditadas al agente que las creó. */
+  recitacionesPorAgente: Map<string, number>;
+}
+
+/**
+ * Reproduce EXACTA la lógica de recitación que antes se hacía en Node con un `findMany` de
+ * ~210k citas completadas + un doble bucle O(atenciones × recitasCandidatas). Aquí se resuelve
+ * como una agregación SQL: por cada atención física (completada, bloque=1) se busca la recita
+ * más temprana del MISMO día civil de la atención (creada por un agente, no cancelada/reprogramada,
+ * físico) cuya fecha sea POSTERIOR. Se acredita al creador de esa recita; la atención cuenta como
+ * "con recita" en su sede. Equivalencia verificada map-a-map contra la implementación JS.
+ */
+async function agregadosRecitacion(filtros: FiltrosDesempeno): Promise<AgregadosRecitacion> {
+  const { gte: creadoGte, lt: creadoLt } = rangoUtc(filtros.desde, filtros.hasta);
+  const sedeFiltro = filtros.sedeId ? Prisma.sql`AND "sedeId" = ${filtros.sedeId}::uuid` : Prisma.empty;
+
+  // `(creadoEn - interval '5 hours')::date` = día civil de Lima (UTC-5 fijo, sin DST) = `diaLima`.
+  const rows = await prisma.$queryRaw<{ tipo: string; clave: string; n: number }[]>(Prisma.sql`
+    WITH atenciones AS (
+      SELECT id, "pacienteId", "sedeId", fecha
+      FROM citas
+      WHERE "deletedAt" IS NULL
+        AND estado::text = 'completada'
+        AND fecha >= ${filtros.desde}::date AND fecha <= ${filtros.hasta}::date
+        AND ("slotRol" IS NULL OR "slotRol"::text <> 'SECUNDARIO')
+        ${sedeFiltro}
+    ),
+    claves AS (SELECT DISTINCT "pacienteId", fecha FROM atenciones),
+    emparejadas AS (
+      SELECT DISTINCT ON (k."pacienteId", k.fecha) k."pacienteId", k.fecha, r."creadoPorUsuarioId" AS agente
+      FROM claves k
+      JOIN citas r
+        ON r."pacienteId" = k."pacienteId"
+       AND r."deletedAt" IS NULL
+       AND r."creadoPorUsuarioId" IS NOT NULL
+       AND r.estado::text NOT IN ('cancelada', 'reprogramada')
+       AND (r."slotRol" IS NULL OR r."slotRol"::text <> 'SECUNDARIO')
+       AND r."creadoEn" >= ${creadoGte} AND r."creadoEn" < ${creadoLt}
+       AND (r."creadoEn" - interval '5 hours')::date = k.fecha
+       AND r.fecha > k.fecha
+      ORDER BY k."pacienteId", k.fecha, r."creadoEn" ASC
+    ),
+    matched AS (
+      SELECT a."sedeId", e.agente
+      FROM atenciones a
+      JOIN emparejadas e ON e."pacienteId" = a."pacienteId" AND e.fecha = a.fecha
+    )
+    SELECT 'sede'::text AS tipo, "sedeId" AS clave, COUNT(*)::int AS n FROM atenciones GROUP BY "sedeId"
+    UNION ALL
+    SELECT 'conRecita', "sedeId", COUNT(*)::int FROM matched GROUP BY "sedeId"
+    UNION ALL
+    SELECT 'agente', agente, COUNT(*)::int FROM matched GROUP BY agente
+  `);
+
+  const atencionesPorSede = new Map<string, number>();
+  const atencionesConRecitaPorSede = new Map<string, number>();
+  const recitacionesPorAgente = new Map<string, number>();
+  for (const row of rows) {
+    if (row.tipo === 'sede') atencionesPorSede.set(row.clave, row.n);
+    else if (row.tipo === 'conRecita') atencionesConRecitaPorSede.set(row.clave, row.n);
+    else recitacionesPorAgente.set(row.clave, row.n);
+  }
+  return { atencionesPorSede, atencionesConRecitaPorSede, recitacionesPorAgente };
+}
+
 // ─── Cálculo principal ─────────────────────────────────────────────────────────
 export async function resumenDesempeno(filtros: FiltrosDesempeno, conVariaciones = true): Promise<ResumenDesempeno> {
   const agentes = await prisma.usuario.findMany({
@@ -262,53 +333,10 @@ export async function resumenDesempeno(filtros: FiltrosDesempeno, conVariaciones
   const creadorDe = new Map(autoriaMovidas.map((c) => [c.id, c.creadoPorUsuarioId]));
 
   // ── Recitación (Recepción): atenciones del rango + próxima cita mismo día civil ──
-  // Denominador: citas COMPLETADAS con fecha civil dentro del rango (por sede).
-  const atenciones = await prisma.cita.findMany({
-    where: {
-      deletedAt: null,
-      estado: 'completada',
-      fecha: { gte: new Date(`${filtros.desde}T12:00:00Z`), lte: new Date(`${filtros.hasta}T12:00:00Z`) },
-      ...(filtros.sedeId ? { sedeId: filtros.sedeId } : {}),
-    },
-    select: { id: true, pacienteId: true, sedeId: true, fecha: true, slotGrupoId: true, slotRol: true },
-  });
-  // Un bloque combinado = UNA atención física (se descartan las mitades SECUNDARIO).
-  const atencionesFisicas = atenciones.filter((a) => a.slotRol !== 'SECUNDARIO');
-  const pacientesAtendidos = [...new Set(atencionesFisicas.map((a) => a.pacienteId))];
-  // Citas futuras creadas el MISMO día civil de la atención (ventana aprobada: día civil).
-  const recitasCandidatas = pacientesAtendidos.length === 0 ? [] : await prisma.cita.findMany({
-    where: {
-      deletedAt: null,
-      pacienteId: { in: pacientesAtendidos },
-      creadoPorUsuarioId: { not: null },
-      creadoEn: creadoEnRango,
-      estado: { notIn: ['cancelada', 'reprogramada'] },
-    },
-    select: { id: true, pacienteId: true, fecha: true, creadoEn: true, creadoPorUsuarioId: true, slotRol: true },
-  });
-  // atención → recita más temprana del mismo día civil con fecha posterior a la atención.
-  const recitaPorAtencion = new Map<string, { agenteId: string }>();
-  const atencionesConRecitaPorSede = new Map<string, number>();
-  const atencionesPorSede = new Map<string, number>();
-  for (const a of atencionesFisicas) {
-    const diaAtencion = fechaAStr(a.fecha);
-    atencionesPorSede.set(a.sedeId, (atencionesPorSede.get(a.sedeId) ?? 0) + 1);
-    const recita = recitasCandidatas
-      .filter((r) =>
-        r.pacienteId === a.pacienteId &&
-        r.slotRol !== 'SECUNDARIO' &&
-        diaLima(r.creadoEn) === diaAtencion &&
-        fechaAStr(r.fecha) > diaAtencion)
-      .sort((x, y) => x.creadoEn.getTime() - y.creadoEn.getTime())[0];
-    if (recita) {
-      recitaPorAtencion.set(a.id, { agenteId: recita.creadoPorUsuarioId! });
-      atencionesConRecitaPorSede.set(a.sedeId, (atencionesConRecitaPorSede.get(a.sedeId) ?? 0) + 1);
-    }
-  }
-  const recitacionesPorAgente = new Map<string, number>();
-  for (const { agenteId } of recitaPorAtencion.values()) {
-    recitacionesPorAgente.set(agenteId, (recitacionesPorAgente.get(agenteId) ?? 0) + 1);
-  }
+  // Denominador: citas COMPLETADAS con fecha civil dentro del rango (por sede). El emparejamiento
+  // atención→recita se resuelve en SQL (ver `agregadosRecitacion`) en vez de traer ~210k filas a
+  // Node y correr un doble bucle. Resultado idéntico, verificado map-a-map.
+  const { atencionesPorSede, atencionesConRecitaPorSede, recitacionesPorAgente } = await agregadosRecitacion(filtros);
 
   // ── Agregación por agente ────────────────────────────────────────────────────
   const porAgente = new Map(agenteIds.map((id) => [id, {
@@ -535,24 +563,25 @@ export async function reporteRecitacion(filtros: FiltrosDesempeno) {
 
   // Denominadores por sede ya calculados dentro del resumen por agente; se re-derivan
   // aquí a nivel sede para el reporte (mismas reglas: completadas del rango, bloques = 1).
-  const atenciones = await prisma.cita.findMany({
+  // Conteo en SQL (`groupBy`) en vez de traer ~210k filas a Node. `OR: [null, PRINCIPAL]`
+  // reproduce "físicas" (`slotRol <> 'SECUNDARIO'` incluyendo los NULL).
+  const atencionesPorSedeRows = await prisma.cita.groupBy({
+    by: ['sedeId'],
     where: {
       deletedAt: null,
       estado: 'completada',
       fecha: { gte: new Date(`${filtros.desde}T12:00:00Z`), lte: new Date(`${filtros.hasta}T12:00:00Z`) },
       ...(filtros.sedeId ? { sedeId: filtros.sedeId } : {}),
-      // Bloque combinado = 1 atención física. OJO: `not: 'SECUNDARIO'` excluiría los NULL
-      // (citas individuales) — por eso el OR explícito.
       OR: [{ slotRol: null }, { slotRol: 'PRINCIPAL' }],
     },
-    select: { id: true, sedeId: true },
+    _count: { _all: true },
   });
   const sedes = await prisma.sede.findMany({ where: { deletedAt: null }, select: { id: true, nombre: true, color: true } });
   const sedeMap = new Map(sedes.map((s) => [s.id, s]));
 
   const porSede = new Map<string, { atenciones: number }>();
-  for (const a of atenciones) {
-    porSede.set(a.sedeId, { atenciones: (porSede.get(a.sedeId)?.atenciones ?? 0) + 1 });
+  for (const row of atencionesPorSedeRows) {
+    porSede.set(row.sedeId, { atenciones: row._count._all });
   }
   const recitasPorSede = new Map<string, number>();
   for (const ag of resumen.agentes) {

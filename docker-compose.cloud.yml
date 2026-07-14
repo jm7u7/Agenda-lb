@@ -1,0 +1,116 @@
+# Stack de PRODUCCIÓN self-hosted (un VPS) para Limablue Agenda.
+# Topología same-origin con TLS automático (Caddy):
+#   https://$DOMAIN            → web (estático)
+#   https://$DOMAIN/api        → api  (vía serve-prod.cjs, interno)
+#   https://$DOMAIN/socket.io  → api  (WebSocket, vía serve-prod.cjs)
+# Postgres y Redis quedan INTERNOS (nunca expuestos a internet).
+#
+# Requiere en la MISMA carpeta:
+#   - .env               (variables de compose: DOMAIN, POSTGRES_PASSWORD)   ← ver abajo
+#   - apps/api/.env       (config de la app: secretos + dominio)              ← copia de .env.production.example
+#   - Caddyfile
+#
+# Uso:  docker compose -f docker-compose.cloud.yml up -d --build
+#
+# ── Variante con BD/Redis GESTIONADOS (recomendado en nube seria): borra los servicios
+#    `postgres` y `redis` y sus `depends_on`, y define DATABASE_URL/REDIS_URL en apps/api/.env.
+
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_USER: limablue
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: limablue_agenda
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U limablue -d limablue_agenda"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-bookworm
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Migración one-shot: aplica prisma migrate deploy y termina. La API espera a que complete.
+  migrate:
+    build: .
+    working_dir: /app/apps/api
+    command: sh -c "npx prisma migrate deploy"
+    environment:
+      DATABASE_URL: postgresql://limablue:${POSTGRES_PASSWORD}@postgres:5432/limablue_agenda?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build: .
+    working_dir: /app/apps/api
+    command: node dist/apps/api/src/index.js
+    env_file:
+      - apps/api/.env            # secretos + dominio (copia de .env.production.example)
+    environment:
+      # Overrides para hablar con los servicios INTERNOS (ganan sobre el env_file):
+      DATABASE_URL: postgresql://limablue:${POSTGRES_PASSWORD}@postgres:5432/limablue_agenda?schema=public
+      REDIS_URL: redis://redis:6379
+      PORT: "3002"
+    volumes:
+      - uploads:/app/apps/api/uploads   # comprobantes subidos: persistentes
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/api/docs"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build: .
+    working_dir: /app/apps/web
+    command: node serve-prod.cjs
+    environment:
+      PORT: "5180"
+      API_TARGET: http://api:3002       # el proxy interno del web apunta a la API por nombre de servicio
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?define DOMAIN en .env (ej. agenda.limablue.pe)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  uploads:
+  caddy_data:
+  caddy_config:

@@ -59,3 +59,27 @@ export async function invalidateDisponibilidadCache(sedeId: string, fecha: strin
     await redis.del(...keys);
   }
 }
+
+/** Invalida TODAS las fechas de UNA sede (cambios que afectan muchas fechas de esa sede). */
+export async function invalidateDisponibilidadSede(sedeId: string): Promise<void> {
+  const keys = await redis.keys(`cache:disponibilidad:${sedeId}:*`);
+  if (keys.length > 0) {
+    await redis.del(...keys);
+  }
+}
+
+/** Invalida una FECHA en TODAS las sedes (para cambios sin sede conocida, ej. override de turno). */
+export async function invalidateDisponibilidadFecha(fecha: string): Promise<void> {
+  const keys = await redis.keys(`cache:disponibilidad:*:*:${fecha}`);
+  if (keys.length > 0) {
+    await redis.del(...keys);
+  }
+}
+
+/** Vacía TODA la caché de disponibilidad (cambios que afectan muchas fechas, ej. horario semanal). */
+export async function flushDisponibilidadCache(): Promise<void> {
+  const keys = await redis.keys('cache:disponibilidad:*');
+  if (keys.length > 0) {
+    await redis.del(...keys);
+  }
+}

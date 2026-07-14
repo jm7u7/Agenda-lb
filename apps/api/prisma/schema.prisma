@@ -164,6 +164,8 @@ model Sede {
 
   unidadesNegocio SedeUnidadNegocio[]
   asignaciones    AsignacionSede[]
+  // Roster administrativo (doctores + recepcionistas) — solo informativo, no afecta reservas.
+  asignacionesAdmin AsignacionAdministrativa[]
   citas           Cita[]
   usuarios        UsuarioSede[]
   usuariosAsignados Usuario[]           @relation("UsuarioSedeAsignada")
@@ -246,6 +248,9 @@ model Profesional {
   // solo es seleccionable al reservar (médicos de baropodometría y Daniel Doy) y su columna
   // aparece únicamente el día que tiene citas. Puede atender en cualquier sede.
   soloPorSolicitud Boolean         @default(false)
+  // Orden manual de la columna en la agenda: null = alfabético normal; un valor mayor
+  // empuja la columna a la DERECHA (después de las normales y de las "Adicional").
+  ordenAgenda      Int?
   // Meta mensual de días de presencia para el reporte de bonos de RRHH (null = usar el
   // valor global del filtro). Solo se usa en Reportes RRHH; no afecta la operación.
   metaDiasMes      Int?
@@ -258,6 +263,8 @@ model Profesional {
   unidadNegocio    UnidadNegocio            @relation(fields: [unidadNegocioId], references: [id])
   asignaciones     AsignacionSede[]         @relation("AsignacionProfesional")
   reemplazado      AsignacionSede[]         @relation("Reemplazos")
+  // Roster administrativo cuando el profesional es un "doctor" (baropodometría por solicitud).
+  asignacionesAdmin AsignacionAdministrativa[] @relation("AsignacionAdminProfesional")
   horarios         HorarioProfesional[]
   bloqueos         BloqueoAgenda[]
   competencias     CompetenciaProfesional[]
@@ -286,6 +293,9 @@ model AsignacionSede {
   reemplazaA    String?          @db.Uuid
   notas         String?
   creadoPor     String?          @db.Uuid
+  // Asignación de RETORNO AUTOMÁTICO (devuelve a la sede matriz al terminar un movimiento
+  // temporal). Marca estructural — NO detectar retornos por heurística de sede/fecha.
+  esRetorno     Boolean          @default(false)
 
   // Para deshacer un movimiento con exactitud: qué asignación previa cerró este
   // movimiento y cuál era su fechaFin original (null = era indefinida). Al eliminar
@@ -305,6 +315,55 @@ model AsignacionSede {
   @@index([sedeId, activa])
   @@index([fechaInicio, fechaFin])
   @@map("asignaciones_sede")
+}
+
+// ─── Recepcionista ────────────────────────────────────────────────────────────
+// Ficha de personal SIN login (no es Usuario ni Profesional). Existe solo para el módulo
+// de composición de sede: se crea y se le asignan sedes por periodo (roster administrativo).
+// No tiene agenda, no impacta reservas.
+model Recepcionista {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre    String
+  activo    Boolean   @default(true)
+  deletedAt DateTime?
+
+  asignaciones AsignacionAdministrativa[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("recepcionistas")
+}
+
+// ─── AsignacionAdministrativa ─────────────────────────────────────────────────
+// Roster administrativo: en qué sede está un DOCTOR (Profesional tipo=medico por solicitud)
+// o una RECEPCIONISTA durante un rango de fechas. PURAMENTE INFORMATIVO para el módulo de
+// composición de sede + PDF. El motor de disponibilidad y las reservas NO leen esta tabla,
+// así que asignar aquí no afecta la agenda ni las citas. Exactamente uno de
+// profesionalId / recepcionistaId debe estar presente (validado en el backend).
+model AsignacionAdministrativa {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sedeId          String    @db.Uuid
+  fechaInicio     DateTime  @db.Date
+  fechaFin        DateTime? @db.Date // null = indefinida
+  // Persona asignada: un doctor (profesionalId) O una recepcionista (recepcionistaId).
+  profesionalId   String?   @db.Uuid
+  recepcionistaId String?   @db.Uuid
+  notas           String?
+  creadoPor       String?   @db.Uuid // uuid del usuario (sin relación, solo auditoría)
+  deletedAt       DateTime?
+
+  sede          Sede           @relation(fields: [sedeId], references: [id])
+  profesional   Profesional?   @relation("AsignacionAdminProfesional", fields: [profesionalId], references: [id])
+  recepcionista Recepcionista? @relation(fields: [recepcionistaId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([sedeId, fechaInicio, fechaFin])
+  @@index([profesionalId])
+  @@index([recepcionistaId])
+  @@map("asignaciones_administrativas")
 }
 
 // ─── HorarioProfesional ───────────────────────────────────────────────────────
@@ -327,15 +386,19 @@ model HorarioProfesional {
   @@map("horarios_profesional")
 }
 
-// ─── EntradaPodologa ──────────────────────────────────────────────────────────
-// Hora de entrada (08:00/09:00) específica de una FECHA, gestionada por la
-// Coordinadora de Sedes semana a semana. Sobrescribe la entrada base de
-// HorarioProfesional para ese día. Si no hay fila para una fecha, se usa la base.
+// ─── EntradaPodologa — OVERRIDE DE TURNO POR FECHA ────────────────────────────
+// Sobrescribe el turno base (HorarioProfesional) de UNA fecha concreta: entrada
+// distinta (08:00/09:00) y, opcionalmente, salida distinta. Es la CAPA 2 del
+// resolvedor único `turnosDelDia` (capa 0 = ventana de sede, capa 1 = horario base).
+// En días de EXCEPCIÓN de sede abierta (domingo/feriado) la fila además marca
+// PRESENCIA: solo quien tiene fila atiende ese día. Las AUSENCIAS puntuales NO
+// van aquí: son responsabilidad del módulo Permisos/Bloqueos (BloqueoAgenda).
 model EntradaPodologa {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   profesionalId String   @db.Uuid
   fecha         DateTime @db.Date
   horaInicio    String // "08:00" | "09:00"
+  horaFin       String? // opcional: sobreescribe la SALIDA ese día (null = usa la base)
   creadoPor     String?  @db.Uuid
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -363,6 +426,10 @@ model BloqueoAgenda {
   esRecurrente Boolean     @default(false)
   // Reunión administrativa de Daniel/Yasica: se pinta VERDE en la agenda (vs rojo del permiso).
   esReunion    Boolean     @default(false)
+  // Vacaciones planificadas: bloqueo de día completo (tipo PERMISO, esRecurrente=false) marcado
+  // con esta bandera para pintarse como franja 🌴 "Vacaciones" en la agenda (vs rojo del permiso).
+  // No cambia la semántica de disponibilidad (esta ya bloquea todo bloqueo no recurrente).
+  esVacaciones Boolean     @default(false)
   // Sincronización con el calendario del celular del profesional (reuniones): id del evento
   // Outlook (Daniel) para update/cancel; último error de sync (null = OK) para el reintentador.
   outlookEventId   String?
@@ -510,6 +577,26 @@ model CompetenciaProfesional {
 
 // ─── Paciente ─────────────────────────────────────────────────────────────────
 
+// ─── Ubigeo (INEI) — distritos del Perú para "distrito de residencia" ─────────
+// Fuente de verdad: código INEI de 6 dígitos (prisma/data/ubigeo-peru.json, 1892
+// distritos). Dos filas ESPECIALES con códigos imposibles en INEI:
+//   999999 = "Extranjero (reside fuera del Perú)"  → exige Paciente.paisResidencia
+//   999998 = "No precisa"
+model Ubigeo {
+  id           String    @id // código INEI 6 dígitos, ej. "150131" = San Isidro
+  distrito     String
+  provincia    String
+  departamento String
+  esLimaMetro  Boolean   @default(false) // provincia Lima (1501xx) + Callao (0701xx)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  pacientes Paciente[]
+
+  @@map("ubigeos")
+}
+
 model Paciente {
   id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nombres         String
@@ -525,6 +612,12 @@ model Paciente {
   // EXCLUYE de futuros envíos sin borrar el email. Se limpia si el correo se corrige.
   emailInvalido   Boolean       @default(false)
   notas           String?
+  // Distrito de residencia (UBIGEO INEI). null = no capturado (54K+ legados).
+  ubigeoId        String?
+  ubigeo          Ubigeo?       @relation(fields: [ubigeoId], references: [id])
+  // País de residencia ISO 3166-1 alpha-2 ("VE","CO"...). SOLO cuando
+  // ubigeoId = 999999 (Extranjero); en cualquier otro caso el backend fuerza null.
+  paisResidencia  String?
   deletedAt       DateTime?
 
   // ─── Import Genexis (migración del sistema antiguo) ──────────────────────────
@@ -545,6 +638,7 @@ model Paciente {
   // Índices para búsqueda rápida
   @@index([numeroDocumento])
   @@index([telefono])
+  @@index([ubigeoId])
   // GIN trigram indexes are created via raw SQL in migration
   @@map("pacientes")
 }

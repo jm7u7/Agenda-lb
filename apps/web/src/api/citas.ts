@@ -156,6 +156,18 @@ export const citasApi = {
   confirmarPorCorreo: (id: string) =>
     api.post<{ ok: boolean; to: string }>(`/citas/${id}/confirmar-mail`),
 
+  // Reporta enfermedad/ausencia de un profesional un día: cancela en lote sus citas
+  // activas del rango y crea el bloqueo, en una sola transacción. Devuelve la lista de
+  // pacientes afectados para contactarlos.
+  reportarEnfermedad: (data: { profesionalId: string; sedeId: string; fecha: string; horaInicio?: string; horaFin?: string; motivo?: string }) =>
+    api.post<{
+      ok: boolean;
+      bloqueoId: string;
+      profesional: string;
+      citasCanceladas: number;
+      pacientes: { horaInicio: string; estado: string; servicio: string; paciente: string; telefono: string }[];
+    }>('/citas/reportar-enfermedad', data),
+
   stats: (sedeId: string, fecha: string) =>
     api.get<{ total: number; confirmadas: number; llegaron: number; noShows: number; completadas: number; ocupacion: number }>(
       `/citas/sede/${sedeId}/stats`, { fecha }

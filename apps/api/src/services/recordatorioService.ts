@@ -123,8 +123,12 @@ export async function procesarEnvioReserva(citaId: string): Promise<'enviado' | 
 /**
  * Procesa el envío del recordatorio (Correo 2). Lo llama el worker de BullMQ.
  * Difiere por cuota; lanza ante error transitorio para que BullMQ reintente.
+ *
+ * `tipo` decide qué cupo consume: 'auto' (worker en masa, deja reserva libre) o
+ * 'manual' (reenvío disparado por recepción, puede usar la reserva → no queda
+ * bloqueado por los recordatorios automáticos del día). Ver `mailQuota`.
  */
-export async function procesarEnvioRecordatorio(citaId: string): Promise<'enviado' | 'cancelado' | 'omitido' | 'diferido'> {
+export async function procesarEnvioRecordatorio(citaId: string, tipo: 'auto' | 'manual' = 'auto'): Promise<'enviado' | 'cancelado' | 'omitido' | 'diferido'> {
   const rec = await prisma.recordatorioCita.findFirst({
     where: { citaId, tipo: 'RECORDATORIO', deletedAt: null, estado: { not: 'CANCELADO' } },
   });
@@ -145,7 +149,7 @@ export async function procesarEnvioRecordatorio(citaId: string): Promise<'enviad
   }
 
   // Cuota diaria: diferir antes de generar tokens (evita tokens huérfanos).
-  try { await asegurarCupoEnvio(); }
+  try { await asegurarCupoEnvio(tipo); }
   catch (e) {
     if (e instanceof QuotaExcedidaError) {
       const cuando = proximaVentanaEnvio();
@@ -192,7 +196,9 @@ export async function forzarEnvioRecordatorioAhora(citaId: string): Promise<{ to
   } else {
     await prisma.recordatorioCita.update({ where: { id: rec.id }, data: { estado: 'PROGRAMADO', errorMensaje: null } });
   }
-  const estado = await procesarEnvioRecordatorio(citaId);
+  // Reenvío manual de recepción: usa el cupo 'manual' (con reserva propia), para
+  // que no lo frene la cuota que ya consumieron los recordatorios automáticos.
+  const estado = await procesarEnvioRecordatorio(citaId, 'manual');
   return { to: cita.paciente.email ?? null, estado };
 }
 

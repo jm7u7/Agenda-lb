@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { citasApi } from '../../api/citas';
 import type { CitaResumen } from '../../api/citas';
-import { profesionalesApi, pacientesApi, type Profesional, type HistorialCita } from '../../api';
+import { profesionalesApi, pacientesApi, disponibilidadApi, type Profesional, type HistorialCita } from '../../api';
 import { BadgeEstado, BadgeSesion } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
 import { format, addDays } from 'date-fns';
@@ -21,7 +21,7 @@ import { usePaquetesPaciente, paquetesElegibles, paquetesOtraSede } from '../../
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAgendaStore } from '../../stores/agendaStore';
-import { generarSlotsDelDia, horaInicioValidaParaDuracion } from '@limablue/shared';
+import { generarSlotsDelDia, horaInicioValidaParaDuracion, esCitaInactiva } from '@limablue/shared';
 
 const SLOTS = generarSlotsDelDia('08:00', '20:00', 30);
 
@@ -174,6 +174,12 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
   const consultorioMutation = useMutation({
     mutationFn: (num: number | null) => citasApi.actualizarConsultorio(cita.id, num),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['citas'] }),
+    // El chip se actualiza optimista al hacer clic: si el guardado falla hay que
+    // REVERTIRLO y avisar — antes quedaba pintado un consultorio que nunca se guardó.
+    onError: (e: Error) => {
+      setConsultorioLocal(cita.consultorioNumero ?? null);
+      toast.error(e.message);
+    },
   });
 
   const confirmarMailMutation = useMutation({
@@ -193,7 +199,7 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
   const slotsOcupados = new Set<string>();
   if (citasDia && profSel) {
     for (const c of citasDia) {
-      if (c.profesionalId === profSel && c.id !== cita.id && !['cancelada', 'no_show'].includes(c.estado)) {
+      if (c.profesionalId === profSel && c.id !== cita.id && !esCitaInactiva(c.estado)) {
         const [hh, mm] = c.horaInicio.split(':').map(Number);
         const start = (hh ?? 0) * 60 + (mm ?? 0);
         for (let m = start; m < start + c.duracionMinutos; m += 30) {
@@ -202,6 +208,29 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
         }
       }
     }
+  }
+
+  // DISPONIBILIDAD REAL del profesional destino (misma fuente que el drawer de nueva
+  // cita): descuenta turno, permisos, almuerzos, ocupación en otras unidades y citas.
+  // Antes este panel ofrecía una lista fija 08:00–20:00 y el "Confirmar" fallaba (o
+  // peor: quedaba una cita fuera del turno). Solo se ofrecen horas realmente agendables.
+  const { data: dispoReprog, isFetching: dispoReprogCargando } = useQuery({
+    queryKey: ['disponibilidad', cita.sedeId, cita.unidadNegocio?.id, cita.servicio?.id, fechaSelStr, profSel],
+    queryFn: () => disponibilidadApi.consultar({
+      sede: cita.sedeId,
+      unidadNegocio: cita.unidadNegocio!.id,
+      servicio: cita.servicio!.id,
+      fecha: fechaSelStr,
+      profesional: profSel || undefined,
+    }),
+    enabled: reprogramando && !!profSel && !!cita.unidadNegocio?.id && !!cita.servicio?.id,
+  });
+  const slotsAgendables = new Set(
+    (dispoReprog?.slots ?? []).filter(s => s.disponible).map(s => s.horaInicio),
+  );
+  // La hora ACTUAL de la cita en su mismo día sigue siendo elegible (es su propio slot).
+  if (fechaSelStr === cita.fecha?.slice(0, 10) && profSel === cita.profesionalId) {
+    slotsAgendables.add(cita.horaInicio);
   }
 
   // Próximos 7 días para selección rápida
@@ -218,6 +247,7 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
         className="fixed z-50 right-0 top-0 bottom-0 w-[420px] bg-white shadow-2xl border-l border-slate-200 flex flex-col overflow-hidden"
         role="dialog"
         aria-label="Detalle de cita"
+        data-testid="popover-cita"
       >
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-200 flex items-start gap-3 shrink-0">
@@ -225,7 +255,7 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-slate-900 text-sm leading-tight flex items-center gap-1.5">
               <RomboAlerta alerta={cita.paciente.alerta ?? datosPaciente?.alerta} size={13} />
-              <span className="truncate">{nombrePaciente}</span>
+              <span className="truncate" data-testid="popover-cita-nombre">{nombrePaciente}</span>
             </p>
             <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
               <span>{cita.paciente.telefono}</span>
@@ -455,6 +485,7 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
                     <button
                       onClick={() => estadoMutation.mutate({ estado: 'llego' })}
                       disabled={estadoMutation.isPending}
+                      data-testid="popover-cita-btn-llego"
                       className="flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-green-300 bg-green-50 text-green-700 font-semibold text-sm hover:bg-green-100 transition-colors"
                     >
                       <span className="text-base">✓</span> Llegó
@@ -595,9 +626,11 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
               <div>
                 <p className="text-xs text-slate-500 mb-1.5">Hora</p>
                 <div className="grid grid-cols-6 gap-1">
-                  {/* Servicios de 1 hora: solo se muestran horas enteras (sin :30) */}
+                  {/* Servicios de 1 hora: solo se muestran horas enteras (sin :30).
+                      "Ocupado" = no está en la disponibilidad real (turno, permisos,
+                      almuerzos, citas de cualquier unidad) — misma fuente que el drawer. */}
                   {SLOTS.filter(slot => horaInicioValidaParaDuracion(slot, cita.duracionMinutos)).map(slot => {
-                    const ocupado = slotsOcupados.has(slot);
+                    const ocupado = slotsOcupados.has(slot) || dispoReprogCargando || !slotsAgendables.has(slot);
                     const sel = horaSel === slot;
                     return (
                       <button

@@ -48,6 +48,48 @@ async function citasEnConflicto(profesionalId: string, sedeId: string, fecha: st
     }));
 }
 
+// Lista de días 'YYYY-MM-DD' del rango [inicio, fin] inclusive (TZ-safe: el proceso corre en UTC).
+function diasDelRango(inicio: string, fin: string): string[] {
+  const out: string[] = [];
+  const d = new Date(`${inicio}T00:00:00Z`);
+  const end = new Date(`${fin}T00:00:00Z`);
+  // Tope de seguridad: nunca más de 366 iteraciones aunque el rango sea absurdo.
+  for (let i = 0; d <= end && i < 366; i++) {
+    out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return out;
+}
+
+// Citas ACTIVAS de un profesional en un RANGO de fechas (cualquier hora del día).
+// Para vacaciones el bloqueo es de día completo, así que CUALQUIER cita activa del rango estorba.
+// Una sola query por profesional (barre todo el rango) → agrupa por día.
+async function citasActivasEnRango(profesionalId: string, sedeId: string, inicio: string, fin: string) {
+  const dayStart = new Date(`${inicio}T00:00:00`);
+  const dayEnd = new Date(`${fin}T23:59:59`);
+  const citas = await prisma.cita.findMany({
+    where: {
+      OR: [{ profesionalId }, { solicitadoProfesionalId: profesionalId }],
+      sedeId,
+      fecha: { gte: dayStart, lte: dayEnd },
+      deletedAt: null,
+      estado: { notIn: ['cancelada', 'no_show', 'reprogramada', 'completada'] },
+    },
+    select: {
+      fecha: true, horaInicio: true, estado: true,
+      paciente: { select: { nombres: true, apellidoPaterno: true, apellidoMaterno: true, telefono: true } },
+      servicio: { select: { nombre: true } },
+    },
+    orderBy: [{ fecha: 'asc' }, { horaInicio: 'asc' }],
+  });
+  return citas.map(c => ({
+    fecha: c.fecha.toISOString().slice(0, 10),
+    horaInicio: c.horaInicio, estado: c.estado as string, servicio: c.servicio.nombre,
+    paciente: `${c.paciente.nombres} ${c.paciente.apellidoPaterno} ${c.paciente.apellidoMaterno}`.trim(),
+    telefono: c.paciente.telefono,
+  }));
+}
+
 // Dueños que reparten su día entre pacientes y temas administrativos: Daniel y Yasica Doy.
 // Las reuniones se bloquean en AMBAS agendas. Se identifican por nombre (misma convención
 // que la integración de Outlook Calendar). Devuelve cada uno con su sede vigente.
@@ -335,6 +377,151 @@ router.post('/reunion', requireAuth, requireRol('admin', 'coordinadora_sedes'), 
   for (const c of creados) void sincronizarReunionOutlook('crear', c.id);
 
   res.status(201).json({ ok: true, creados, profesionales: profs.map(p => p.nombre) });
+});
+
+// ─── Vacaciones ────────────────────────────────────────────────────────────────
+// Bloqueo de vacaciones = un PERMISO de DÍA COMPLETO (08:00–20:00) por cada día del rango,
+// marcado con esVacaciones=true (se pinta 🌴 en la agenda). Semántica idéntica a un permiso:
+// NO cancela citas; si hay CUALQUIER cita activa en el rango, se rechaza en bloque (todo-o-nada)
+// para que la coordinadora las reprograme primero. La disponibilidad ya respeta estos bloqueos
+// (son no recurrentes), así que no hay que tocar el motor.
+const VAC_DIA_INICIO = '08:00';
+const VAC_DIA_FIN = '20:00';
+
+const vacacionesSchema = z.object({
+  profesionalIds: z.array(z.string().uuid()).min(1).max(60),
+  sedeId: z.string().uuid(),
+  fechaInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  fechaFin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+// Escanea el rango para todos los profesionales y arma el reporte por profesional
+// (verde = sin citas; rojo = con citas que impiden bloquear). Reutilizado por preview y crear.
+async function analizarVacaciones(profIds: string[], sedeId: string, fechaInicio: string, fechaFin: string) {
+  const ids = [...new Set(profIds)];
+  const profs = await prisma.profesional.findMany({
+    where: { id: { in: ids }, activo: true, deletedAt: null },
+    select: { id: true, nombres: true, apellidos: true, tipo: true },
+  });
+  const profPorId = new Map(profs.map(p => [p.id, p]));
+  const dias = diasDelRango(fechaInicio, fechaFin);
+
+  const reporte: {
+    profesionalId: string; nombre: string; bloqueable: boolean;
+    conflictos: Awaited<ReturnType<typeof citasActivasEnRango>>;
+  }[] = [];
+  const invalidos: { profesionalId: string; motivo: string }[] = [];
+
+  for (const id of ids) {
+    const prof = profPorId.get(id);
+    if (!prof) { invalidos.push({ profesionalId: id, motivo: 'no encontrado' }); continue; }
+    if (prof.tipo !== 'podologa' && prof.tipo !== 'fisioterapeuta' && prof.tipo !== 'medico') {
+      invalidos.push({ profesionalId: id, motivo: 'tipo no bloqueable' });
+      continue;
+    }
+    const nombre = `${prof.nombres.split(' ')[0]} ${prof.apellidos.split(' ')[0]}`.trim();
+    const conflictos = await citasActivasEnRango(id, sedeId, fechaInicio, fechaFin);
+    reporte.push({ profesionalId: id, nombre, bloqueable: conflictos.length === 0, conflictos });
+  }
+
+  const totalConflictos = reporte.reduce((s, r) => s + r.conflictos.length, 0);
+  const bloqueablesIds = reporte.filter(r => r.bloqueable).map(r => r.profesionalId);
+  return { dias, reporte, invalidos, totalConflictos, bloqueablesIds };
+}
+
+// ─── POST /permisos/vacaciones/preview ──────────────────────────────────────────
+// Dry-run: NO crea nada. Devuelve por profesional si está limpio (verde) o con citas (rojo),
+// para anticipar al usuario antes de bloquear.
+router.post('/vacaciones/preview', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
+  const data = vacacionesSchema.parse(req.body);
+  if (data.fechaFin < data.fechaInicio) throw new AppError('La fecha de fin no puede ser anterior a la de inicio', 400);
+
+  const { dias, reporte, invalidos, totalConflictos, bloqueablesIds } =
+    await analizarVacaciones(data.profesionalIds, data.sedeId, data.fechaInicio, data.fechaFin);
+
+  res.json({
+    ok: totalConflictos === 0 && bloqueablesIds.length > 0,
+    dias: dias.length,
+    totalConflictos,
+    totalBloqueos: bloqueablesIds.length * dias.length,
+    profesionales: reporte,
+    invalidos,
+  });
+});
+
+// ─── POST /permisos/vacaciones ───────────────────────────────────────────────────
+// Todo-o-nada: si CUALQUIER profesional tiene citas en el rango, no se crea NADA y se reporta
+// (hay que reprogramarlas primero). Si todo está limpio, crea un PERMISO de día completo por
+// cada día × profesional, en una transacción, con esVacaciones=true.
+router.post('/vacaciones', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
+  const data = z.object({
+    ...vacacionesSchema.shape,
+    motivo: z.string().min(3).max(200),
+  }).parse(req.body);
+  if (data.fechaFin < data.fechaInicio) throw new AppError('La fecha de fin no puede ser anterior a la de inicio', 400);
+
+  const { dias, reporte, invalidos, totalConflictos, bloqueablesIds } =
+    await analizarVacaciones(data.profesionalIds, data.sedeId, data.fechaInicio, data.fechaFin);
+
+  if (dias.length > 92) throw new AppError('El rango de vacaciones no puede superar 92 días', 400);
+  // `reporte` = profesionales de tipo bloqueable (podóloga/fisio/baro). Si está vacío, todos los
+  // seleccionados eran inválidos (no encontrados / tipo no bloqueable). El chequeo de citas va
+  // DESPUÉS, para que un profesional válido con citas devuelva el 409 con la lista (no este 400).
+  if (reporte.length === 0) {
+    throw new AppError('Ninguno de los profesionales seleccionados es válido para vacaciones', 400, 'SIN_PROFESIONALES_VALIDOS');
+  }
+
+  // Regla dura (igual que permiso): no se bloquea sobre citas. Todo-o-nada.
+  if (totalConflictos > 0) {
+    const citasPlanas = reporte.flatMap(r => r.conflictos.map(c => ({ ...c, profesional: r.nombre })));
+    const muestra = reporte.filter(r => r.conflictos.length > 0)
+      .map(r => `${r.nombre} (${r.conflictos.length})`).join(' · ');
+    res.status(409).json({
+      error: 'CITAS_EN_RANGO',
+      message: `No se pueden bloquear las vacaciones: hay ${totalConflictos} cita(s) en el rango (${muestra}). Reprograma o cancela esas citas antes de bloquear.`,
+      statusCode: 409,
+      conflictos: reporte.filter(r => r.conflictos.length > 0),
+      citas: citasPlanas,
+    });
+    return;
+  }
+
+  // Salvaguarda de volumen (rango largo × muchos profesionales).
+  if (bloqueablesIds.length * dias.length > 2000) {
+    throw new AppError('Demasiados bloqueos a la vez (reduce el rango o los profesionales)', 400, 'DEMASIADOS_BLOQUEOS');
+  }
+
+  const filas = bloqueablesIds.flatMap(profesionalId => dias.map(dia => ({
+    profesionalId,
+    sedeId: data.sedeId,
+    tipo: 'PERMISO' as const,
+    esRecurrente: false,
+    esVacaciones: true,
+    fechaInicio: new Date(`${dia}T${VAC_DIA_INICIO}:00`),
+    fechaFin: new Date(`${dia}T${VAC_DIA_FIN}:00`),
+    horaInicio: VAC_DIA_INICIO,
+    horaFin: VAC_DIA_FIN,
+    motivo: data.motivo,
+    creadoPor: req.user?.userId,
+  })));
+
+  const creados = await prisma.$transaction(async (tx) => {
+    // createMany es una sola sentencia (rápido y atómico dentro de la transacción).
+    const r = await tx.bloqueoAgenda.createMany({ data: filas });
+    return r.count;
+  });
+
+  // Invalidar la caché de disponibilidad de cada día del rango (una sola sede).
+  for (const dia of dias) await invalidateDisponibilidadCache(data.sedeId, dia);
+
+  const nombres = reporte.filter(r => r.bloqueable).map(r => r.nombre);
+  res.status(201).json({
+    ok: true,
+    creados,
+    dias: dias.length,
+    profesionales: nombres,
+    invalidos,
+  });
 });
 
 // ─── DELETE /permisos/:id ─────────────────────────────────────────────────────

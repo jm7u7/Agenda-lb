@@ -83,6 +83,7 @@ export interface DiaEntrada {
   diaSemana: number;   // 1=Lun .. 6=Sáb
   horaEntrada: '08:00' | '09:00';
   esExcepcion: boolean; // true si tiene override explícito para esa fecha
+  trabaja: boolean;     // false = ese día de la semana no tiene horario base (el toggle no aplica)
 }
 export interface PodologaSemana {
   id: string;
@@ -136,14 +137,19 @@ export const profesionalesApi = {
   // + Daniel "solo por solicitud" + podólogas/fisios reales de la sede). No incluye los slots
   // automáticos genéricos de baropodometría.
   seleccionables: (params: { sedeId?: string; unidadNegocioId: string; fecha?: string; servicioId?: string }) =>
-    api.get<{ id: string; nombres: string; apellidos: string; tipo: string; porSolicitud: boolean }[]>(
+    api.get<{
+      id: string; nombres: string; apellidos: string; tipo: string; porSolicitud: boolean;
+      // Bloqueos del día (permisos + almuerzos): el selector desactiva a quien esté
+      // bloqueado a la hora elegida y muestra el rango en la etiqueta.
+      bloqueos: { horaInicio: string; horaFin: string; motivo: string; tipo: string }[];
+    }[]>(
       '/profesionales/seleccionables', params as Record<string, string>),
 
   // Hora de entrada (8:00/9:00) por semana — gestión de la Coordinadora de Sedes
   listarHorariosEntrada: (sedeId: string, semana: string) =>
     api.get<HorariosEntradaSemana>('/profesionales/horarios-entrada', { sedeId, semana }),
-  setEntrada: (id: string, fechas: string[], horaInicio: '08:00' | '09:00') =>
-    api.patch<{ ok: boolean; id: string; fechas: string[]; horaInicio: string }>(`/profesionales/${id}/entrada`, { fechas, horaInicio }),
+  setEntrada: (id: string, fechas: string[], horaInicio: '08:00' | '09:00', forzar?: boolean) =>
+    api.patch<{ ok: boolean; id: string; fechas: string[]; horaInicio: string }>(`/profesionales/${id}/entrada`, { fechas, horaInicio, forzar }),
 
   // Personal de un día EXCEPCIONAL habilitado (domingo/feriado que la sede abre).
   personalExcepcion: (sedeId: string, fecha: string) =>
@@ -154,8 +160,8 @@ export const profesionalesApi = {
   // Horario semanal PERMANENTE (días + rango horario) de un trabajador — vigente hasta editarlo.
   horarioSemanal: (id: string) =>
     api.get<{ horarios: { id: string; diaSemana: number; horaInicio: string; horaFin: string; turno: string; activo: boolean }[] }>(`/profesionales/${id}/horario`),
-  setHorarioSemanal: (id: string, dias: { diaSemana: number; horaInicio: string; horaFin: string; turno?: string }[]) =>
-    api.put<{ ok: boolean; horarios: { diaSemana: number; horaInicio: string; horaFin: string }[] }>(`/profesionales/${id}/horario`, { dias }),
+  setHorarioSemanal: (id: string, dias: { diaSemana: number; horaInicio: string; horaFin: string; turno?: string }[], forzar?: boolean) =>
+    api.put<{ ok: boolean; horarios: { diaSemana: number; horaInicio: string; horaFin: string }[] }>(`/profesionales/${id}/horario`, { dias, forzar }),
 
   // Días especiales / excepciones — herramienta unificada (quién trabaja + traer de otra sede).
   diaEspecial: (sedeId: string, fecha: string) =>
@@ -235,6 +241,10 @@ export interface Paciente {
   telefono: string;
   email: string | null;
   notas: string | null;
+  // Distrito de residencia (código UBIGEO; 999999=Extranjero, 999998=No precisa)
+  ubigeoId?: string | null;
+  // País ISO-2, solo cuando ubigeoId=999999
+  paisResidencia?: string | null;
   creadoEn: string;
   alerta?: AlertaPaciente | null;
   familiares?: FamiliarPaciente[] | null;
@@ -305,6 +315,10 @@ export const reniecApi = {
 
 export const pacientesApi = {
   buscar: (q: string) => api.get<(Paciente & { nombreCompleto: string })[]>('/pacientes/buscar', { q }),
+  // Top de distritos frecuentes para los chips del autocomplete (cache 24h server-side).
+  distritosFrecuentes: (sedeId?: string) =>
+    api.get<{ id: string; distrito: string; provincia: string; departamento: string; total: number }[]>(
+      '/pacientes/distritos-frecuentes', sedeId ? { sedeId } : undefined),
   obtener: (id: string) => api.get<PacienteDetalle>(`/pacientes/${id}`),
   crear: (data: Partial<Paciente>) => api.post<Paciente>('/pacientes', data),
   actualizar: (id: string, data: Partial<Paciente>) => api.patch<Paciente>(`/pacientes/${id}`, data),

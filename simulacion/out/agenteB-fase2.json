@@ -1,0 +1,13 @@
+{
+ "walkin-fallido": 1,
+ "reserva-fallida:carrera": 3,
+ "noshow": 26,
+ "asistio": 155,
+ "cancelo-ultimo-minuto": 16,
+ "tarde": 18,
+ "cancelo-24h": 12,
+ "combinada": 19,
+ "reprogramo": 49,
+ "walkin": 5,
+ "reserva-fallida:sin-slots": 4
+}

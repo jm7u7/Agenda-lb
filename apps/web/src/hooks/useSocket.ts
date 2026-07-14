@@ -76,11 +76,23 @@ export function useSocket(sedeId: string | null) {
       toast('Asignación de sede actualizada', { icon: '🔄', duration: 3000 });
     };
 
+    // Cambio de horario del personal (base semanal u override por fecha). El backend lo
+    // emite de forma centralizada (horarioService) — aquí basta refrescar todo lo que
+    // depende del turno: columnas de agenda, slots y las pantallas de gestión de horarios.
+    const horarioHandler = () => {
+      const claves = ['profesionales-sede', 'disponibilidad', 'horarios-entrada', 'personal-excepcion', 'horario-semanal', 'dia-especial'];
+      qc.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && typeof q.queryKey[0] === 'string' && claves.includes(q.queryKey[0]),
+      });
+    };
+
     socket.on('agenda:actualizada', citaHandler);
     socket.on('movimiento:guardado', movimientoHandler);
+    socket.on('horario:actualizado', horarioHandler);
     return () => {
       socket?.off('agenda:actualizada', citaHandler);
       socket?.off('movimiento:guardado', movimientoHandler);
+      socket?.off('horario:actualizado', horarioHandler);
     };
   }, [sedeId, qc]);
 }

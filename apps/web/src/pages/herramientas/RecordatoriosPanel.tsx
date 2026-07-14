@@ -127,7 +127,11 @@ export function RecordatoriosPanel() {
               <Card label="Pidió reprogramar" value={`${metricas.pidioReprogramar}`} sub={`${metricas.pctPidioReprogramar}% de enviados`} />
               <Card label="Sin respuesta" value={`${metricas.sinRespuesta}`} sub="posible no-show" />
               <Card label="T. prom. confirmación" value={metricas.tiempoPromedioConfirmacionMin != null ? `${metricas.tiempoPromedioConfirmacionMin} min` : '—'} />
-              <Card label="Cuota Gmail hoy" value={`${metricas.cuotaUsadaHoy}/${metricas.cuotaLimiteDiario}`} sub="envíos del día" />
+              <Card
+                label="Cuota Gmail hoy"
+                value={`${metricas.cuotaUsadaHoy}/${metricas.cuotaLimiteDiario}`}
+                sub={`autom. hasta ${metricas.cuotaLimiteAutomatico} · ${metricas.cuotaReservaManual} reservados p/ reenvío manual`}
+              />
             </div>
             {metricas.porSede.length > 0 && (
               <div className="bg-white rounded-xl border border-slate-200 p-4">

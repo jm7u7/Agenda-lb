@@ -32,9 +32,18 @@ import {
 const REMITENTE_DEFAULT_EMAIL = 'citas@limablue.pe';
 const REMITENTE_DEFAULT_NOMBRE = 'Limablue Podología';
 
-/** ¿Está Resend configurado para enviar? (única fuente: variable de entorno). */
+/**
+ * Modo prueba: NO envía correos reales pero deja correr toda la lógica previa (incl. la
+ * cuota diaria). Env-gated, default FALSE. Solo para entornos de prueba (Gate 0); NUNCA prod.
+ */
+export const MAIL_DRY_RUN = process.env.MAIL_DRY_RUN === 'true';
+if (MAIL_DRY_RUN) {
+  console.warn('⚠️  MAIL_DRY_RUN ACTIVO — los correos NO se envían (modo prueba). No debe estar activo en producción.');
+}
+
+/** ¿Está Resend configurado para enviar? (o dry-run activo, para ejercer la lógica de cuota). */
 export function resendConfigurado(): boolean {
-  return !!process.env.RESEND_API_KEY?.trim();
+  return MAIL_DRY_RUN || !!process.env.RESEND_API_KEY?.trim();
 }
 
 // Cliente Resend perezoso: se crea al primer envío, no al importar el módulo,
@@ -86,6 +95,10 @@ export interface EnviarEmailArgs {
  * `contentId = logo-limablue`, que las plantillas referencian vía `cid:logo-limablue`.
  */
 export async function enviarEmail({ to, subject, html, ics }: EnviarEmailArgs): Promise<{ id: string } | null> {
+  if (MAIL_DRY_RUN) {
+    // Dry-run: se saltó el envío real a Resend, pero la cuota ya se reservó aguas arriba.
+    return { id: `dry-run-${Date.now()}` };
+  }
   if (!resendConfigurado()) {
     console.warn(`[email] RESEND_API_KEY ausente en el entorno — envío OMITIDO (destinatario ${to}). El flujo continúa sin correo.`);
     return null;

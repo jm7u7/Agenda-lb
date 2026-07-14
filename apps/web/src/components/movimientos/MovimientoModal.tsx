@@ -267,6 +267,9 @@ export function MovimientoModal({ onClose, movimientoEditar, prefillSedeId }: Pr
     enabled: !!sedeId && !!fechaInicio,
   });
 
+  // ¿Es la asignación de RETORNO que el sistema crea solo al terminar una cobertura temporal?
+  const esRetornoAutomatico = !!movimientoEditar?.esRetorno || !!movimientoEditar?.notas?.startsWith('Retorno automático');
+
   const profSeleccionado = profesionales?.find(p => p.id === profesionalId);
   const nombreProfesional = profSeleccionado
     ? `${profSeleccionado.nombres.split(' ')[0]} ${profSeleccionado.apellidos.split(' ')[0]}`
@@ -367,16 +370,37 @@ export function MovimientoModal({ onClose, movimientoEditar, prefillSedeId }: Pr
   const editarMutation = useMutation({
     mutationFn: () =>
       movimientosApi.editar(movimientoEditar!.id, {
+        ...(profesionalId !== movimientoEditar!.profesionalId ? { profesionalId } : {}),
+        ...(sedeId !== movimientoEditar!.sedeId ? { sedeId } : {}),
+        ...(fechaInicio !== movimientoEditar!.fechaInicio?.slice(0, 10) ? { fechaInicio } : {}),
         fechaFin: sinFechaFin ? null : (fechaFin || null),
         motivo,
         notas: notas || null,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['movimientos'] });
+      qc.invalidateQueries({ queryKey: ['profesionales-sede'] });
       toast.success('Movimiento actualizado');
       onClose();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: async (e: Error & { statusCode?: number; data?: { error: string; totalCitas: number } }) => {
+      // Cambiar la sede con citas activas en el período → mostrar el panel para gestionarlas.
+      if (e.statusCode === 409 && e.data?.error === 'CITAS_PENDIENTES') {
+        try {
+          const ver = await movimientosApi.verificarCitas({
+            profesionalId,
+            fechaInicio,
+            fechaFin: sinFechaFin ? null : (fechaFin || null),
+          });
+          setVerificacion(ver);
+          toast.error('Gestiona las citas del período antes de cambiar la sede');
+        } catch {
+          toast.error(`${e.data.totalCitas} citas pendientes deben gestionarse primero`);
+        }
+        return;
+      }
+      toast.error(e.message);
+    },
   });
 
   const hayConflicto = !esEdicion && !!preview?.conflicto;
@@ -399,65 +423,52 @@ export function MovimientoModal({ onClose, movimientoEditar, prefillSedeId }: Pr
           </div>
 
           <div className="px-6 py-5 space-y-5">
-            {/* 1. Podóloga */}
+            {/* 1. Podóloga (editable también en edición: el backend recrea el movimiento
+                 restaurando el estado previo de la podóloga original) */}
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">Podóloga</label>
-              {esEdicion ? (
-                <div className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                  <span
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ backgroundColor: movimientoEditar!.profesional.colorAvatar }}
-                  >
-                    {movimientoEditar!.profesional.nombres[0]}{movimientoEditar!.profesional.apellidos[0]}
-                  </span>
-                  <span className="text-sm font-medium text-slate-800">
-                    {movimientoEditar!.profesional.nombres} {movimientoEditar!.profesional.apellidos}
-                  </span>
-                </div>
-              ) : (
-                <select
-                  value={profesionalId}
-                  onChange={e => setProfesionalId(e.target.value)}
-                  className="input w-full text-sm"
-                >
-                  <option value="">Seleccionar podóloga...</option>
-                  {/* Los "Adicional" son fijos de su sede → no aparecen como movibles. */}
-                  {profesionales?.filter(p => p.nombres.trim().toLowerCase() !== 'adicional').map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.nombres} {p.apellidos}
-                      {p.sedeActual ? ` — ${p.sedeActual.nombre}` : ' — Sin sede'}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <select
+                value={profesionalId}
+                onChange={e => setProfesionalId(e.target.value)}
+                className="input w-full text-sm"
+              >
+                <option value="">Seleccionar podóloga...</option>
+                {/* Los "Adicional" son fijos de su sede → no aparecen como movibles. */}
+                {profesionales?.filter(p => p.nombres.trim().toLowerCase() !== 'adicional').map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombres} {p.apellidos}
+                    {p.sedeActual ? ` — ${p.sedeActual.nombre}` : ' — Sin sede'}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* 2. Sede destino */}
+            {/* 2. Sede destino (editable también en edición: el backend valida citas del período) */}
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sede destino</label>
-              {esEdicion ? (
-                <div className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: movimientoEditar!.sede.color }} />
-                  <span className="text-sm font-medium text-slate-800">{movimientoEditar!.sede.nombre}</span>
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {sedes?.map(s => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setSedeId(s.id)}
-                      className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all',
-                        sedeId === s.id
-                          ? 'border-limablue-500 bg-limablue-50 text-limablue-700 ring-1 ring-limablue-400'
-                          : 'border-slate-200 text-slate-600 hover:border-slate-300 bg-white',
-                      )}
-                    >
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                      {s.nombre}
-                    </button>
-                  ))}
+              <div className="flex flex-wrap gap-2">
+                {sedes?.map(s => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setSedeId(s.id)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all',
+                      sedeId === s.id
+                        ? 'border-limablue-500 bg-limablue-50 text-limablue-700 ring-1 ring-limablue-400'
+                        : 'border-slate-200 text-slate-600 hover:border-slate-300 bg-white',
+                    )}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                    {s.nombre}
+                  </button>
+                ))}
+              </div>
+              {esRetornoAutomatico && (
+                <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800 leading-relaxed">
+                  ℹ️ Este movimiento es el <strong>retorno automático</strong> que el sistema creó para devolver a la
+                  podóloga a su sede matriz al terminar una cobertura temporal — no lo creaste tú. Si quieres que al
+                  terminar continúe en OTRA sede, cambia aquí la sede destino y guarda.
                 </div>
               )}
             </div>
@@ -470,8 +481,7 @@ export function MovimientoModal({ onClose, movimientoEditar, prefillSedeId }: Pr
                   type="date"
                   value={fechaInicio}
                   onChange={e => setFechaInicio(e.target.value)}
-                  disabled={esEdicion}
-                  className="input w-full text-sm disabled:bg-slate-50 disabled:text-slate-500"
+                  className="input w-full text-sm"
                 />
               </div>
               <div>
@@ -602,8 +612,8 @@ export function MovimientoModal({ onClose, movimientoEditar, prefillSedeId }: Pr
               </div>
             )}
 
-            {/* Panel de citas pendientes */}
-            {!esEdicion && verificacion && (
+            {/* Panel de citas pendientes (en edición aparece si el cambio de sede fue rechazado) */}
+            {verificacion && (
               <PanelCitasPendientes
                 verificacion={verificacion}
                 nombreProfesional={nombreProfesional}
