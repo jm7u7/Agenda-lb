@@ -71,6 +71,9 @@ export const paquetesSesionesApi = {
     api.post<{ numeroSesion: number; saldo: number; estado: string }>('/consumos/manual', { paquetePacienteId, ...data }),
   anularConsumo: (consumoId: string, motivo: string) =>
     api.post<{ saldo: number; estado: string }>(`/consumos/${consumoId}/anular`, { motivo }),
+  // "No aplicar / no descontar la sesión" (ej. láser no aplicado). exonerar=false quita la marca.
+  exonerarSesion: (citaId: string, exonerar: boolean, motivo?: string) =>
+    api.post<{ exonerada: boolean; devolvioConsumo?: boolean; saldo?: number | null }>(`/consumos/cita/${citaId}/exonerar`, { exonerar, motivo }),
   // Corregir tamaño del paquete — SOLO admin (recepción eligió mal, ej. 12 → 4).
   corregirTamano: (paquetePacienteId: string, sesionesTotal: number, motivo: string) =>
     api.patch<{ saldo: number; estado: string }>(`/paquetes/instancia/${paquetePacienteId}/tamano`, { sesionesTotal, motivo }),

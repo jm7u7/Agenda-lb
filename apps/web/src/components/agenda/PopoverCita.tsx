@@ -17,7 +17,7 @@ import { ToggleDatosPaciente } from '../pacientes/ToggleDatosPaciente';
 import { BadgeAsistencia } from '../pacientes/BadgeAsistencia';
 import { BotonHistorialGenexis } from '../pacientes/HistorialGenexis';
 import { SaldoPaquetes, DialogoConsumo } from '../pacientes/SaldoPaquetes';
-import { usePaquetesPaciente, paquetesElegibles, paquetesOtraSede } from '../../api/paquetesSesiones';
+import { usePaquetesPaciente, paquetesElegibles, paquetesOtraSede, paquetesSesionesApi } from '../../api/paquetesSesiones';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAgendaStore } from '../../stores/agendaStore';
@@ -102,6 +102,20 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
   const paquetesOtras = paquetesOtraSede(paquetesPac, cita.servicioId, cita.sedeId, cita.subcategoriaId ?? null, cita.fecha?.slice(0, 10) ?? null);
   const [dialogoConsumo, setDialogoConsumo] = useState(false);
 
+  // Combo Profilaxis+Láser: la sesión la descuenta la mitad de LÁSER (SECUNDARIO). Para que
+  // "no descontar" funcione desde CUALQUIER fila del combo, si esta es la PRINCIPAL (profilaxis)
+  // buscamos su hermana de láser y mostramos/actuamos sobre ella (el backend hace el mismo redirect).
+  const esCombo = !!cita.slotGrupoId;
+  const { data: citasComboDia } = useQuery({
+    queryKey: ['combo-sibling', cita.sedeId, cita.fecha?.slice(0, 10), cita.slotGrupoId],
+    queryFn: () => citasApi.listar({ sedeId: cita.sedeId, fecha: (cita.fecha ?? '').slice(0, 10) }),
+    enabled: esCombo && cita.slotRol === 'PRINCIPAL' && !!cita.fecha,
+    staleTime: 15_000,
+  });
+  const citaExon = (esCombo && cita.slotRol === 'PRINCIPAL'
+    ? (citasComboDia ?? []).find((c) => c.slotGrupoId === cita.slotGrupoId && c.slotRol === 'SECUNDARIO')
+    : null) ?? cita;
+
   const estadoMutation = useMutation({
     mutationFn: ({ estado, comentario }: { estado: string; comentario?: string }) =>
       citasApi.cambiarEstado(cita.id, estado, comentario, motivoCancelacion || undefined),
@@ -115,6 +129,20 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
       } else {
         onClose();
       }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // "No descontar sesión" (láser no aplicado): recepción/admin. Devuelve la sesión al paquete.
+  const exonerarMut = useMutation({
+    mutationFn: ({ exonerar, motivo }: { exonerar: boolean; motivo?: string }) => paquetesSesionesApi.exonerarSesion(cita.id, exonerar, motivo),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['citas'] });
+      qc.invalidateQueries({ queryKey: ['combo-sibling'] });
+      qc.invalidateQueries({ queryKey: ['paquetes-sesiones', cita.paciente.id] });
+      toast.success(r.exonerada
+        ? (r.devolvioConsumo ? 'Sesión no descontada — devuelta al paquete' : 'Marcada: esta cita no descuenta sesión')
+        : 'Marca quitada: vuelve a descontar normalmente');
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -308,6 +336,38 @@ export function PopoverCita({ cita, onClose, onReprogramar }: PopoverCitaProps) 
               <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
                 ⚠ El paquete de este paciente pertenece a <b>{paquetesOtras[0].sede?.nombre}</b> — aquí no consume.
               </p>
+            )}
+          </div>
+        )}
+
+        {/* "No descontar sesión" (láser no aplicado): recepción/admin. En un combo se marca solo
+            la mitad de láser; la profilaxis descuenta normal. Devuelve la sesión al paquete. */}
+        {(citaExon.sesionExonerada || cita.sesionConsumida || elegiblesConsumo.length > 0 || esCombo) && (
+          <div className="px-5 py-2 border-b border-slate-100">
+            {citaExon.sesionExonerada ? (
+              <div className="flex items-center justify-between gap-2 rounded-lg bg-rose-50 border border-rose-200 px-3 py-2">
+                <div className="text-xs text-rose-800 min-w-0">
+                  <span className="font-bold">🚫 Sesión de láser no descontada</span>
+                  {citaExon.sesionExoneradaMotivo && <span className="text-rose-600"> · {citaExon.sesionExoneradaMotivo}</span>}
+                  <span className="block text-[11px] text-rose-500">Láser no aplicado — el paciente conserva la sesión.</span>
+                </div>
+                <button
+                  onClick={() => exonerarMut.mutate({ exonerar: false })}
+                  disabled={exonerarMut.isPending}
+                  className="text-[11px] font-semibold text-rose-700 hover:bg-rose-100 rounded px-2 py-1 shrink-0 disabled:opacity-50"
+                >Quitar</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  const motivo = window.prompt('Motivo (opcional) — ej. el médico indicó no aplicar el láser:', 'Láser no aplicado');
+                  if (motivo === null) return; // canceló el prompt
+                  exonerarMut.mutate({ exonerar: true, motivo: motivo.trim() || undefined });
+                }}
+                disabled={exonerarMut.isPending}
+                data-testid="popover-cita-btn-no-descontar"
+                className="w-full text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg py-2 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors disabled:opacity-50"
+              >🚫 No descontar sesión (láser no aplicado)</button>
             )}
           </div>
         )}

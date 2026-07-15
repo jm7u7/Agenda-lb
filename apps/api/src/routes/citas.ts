@@ -847,10 +847,14 @@ router.post('/', requireAuth, requireScope('appointments:write'), async (req: Re
             'PAQUETE_OTRA_SEDE',
           );
         }
+        // citasProgramadas = citas activas que reservaron una sesión pero AÚN NO la consumieron.
+        // Las ya consumidas viven en `sesionesUsadas`; incluirlas aquí las contaría DOS veces y
+        // saltaba la numeración (una 'llego' consumida → la siguiente salía 3 en vez de 2).
         const citasProgramadas = await prisma.cita.count({
           where: {
             paquetePacienteId: data.paquetePacienteId,
             estado: { in: ['agendada', 'confirmada', 'llego', 'en_atencion'] },
+            sesionConsumida: false,
             deletedAt: null,
           },
         });
@@ -1104,9 +1108,11 @@ async function calcularSesionNumeroTx(tx: Prisma.TransactionClient, paquetePacie
       400, 'SESION_MANUAL_REQUERIDA',
     );
   }
+  // Solo las citas activas que AÚN NO consumieron (las consumidas ya están en sesionesUsadas;
+  // contarlas aquí las duplicaría y saltaría la numeración).
   const citasProgramadas = await tx.cita.count({
     where: {
-      paquetePacienteId, estado: { in: ['agendada', 'confirmada', 'llego', 'en_atencion'] }, deletedAt: null,
+      paquetePacienteId, estado: { in: ['agendada', 'confirmada', 'llego', 'en_atencion'] }, sesionConsumida: false, deletedAt: null,
     },
   });
   if (paquetePac.sesionesUsadas + citasProgramadas >= paquetePac.sesionesTotal) {

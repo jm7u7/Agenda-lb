@@ -7,7 +7,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db';
 import { requireAuth, requireRol } from '../middleware/auth';
-import { consumirDeCita, consumoManual, anularConsumo } from '../services/consumoService';
+import { consumirDeCita, consumoManual, anularConsumo, exonerarSesion, revertirExoneracion } from '../services/consumoService';
 
 const router = Router();
 
@@ -45,6 +45,22 @@ router.post('/manual', requireAuth, async (req, res) => {
     usuarioNombre: await nombreUsuario(req.user?.userId),
   });
   res.status(201).json(r);
+});
+
+// ─── POST /consumos/cita/:citaId/exonerar — "no aplicar / no descontar" (recepción + admin) ──
+// exonerar=true marca la cita como sesión no aplicada (ej. láser no aplicado) y DEVUELVE la
+// sesión si ya se descontó; exonerar=false quita la marca. Auditado. En un combo se aplica
+// solo a la cita del láser (la profilaxis descuenta normal).
+router.post('/cita/:citaId/exonerar', requireAuth, async (req, res) => {
+  const { exonerar, motivo } = z.object({
+    exonerar: z.boolean(),
+    motivo: z.string().trim().max(500).optional(),
+  }).parse(req.body);
+  const nombre = await nombreUsuario(req.user?.userId);
+  const r = exonerar
+    ? await exonerarSesion(req.params.citaId, motivo, req.user?.userId, nombre)
+    : await revertirExoneracion(req.params.citaId, req.user?.userId, nombre);
+  res.json(r);
 });
 
 // ─── POST /consumos/:id/anular — reversa (solo admin, motivo obligatorio) ────

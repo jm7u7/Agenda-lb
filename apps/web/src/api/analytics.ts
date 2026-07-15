@@ -135,6 +135,16 @@ export interface PromocionRow {
   porcentajeCompletadas: number;
 }
 
+export interface PacientesNuevosResponse {
+  periodo: { desde: string; hasta: string };
+  prevPeriodo: { desde: string; hasta: string };
+  total: number;
+  prevTotal: number;
+  variacion: number | null;
+  puntos: { mes: string; nuevos: number }[];
+  porSede: { sede: string; nuevos: number }[];
+}
+
 type FilterParams = {
   desde: string;
   hasta: string;
@@ -167,6 +177,7 @@ export const analyticsApi = {
     }),
   noshow: (p: FilterParams) => api.get<NoShowResponse>('/analytics/noshow', toQuery(p)),
   caseload: (p: FilterParams) => api.get<CaseloadRow[]>('/analytics/caseload', toQuery(p)),
+  pacientesNuevos: (p: FilterParams) => api.get<PacientesNuevosResponse>('/analytics/pacientes-nuevos', toQuery(p)),
   canales: (p: FilterParams) => api.get<CanalRow[]>('/analytics/canales', toQuery(p)),
   promociones: (p: FilterParams) => api.get<PromocionRow[]>('/analytics/promociones', toQuery(p)),
   recalcularHoy: () => api.post<{ ok: boolean; grupos: number }>('/analytics/recalcular/hoy', {}),

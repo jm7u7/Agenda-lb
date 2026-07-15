@@ -51,6 +51,10 @@ export interface CitaResumen {
   promocion: { id: string; nombre: string; tipo: 'PRECIO_FIJO' | 'PORCENTAJE' | 'OTRO'; valor: number | null } | null;
   promocionHeredada?: { id: string; nombre: string; tipo: 'PRECIO_FIJO' | 'PORCENTAJE' | 'OTRO'; valor: number | null } | null;
   sesionNumero: number | null;
+  sesionConsumida?: boolean;
+  // "No aplicar / no descontar" (ej. láser no aplicado): la cita no consume su sesión.
+  sesionExonerada?: boolean;
+  sesionExoneradaMotivo?: string | null;
   consultorioNumero: number | null;
   comprobanteUrl: string | null;
   comprobanteNombre: string | null;

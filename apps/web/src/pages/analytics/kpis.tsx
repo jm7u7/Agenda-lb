@@ -352,6 +352,92 @@ function CaseloadDetalle({ params }: { params: AnalyticsParams }) {
   );
 }
 
+// ─── PACIENTES NUEVOS (captación) ─────────────────────────────────────────────
+function usePacientesNuevos(params: AnalyticsParams) {
+  return useQuery({ queryKey: ['analytics-pacientes-nuevos', params], queryFn: () => analyticsApi.pacientesNuevos(params), staleTime: STALE });
+}
+function VariacionBadge({ v }: { v: number | null }) {
+  if (v === null) return <span className="text-[10px] text-slate-300">—</span>;
+  const up = v >= 0;
+  return <span className={cn('text-xs font-bold tabular-nums', up ? 'text-emerald-600' : 'text-red-500')}>{up ? '▲' : '▼'} {Math.abs(v)}%</span>;
+}
+function PacientesNuevosPreview({ params }: { params: AnalyticsParams }) {
+  const q = usePacientesNuevos(params);
+  const d = q.data;
+  const puntos = d?.puntos ?? [];
+  return (
+    <Estado q={q} vacio={!d} alto={130}>
+      <div className="flex items-end justify-between gap-3 mb-1.5">
+        <div>
+          <p className="text-3xl font-black text-slate-800 tabular-nums leading-none">{fmtInt(d?.total ?? 0)}</p>
+          <p className="text-[11px] text-slate-400 font-semibold mt-1">nuevos en el período</p>
+        </div>
+        <div className="text-right">
+          <VariacionBadge v={d?.variacion ?? null} />
+          <p className="text-[10px] text-slate-400 mt-0.5">vs. período previo</p>
+        </div>
+      </div>
+      {puntos.length > 1 && (
+        <ResponsiveContainer width="100%" height={62}>
+          <BarChart data={puntos} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+            <XAxis dataKey="mes" hide />
+            <Tooltip contentStyle={TooltipStyle} />
+            <Bar dataKey="nuevos" name="Nuevos" fill="#0e9c88" radius={[3, 3, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </Estado>
+  );
+}
+function PacientesNuevosDetalle({ params }: { params: AnalyticsParams }) {
+  const q = usePacientesNuevos(params);
+  const d = q.data;
+  const puntos = d?.puntos ?? [];
+  const sedes = d?.porSede ?? [];
+  const maxSede = Math.max(...sedes.map(s => s.nuevos), 1);
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <SectionHeader
+          title="Pacientes nuevos por mes"
+          subtitle="Un paciente cuenta como nuevo el mes de su PRIMERA visita (historial + citas)"
+          onExport={puntos.length ? () => exportToExcel(`pacientes_nuevos_${params.desde}_${params.hasta}.xlsx`, [{ name: 'Pacientes nuevos', data: puntos.map(p => ({ Mes: p.mes, Nuevos: p.nuevos })) }]) : undefined}
+        />
+        <div className="flex items-baseline gap-3 mb-4">
+          <span className="text-4xl font-black text-slate-800 tabular-nums">{fmtInt(d?.total ?? 0)}</span>
+          <span className="text-sm text-slate-400 font-semibold">nuevos en el período</span>
+          <VariacionBadge v={d?.variacion ?? null} />
+        </div>
+        <Estado q={q} vacio={puntos.length === 0} alto={300}>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={puntos} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="mes" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+              <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} />
+              <Tooltip contentStyle={TooltipStyle} />
+              <Bar dataKey="nuevos" name="Nuevos" fill="#0e9c88" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Estado>
+      </div>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <SectionHeader title="Captación por sede" subtitle="Sede de la primera visita del paciente" />
+        <Estado q={q} vacio={sedes.length === 0} alto={160}>
+          <div className="space-y-2.5">
+            {sedes.map(s => (
+              <div key={s.sede} className="flex items-center gap-3">
+                <span className="text-xs font-medium text-slate-700 flex-1 truncate">{s.sede}</span>
+                <div className="flex-1 max-w-sm bg-slate-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full bg-teal-500" style={{ width: `${(s.nuevos / maxSede) * 100}%` }} /></div>
+                <span className="text-xs font-bold text-slate-700 tabular-nums w-16 text-right">{fmtInt(s.nuevos)}</span>
+              </div>
+            ))}
+          </div>
+        </Estado>
+      </div>
+    </div>
+  );
+}
+
 // ─── CANALES ──────────────────────────────────────────────────────────────────
 function useCanalesData(params: AnalyticsParams) {
   const q = useQuery({ queryKey: ['analytics-canales', params], queryFn: () => analyticsApi.canales(params), staleTime: STALE });
@@ -501,6 +587,7 @@ const icons = {
   canales: I('M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z'),
   promociones: I('M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z'),
   sedes: I('M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'),
+  pacientesNuevos: I('M18 9v6m3-3h-6M12 7a4 4 0 11-8 0 4 4 0 018 0zM2 21v-2a5 5 0 015-5h2a5 5 0 015 5v2'),
 };
 
 // ─── Registro de KPIs ────────────────────────────────────────────────────────
@@ -511,6 +598,7 @@ export const KPIS: KpiDef[] = [
   { key: 'profesionales', titulo: 'Ranking de profesionales', descripcion: 'Top por completadas', grupo: 'Calidad de agenda', icon: icons.profesionales, Preview: ProfesionalesPreview, Detalle: ProfesionalesDetalle },
   { key: 'noshow', titulo: 'No-show', descripcion: 'Inasistencias por profesional', grupo: 'Calidad de agenda', icon: icons.noshow, Preview: NoshowPreview, Detalle: NoshowDetalle },
   { key: 'caseload', titulo: 'Caseload propio', descripcion: '% elegida por paciente', grupo: 'Calidad de agenda', icon: icons.caseload, Preview: CaseloadPreview, Detalle: CaseloadDetalle },
+  { key: 'pacientes-nuevos', titulo: 'Pacientes nuevos', descripcion: 'Captación por mes (primera visita)', grupo: 'Comercial', span: 2, icon: icons.pacientesNuevos, Preview: PacientesNuevosPreview, Detalle: PacientesNuevosDetalle },
   { key: 'canales', titulo: 'Canales de reserva', descripcion: 'De dónde viene el cliente', grupo: 'Comercial', icon: icons.canales, Preview: CanalesPreview, Detalle: CanalesDetalle },
   { key: 'promociones', titulo: 'Promociones', descripcion: 'Uso según la agenda', grupo: 'Comercial', icon: icons.promociones, Preview: PromocionesPreview, Detalle: PromocionesDetalle },
   { key: 'sedes', titulo: 'Comparativa de sedes', descripcion: 'Volumen y calidad por sede', grupo: 'Sedes', span: 2, icon: icons.sedes, Preview: SedesPreview, Detalle: SedesDetalle },

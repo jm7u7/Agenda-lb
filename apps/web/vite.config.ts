@@ -18,6 +18,7 @@ export default defineConfig({
       // API de e2e en :3003; por defecto la API local en :3002.
       '/api': { target: process.env.VITE_PROXY_TARGET || 'http://localhost:3002', changeOrigin: true },
       '/socket.io': { target: process.env.VITE_PROXY_TARGET || 'http://localhost:3002', ws: true },
+      '/uploads': { target: process.env.VITE_PROXY_TARGET || 'http://localhost:3002', changeOrigin: true },
     },
   },
   // Serving de PRODUCCIÓN del build estático (`vite preview`). Reusa el mismo proxy que

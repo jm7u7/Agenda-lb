@@ -131,11 +131,15 @@ interface ConsumirCitaParams {
 export async function consumirDeCita(params: ConsumirCitaParams) {
   const cita = await prisma.cita.findFirst({
     where: { id: params.citaId, deletedAt: null },
-    select: { id: true, pacienteId: true, servicioId: true, subcategoriaId: true, sedeId: true, estado: true, fecha: true, sesionNumero: true },
+    select: { id: true, pacienteId: true, servicioId: true, subcategoriaId: true, sedeId: true, estado: true, fecha: true, sesionNumero: true, sesionExonerada: true },
   });
   if (!cita) throw new AppError('Cita no encontrada', 404);
   if (!ESTADOS_CON_CONSUMO.includes(cita.estado)) {
     throw new AppError('Solo se consume sesión cuando el paciente llegó', 409, 'PACIENTE_NO_LLEGO');
+  }
+  // Cita marcada "no aplicar / no descontar" (ej. láser no aplicado): nunca consume.
+  if (cita.sesionExonerada) {
+    throw new AppError('Esta cita está marcada como sesión no aplicada; no descuenta. Quita esa marca si quieres descontar.', 409, 'SESION_EXONERADA');
   }
 
   return prisma.$transaction(async (tx) => {
@@ -213,10 +217,11 @@ export async function consumirDeCita(params: ConsumirCitaParams) {
 export async function sincronizarConsumoCita(citaId: string): Promise<'consumida' | 'devuelta' | 'sin_cambio'> {
   const cita = await prisma.cita.findUnique({
     where: { id: citaId },
-    select: { id: true, estado: true, fecha: true, paquetePacienteId: true, sesionConsumida: true, servicioId: true, subcategoriaId: true, sesionNumero: true },
+    select: { id: true, estado: true, fecha: true, paquetePacienteId: true, sesionConsumida: true, servicioId: true, subcategoriaId: true, sesionNumero: true, sesionExonerada: true },
   });
   if (!cita?.paquetePacienteId) return 'sin_cambio';
-  const debeConsumir = ESTADOS_CON_CONSUMO.includes(cita.estado);
+  // Exonerada = nunca consume: se comporta como si no debiera consumir (devuelve el vivo si lo hay).
+  const debeConsumir = ESTADOS_CON_CONSUMO.includes(cita.estado) && !cita.sesionExonerada;
   const consumoVivo = await prisma.consumoSesion.findFirst({ where: { citaId, deletedAt: null } });
 
   // Devolución: ya no está llegada/atendida pero hay consumo vivo.
@@ -243,7 +248,8 @@ export async function sincronizarConsumoCita(citaId: string): Promise<'consumida
 
   // Consumo automático al COMPLETAR una cita agendada contra paquete sin consumo
   // previo (flujo legacy sin diálogo). El diálogo de llegada es el camino normal.
-  if (cita.estado === 'completada' && !consumoVivo) {
+  // Nunca si la cita está exonerada ("no descontar").
+  if (cita.estado === 'completada' && !consumoVivo && !cita.sesionExonerada) {
     return prisma.$transaction<'consumida' | 'sin_cambio'>(async (tx) => {
       const pp = await tx.paquetePaciente.findUnique({ where: { id: cita.paquetePacienteId! }, select: { sesionesTotal: true, composicion: true } });
       if (!pp) return 'sin_cambio';
@@ -337,6 +343,79 @@ export async function consumoManual(params: ConsumoManualParams) {
     });
     return { consumo, numeroSesion, saldo, estado };
   });
+}
+
+/** En un combo (Profilaxis+Láser), la sesión la consume la mitad SECUNDARIO (el láser).
+ *  Devuelve el id de la cita que realmente descuenta: si `cita` es la PRINCIPAL de un combo,
+ *  su SECUNDARIO; si no, ella misma. Así "no descontar" funciona desde cualquier fila del combo. */
+async function resolverCitaSesion(
+  tx: Pick<Prisma.TransactionClient, 'cita'>,
+  cita: { id: string; slotGrupoId: string | null; slotRol: string | null },
+): Promise<string> {
+  if (cita.slotRol === 'PRINCIPAL' && cita.slotGrupoId) {
+    const sec = await tx.cita.findFirst({ where: { slotGrupoId: cita.slotGrupoId, slotRol: 'SECUNDARIO', deletedAt: null }, select: { id: true } });
+    if (sec) return sec.id;
+  }
+  return cita.id;
+}
+
+/**
+ * Exonerar sesión de una cita: "no aplicar / no descontar" (ej. láser no aplicado).
+ * Marca la cita (nunca volverá a consumir) y DEVUELVE la sesión al paquete si ya se había
+ * descontado. Semántica por-cita: en un combo Profilaxis+Láser se exonera solo la mitad
+ * de Láser; la profilaxis descuenta normal. Recepción y admin. Auditado.
+ */
+export async function exonerarSesion(citaId: string, motivo: string | undefined, usuarioId: string | undefined, usuarioNombre: string) {
+  return prisma.$transaction(async (tx) => {
+    const cita = await tx.cita.findFirst({ where: { id: citaId, deletedAt: null }, select: { id: true, slotGrupoId: true, slotRol: true } });
+    if (!cita) throw new AppError('Cita no encontrada', 404);
+
+    // Combo Profilaxis+Láser: la sesión la consume la mitad SECUNDARIO (el láser). Si exoneran
+    // desde la PRINCIPAL (profilaxis), redirigimos a la mitad de láser — así funciona desde
+    // cualquier fila del combo y la profilaxis nunca se toca.
+    const targetId = await resolverCitaSesion(tx, cita);
+
+    // Si esa cita ya había descontado, se devuelve la sesión al paquete.
+    const consumoVivo = await tx.consumoSesion.findFirst({ where: { citaId: targetId, deletedAt: null } });
+    let saldo: number | null = null;
+    let estado: string | null = null;
+    if (consumoVivo) {
+      await tx.consumoSesion.update({
+        where: { id: consumoVivo.id },
+        data: { deletedAt: new Date(), anuladoMotivo: motivo?.trim() || 'Sesión no aplicada (exonerada)' },
+      });
+      const r = await recalcularPaquete(tx, consumoVivo.paqueteId);
+      saldo = r.saldo; estado = r.estado;
+    }
+
+    await tx.cita.update({
+      where: { id: targetId },
+      data: { sesionExonerada: true, sesionExoneradaMotivo: motivo?.trim() || null, sesionConsumida: false },
+    });
+    await tx.auditLog.create({
+      data: {
+        usuarioId, citaId: targetId, accion: 'exonerar_sesion', entidad: 'cita', entidadId: targetId,
+        despues: { motivo: motivo?.trim() ?? null, devolvioConsumo: !!consumoVivo, saldo, por: usuarioNombre, desdeCombo: targetId !== citaId } as never,
+      },
+    });
+    return { exonerada: true, devolvioConsumo: !!consumoVivo, saldo, estado, citaId: targetId };
+  });
+}
+
+/** Quitar la exoneración ("permitir descontar de nuevo"). No re-descuenta solo: si la cita
+ *  aplica, el flujo normal (diálogo de llegada / completar) vuelve a descontar. Auditado. */
+export async function revertirExoneracion(citaId: string, usuarioId: string | undefined, usuarioNombre: string) {
+  const cita = await prisma.cita.findFirst({ where: { id: citaId, deletedAt: null }, select: { id: true, slotGrupoId: true, slotRol: true } });
+  if (!cita) throw new AppError('Cita no encontrada', 404);
+  // Mismo criterio que exonerar: en un combo, la mitad que descuenta es el SECUNDARIO (láser).
+  const targetId = await resolverCitaSesion(prisma, cita);
+  await prisma.cita.update({ where: { id: targetId }, data: { sesionExonerada: false, sesionExoneradaMotivo: null } });
+  await prisma.auditLog.create({
+    data: { usuarioId, citaId: targetId, accion: 'revertir_exoneracion_sesion', entidad: 'cita', entidadId: targetId, despues: { por: usuarioNombre } as never },
+  });
+  // Si la cita ya está completada + ligada a un paquete, el flujo automático vuelve a descontar.
+  const r = await sincronizarConsumoCita(targetId);
+  return { exonerada: false, reconsumo: r };
 }
 
 /** "Anular consumo" (admin, motivo obligatorio): jamás editando números. */

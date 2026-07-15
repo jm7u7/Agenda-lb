@@ -18,8 +18,13 @@ const app = express();
 // lo recortaría y la API respondería 404).
 const apiProxy = createProxyMiddleware({ target: API_TARGET, changeOrigin: true, pathFilter: (p) => p.startsWith('/api') });
 const wsProxy = createProxyMiddleware({ target: API_TARGET, changeOrigin: true, ws: true, pathFilter: (p) => p.startsWith('/socket.io') });
+// Comprobantes de pago (imágenes subidas): las sirve la API en :3002/uploads. Se proxyan
+// por same-origin para que el frontend use rutas RELATIVAS (/uploads/…) y funcione igual en
+// localhost y en la nube (sin URLs absolutas a :3002 que romperían fuera de la máquina).
+const uploadsProxy = createProxyMiddleware({ target: API_TARGET, changeOrigin: true, pathFilter: (p) => p.startsWith('/uploads') });
 app.use(apiProxy);
 app.use(wsProxy);
+app.use(uploadsProxy);
 
 // Archivos estáticos del build + fallback SPA (rutas de cliente → index.html).
 app.use(express.static(DIST));

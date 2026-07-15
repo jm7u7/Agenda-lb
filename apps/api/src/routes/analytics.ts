@@ -519,6 +519,72 @@ router.get('/tendencia', requireAuth, requireCoordinadora, async (req, res) => {
   });
 });
 
+// ─── Pacientes nuevos (captación) ──────────────────────────────────────────────
+// "Paciente nuevo" = paciente cuya PRIMERA visita cae en el período. La primera visita es
+// la mínima fecha entre (a) su historial Genexis y (b) sus citas reales. NO se usa creadoEn
+// porque todos los migrados se crearon el mismo día (05/07). Devuelve total + comparación al
+// período anterior + serie mensual + reparto por sede de la primera visita.
+router.get('/pacientes-nuevos', requireAuth, requireCoordinadora, async (req, res) => {
+  const params = rangoSchema.parse(req.query);
+  const prev = prevPeriod(params.desde, params.hasta);
+
+  // El historial guarda la sede como TEXTO; si se filtra por sede, resolvemos su nombre.
+  let sedeNombre: string | null = null;
+  if (params.sedeId) {
+    const s = await prisma.sede.findUnique({ where: { id: params.sedeId }, select: { nombre: true } });
+    sedeNombre = s?.nombre ?? '__sin_match__';
+  }
+  const sedeFilter = sedeNombre ? Prisma.sql`AND primera.sede = ${sedeNombre}` : Prisma.empty;
+
+  // CTE compartida: primera visita (fecha mínima) por paciente, con la sede de esa visita.
+  const cte = Prisma.sql`
+    WITH visitas AS (
+      SELECT h."pacienteId" AS pid, h."fechaCita" AS f, COALESCE(NULLIF(h.sede,''), '(sin sede)') AS sede
+        FROM historial_genexis h
+        WHERE h."pacienteId" IS NOT NULL AND h."fechaCita" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+      UNION ALL
+      SELECT c."pacienteId" AS pid, to_char(c.fecha, 'YYYY-MM-DD') AS f, s.nombre AS sede
+        FROM citas c JOIN sedes s ON s.id = c."sedeId"
+        WHERE c."deletedAt" IS NULL AND c.estado NOT IN ('cancelada', 'reprogramada', 'no_show')
+    ),
+    primera AS (
+      SELECT DISTINCT ON (pid) pid, f AS primera_fecha, sede
+        FROM visitas ORDER BY pid, f ASC
+    )`;
+
+  // Serie mensual + totales del período actual y del anterior en una sola pasada.
+  const meses = await prisma.$queryRaw<{ mes: string; curr: number; prev: number }[]>(Prisma.sql`
+    ${cte}
+    SELECT substring(primera.primera_fecha, 1, 7) AS mes,
+      SUM(CASE WHEN primera.primera_fecha >= ${params.desde} AND primera.primera_fecha <= ${params.hasta} THEN 1 ELSE 0 END)::int AS curr,
+      SUM(CASE WHEN primera.primera_fecha >= ${prev.desde} AND primera.primera_fecha <= ${prev.hasta} THEN 1 ELSE 0 END)::int AS prev
+    FROM primera
+    WHERE primera.primera_fecha >= ${prev.desde} AND primera.primera_fecha <= ${params.hasta} ${sedeFilter}
+    GROUP BY 1 ORDER BY 1
+  `);
+
+  const porSede = await prisma.$queryRaw<{ sede: string; n: number }[]>(Prisma.sql`
+    ${cte}
+    SELECT primera.sede AS sede, COUNT(*)::int AS n
+    FROM primera
+    WHERE primera.primera_fecha >= ${params.desde} AND primera.primera_fecha <= ${params.hasta} ${sedeFilter}
+    GROUP BY 1 ORDER BY 2 DESC LIMIT 12
+  `);
+
+  const total = meses.reduce((s, m) => s + m.curr, 0);
+  const prevTotal = meses.reduce((s, m) => s + m.prev, 0);
+
+  res.json({
+    periodo: { desde: params.desde, hasta: params.hasta },
+    prevPeriodo: { desde: prev.desde, hasta: prev.hasta },
+    total,
+    prevTotal,
+    variacion: prevTotal > 0 ? Math.round((total - prevTotal) / prevTotal * 1000) / 10 : null,
+    puntos: meses.filter(m => m.curr > 0).map(m => ({ mes: m.mes, nuevos: m.curr })),
+    porSede: porSede.map(s => ({ sede: s.sede, nuevos: s.n })),
+  });
+});
+
 // ─── No-shows y cancelaciones ─────────────────────────────────────────────────
 router.get('/noshow', requireAuth, requireCoordinadora, async (req, res) => {
   const params = rangoSchema.parse(req.query);

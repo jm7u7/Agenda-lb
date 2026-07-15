@@ -672,6 +672,12 @@ model Cita {
   // descuento/reembolso: una cita consume a lo sumo 1 sesión, sin importar
   // cuántas veces se cambie su estado.
   sesionConsumida         Boolean           @default(false)
+  // "No aplicar / no descontar la sesión" (ej. el médico decide no aplicar el láser).
+  // Si es true, esta cita NUNCA consume su sesión (y devuelve el consumo si ya existía),
+  // aunque el paciente haya llegado/se complete. Semántica por-cita → en un combo
+  // Profilaxis+Láser solo se exonera la mitad de Láser; la profilaxis descuenta normal.
+  sesionExonerada         Boolean           @default(false)
+  sesionExoneradaMotivo   String?
   motivoCancelacion       String?
   consultorioNumero       Int?
   citaOriginalId          String?           @db.Uuid // si esta cita es reprogramación de otra
