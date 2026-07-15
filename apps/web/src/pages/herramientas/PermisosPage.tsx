@@ -35,6 +35,11 @@ export function PermisosPage() {
   // Vacaciones: rango de fechas (día completo por cada día del rango).
   const [vacInicio, setVacInicio] = useState<string>(hoyISO());
   const [vacFin, setVacFin] = useState<string>(hoyISO());
+  // Edición inline de una vacación del resumen (guarda ids del grupo + campos editables).
+  const [editVac, setEditVac] = useState<{ ids: string[]; sedeId: string } | null>(null);
+  const [editIni, setEditIni] = useState('');
+  const [editFin, setEditFin] = useState('');
+  const [editMotivo, setEditMotivo] = useState('');
   // Modo del formulario: bloqueo individual, reunión de Daniel y Yasica (ambas agendas),
   // reportar enfermedad (cancela el día del profesional + lo bloquea en un solo paso),
   // o vacaciones (bloqueo de día completo por un rango de fechas, sin cancelar citas).
@@ -154,6 +159,29 @@ export function PermisosPage() {
       qc.invalidateQueries({ queryKey: ['permisos-agenda'] });
       toast.success('Permiso eliminado');
     },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // ── Resumen de vacaciones vigentes (todas, agrupadas por rango) + editar/eliminar ──
+  const vacacionesVigentes = useQuery({
+    queryKey: ['vacaciones-vigentes'],
+    queryFn: () => permisosApi.listarVacaciones(),
+    enabled: puedeGestionar,
+  });
+  const invalidarVacaciones = () => {
+    qc.invalidateQueries({ queryKey: ['vacaciones-vigentes'] });
+    qc.invalidateQueries({ queryKey: ['permisos'] });
+    qc.invalidateQueries({ queryKey: ['permisos-agenda'] });
+    qc.invalidateQueries({ queryKey: ['disponibilidad'] });
+  };
+  const eliminarVacMut = useMutation({
+    mutationFn: (ids: string[]) => permisosApi.eliminarVacacion(ids),
+    onSuccess: (r) => { invalidarVacaciones(); toast.success(`🌴 Vacación eliminada (${r.eliminados} día(s))`); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const editarVacMut = useMutation({
+    mutationFn: (data: { ids: string[]; sedeId: string; fechaInicio: string; fechaFin: string; motivo: string }) => permisosApi.editarVacacion(data),
+    onSuccess: (r) => { setEditVac(null); invalidarVacaciones(); toast.success(`🌴 Vacación actualizada · ${r.dias} día(s)`); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -495,6 +523,75 @@ export function PermisosPage() {
             </div>
           )}
         </div>
+
+        {/* Resumen de VACACIONES vigentes (todas, por rango) — con editar/eliminar completo.
+            Solo en la pestaña Vacaciones para no saturar las demás. */}
+        {modo === 'vacaciones' && (
+          <div className="space-y-2 mb-6">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">🌴 Vacaciones vigentes</p>
+            {vacacionesVigentes.isLoading ? (
+              <div className="flex justify-center py-6"><div className="w-6 h-6 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" /></div>
+            ) : (vacacionesVigentes.data ?? []).length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-6">No hay vacaciones registradas.</p>
+            ) : (
+              (vacacionesVigentes.data ?? []).map((v) => {
+                const editando = editVac?.ids[0] === v.ids[0];
+                const iniciales = `${v.profesional.nombres[0] ?? ''}${v.profesional.apellidos[0] ?? ''}`.toUpperCase();
+                return (
+                  <div key={v.ids[0]} className="rounded-xl border border-teal-200 bg-teal-50/50 p-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: v.profesional.colorAvatar ?? '#0e9c88' }}>{iniciales}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {v.profesional.nombres.split(' ')[0]} {v.profesional.apellidos.split(' ')[0]}
+                          <span className="font-normal text-slate-400"> · {v.sede?.nombre ?? '—'}</span>
+                        </p>
+                        <p className="text-xs text-teal-700 font-medium mt-0.5">
+                          🌴 {format(parseISO(v.fechaInicio), 'd MMM', { locale: es })} – {format(parseISO(v.fechaFin), 'd MMM yyyy', { locale: es })} · {v.dias} día{v.dias !== 1 ? 's' : ''}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">{v.motivo}</p>
+                      </div>
+                      {!editando && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => { setEditVac({ ids: v.ids, sedeId: v.sedeId ?? '' }); setEditIni(v.fechaInicio); setEditFin(v.fechaFin); setEditMotivo(v.motivo); }}
+                            className="px-2.5 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-100 rounded-lg transition-colors"
+                          >Editar</button>
+                          <button
+                            onClick={() => { if (window.confirm(`¿Eliminar las vacaciones de ${v.profesional.nombres.split(' ')[0]} (${v.dias} día(s), del ${format(parseISO(v.fechaInicio), 'd MMM', { locale: es })} al ${format(parseISO(v.fechaFin), 'd MMM', { locale: es })})?`)) eliminarVacMut.mutate(v.ids); }}
+                            disabled={eliminarVacMut.isPending}
+                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                            title="Eliminar vacación completa"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {editando && (
+                      <div className="mt-3 pt-3 border-t border-teal-200 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div><label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Desde</label><input type="date" value={editIni} onChange={e => setEditIni(e.target.value)} className="input w-full text-sm" /></div>
+                          <div><label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Hasta</label><input type="date" value={editFin} min={editIni} onChange={e => setEditFin(e.target.value)} className="input w-full text-sm" /></div>
+                        </div>
+                        <input type="text" value={editMotivo} onChange={e => setEditMotivo(e.target.value)} placeholder="Motivo" className="input w-full text-sm" />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => editarVacMut.mutate({ ids: v.ids, sedeId: v.sedeId ?? '', fechaInicio: editIni, fechaFin: editFin, motivo: editMotivo.trim() || 'Vacaciones' })}
+                            disabled={editarVacMut.isPending || !editIni || !editFin || editFin < editIni || !v.sedeId}
+                            className="flex-1 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold py-2 rounded-lg disabled:opacity-50 transition-colors"
+                          >{editarVacMut.isPending ? 'Guardando…' : 'Guardar cambios'}</button>
+                          <button onClick={() => setEditVac(null)} className="px-4 text-sm font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                        </div>
+                        <p className="text-[11px] text-slate-400">Al cambiar el rango se recrean los días. Si hay citas en el nuevo rango, se rechaza.</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
 
         {/* Lista de permisos del día */}
         <div className="space-y-2">

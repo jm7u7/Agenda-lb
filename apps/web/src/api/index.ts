@@ -442,8 +442,8 @@ export const asignacionesApi = {
     api.get<{ id: string; profesional: Profesional; sede: Sede; fechaInicio: string; fechaFin: string | null; activa: boolean }[]>(
       '/asignaciones', params as Record<string, string>
     ),
-  crear: (data: { profesionalId: string; sedeId: string; fechaInicio: string; fechaFin?: string }) =>
-    api.post('/asignaciones', data),
+  // `crear` se eliminó: la creación directa por /asignaciones era una vía sin trazabilidad
+  // que dejaba a la profesional sin sede. Usa movimientosApi.crear (POST /movimientos).
 };
 
 // ─── Paquetes ─────────────────────────────────────────────────────────────────

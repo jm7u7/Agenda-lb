@@ -524,6 +524,145 @@ router.post('/vacaciones', requireAuth, requireRol('admin', 'coordinadora_sedes'
   });
 });
 
+// Construye las filas de bloqueo (una por día) para un rango de vacaciones de UN profesional.
+function filasVacaciones(profesionalId: string, sedeId: string, dias: string[], motivo: string, creadoPor?: string) {
+  return dias.map(dia => ({
+    profesionalId,
+    sedeId,
+    tipo: 'PERMISO' as const,
+    esRecurrente: false,
+    esVacaciones: true,
+    fechaInicio: new Date(`${dia}T${VAC_DIA_INICIO}:00`),
+    fechaFin: new Date(`${dia}T${VAC_DIA_FIN}:00`),
+    horaInicio: VAC_DIA_INICIO,
+    horaFin: VAC_DIA_FIN,
+    motivo,
+    creadoPor,
+  }));
+}
+
+// ─── GET /permisos/vacaciones — RESUMEN de todas las vacaciones (agrupadas por rango) ──
+// A diferencia de GET /permisos (un día + una sede), esto agrupa las filas por-día en
+// RANGOS contiguos por (profesional, sede, motivo) para ver/editar vacaciones completas.
+router.get('/vacaciones', requireAuth, async (req, res) => {
+  const { sedeId, profesionalId } = req.query as { sedeId?: string; profesionalId?: string };
+  const rows = await prisma.bloqueoAgenda.findMany({
+    where: {
+      tipo: 'PERMISO', esVacaciones: true, deletedAt: null,
+      ...(sedeId ? { sedeId } : {}),
+      ...(profesionalId ? { profesionalId } : {}),
+    },
+    include: {
+      profesional: { select: { id: true, nombres: true, apellidos: true, tipo: true, colorAvatar: true } },
+      sede: { select: { id: true, nombre: true, color: true } },
+    },
+    orderBy: [{ profesionalId: 'asc' }, { sedeId: 'asc' }, { motivo: 'asc' }, { fechaInicio: 'asc' }],
+  });
+
+  type Row = (typeof rows)[number];
+  interface Grupo {
+    profesionalId: string; profesional: Row['profesional'];
+    sedeId: string | null; sede: Row['sede'];
+    motivo: string; fechaInicio: string; fechaFin: string; dias: number; ids: string[];
+  }
+  const dayStr = (d: Date) => d.toISOString().slice(0, 10);
+  const nextDay = (s: string) => { const d = new Date(`${s}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+
+  const grupos: Grupo[] = [];
+  let cur: Grupo | null = null;
+  for (const r of rows) {
+    const dia = dayStr(r.fechaInicio);
+    if (cur && cur.profesionalId === r.profesionalId && cur.sedeId === r.sedeId && cur.motivo === r.motivo && nextDay(cur.fechaFin) === dia) {
+      cur.fechaFin = dia; cur.dias += 1; cur.ids.push(r.id);
+    } else {
+      cur = { profesionalId: r.profesionalId, profesional: r.profesional, sedeId: r.sedeId, sede: r.sede, motivo: r.motivo, fechaInicio: dia, fechaFin: dia, dias: 1, ids: [r.id] };
+      grupos.push(cur);
+    }
+  }
+  grupos.sort((a, b) => a.fechaInicio.localeCompare(b.fechaInicio) || a.profesional.nombres.localeCompare(b.profesional.nombres));
+  res.json(grupos);
+});
+
+// ─── POST /permisos/vacaciones/eliminar — borra una VACACIÓN COMPLETA (todas sus filas) ──
+router.post('/vacaciones/eliminar', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
+  const { ids } = z.object({ ids: z.array(z.string().uuid()).min(1).max(400) }).parse(req.body);
+  const rows = await prisma.bloqueoAgenda.findMany({
+    where: { id: { in: ids }, tipo: 'PERMISO', esVacaciones: true, deletedAt: null },
+  });
+  if (rows.length === 0) throw new AppError('No se encontraron vacaciones para eliminar', 404);
+
+  await prisma.bloqueoAgenda.updateMany({ where: { id: { in: rows.map(r => r.id) } }, data: { deletedAt: new Date() } });
+
+  const sedeDias = new Set<string>();
+  for (const r of rows) if (r.sedeId) sedeDias.add(`${r.sedeId}|${r.fechaInicio.toISOString().slice(0, 10)}`);
+  for (const sd of sedeDias) { const [s, d] = sd.split('|'); await invalidateDisponibilidadCache(s!, d!); }
+
+  await prisma.auditLog.create({
+    data: {
+      usuarioId: req.user?.userId, accion: 'VACACIONES_ELIMINADAS', entidad: 'bloqueo_agenda', entidadId: rows[0]!.id,
+      antes: { profesionalId: rows[0]!.profesionalId, dias: rows.length }, despues: { deletedAt: new Date().toISOString() },
+      sedeId: rows[0]!.sedeId ?? undefined, ip: req.ip,
+    },
+  });
+  res.json({ ok: true, eliminados: rows.length });
+});
+
+// ─── PATCH /permisos/vacaciones — EDITA el rango de una vacación (borra viejo + crea nuevo) ──
+// Atómico: soft-delete de las filas viejas + createMany del nuevo rango, tras validar citas.
+router.patch('/vacaciones', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
+  const data = z.object({
+    ids: z.array(z.string().uuid()).min(1).max(400),
+    sedeId: z.string().uuid(),
+    fechaInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    fechaFin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    motivo: z.string().min(3).max(200),
+  }).parse(req.body);
+  if (data.fechaFin < data.fechaInicio) throw new AppError('La fecha de fin no puede ser anterior a la de inicio', 400);
+
+  const viejos = await prisma.bloqueoAgenda.findMany({
+    where: { id: { in: data.ids }, tipo: 'PERMISO', esVacaciones: true, deletedAt: null },
+  });
+  if (viejos.length === 0) throw new AppError('No se encontró la vacación a editar', 404);
+  const profIds = [...new Set(viejos.map(v => v.profesionalId))];
+  if (profIds.length !== 1) throw new AppError('La edición aplica a la vacación de un solo profesional', 400);
+  const profesionalId = profIds[0]!;
+
+  const { dias, reporte, totalConflictos } = await analizarVacaciones([profesionalId], data.sedeId, data.fechaInicio, data.fechaFin);
+  if (dias.length > 92) throw new AppError('El rango de vacaciones no puede superar 92 días', 400);
+  if (reporte.length === 0) throw new AppError('El profesional no es válido para vacaciones', 400, 'SIN_PROFESIONALES_VALIDOS');
+  if (totalConflictos > 0) {
+    const citasPlanas = reporte.flatMap(r => r.conflictos.map(c => ({ ...c, profesional: r.nombre })));
+    const muestra = reporte.filter(r => r.conflictos.length > 0).map(r => `${r.nombre} (${r.conflictos.length})`).join(' · ');
+    res.status(409).json({
+      error: 'CITAS_EN_RANGO',
+      message: `No se puede editar: hay ${totalConflictos} cita(s) en el nuevo rango (${muestra}). Reprograma o cancela esas citas antes.`,
+      statusCode: 409, conflictos: reporte.filter(r => r.conflictos.length > 0), citas: citasPlanas,
+    });
+    return;
+  }
+
+  const filas = filasVacaciones(profesionalId, data.sedeId, dias, data.motivo, req.user?.userId);
+  const creados = await prisma.$transaction(async (tx) => {
+    await tx.bloqueoAgenda.updateMany({ where: { id: { in: viejos.map(v => v.id) } }, data: { deletedAt: new Date() } });
+    const r = await tx.bloqueoAgenda.createMany({ data: filas });
+    return r.count;
+  });
+
+  const sedeDias = new Set<string>();
+  for (const v of viejos) if (v.sedeId) sedeDias.add(`${v.sedeId}|${v.fechaInicio.toISOString().slice(0, 10)}`);
+  for (const dia of dias) sedeDias.add(`${data.sedeId}|${dia}`);
+  for (const sd of sedeDias) { const [s, d] = sd.split('|'); await invalidateDisponibilidadCache(s!, d!); }
+
+  await prisma.auditLog.create({
+    data: {
+      usuarioId: req.user?.userId, accion: 'VACACIONES_EDITADAS', entidad: 'bloqueo_agenda', entidadId: viejos[0]!.id,
+      antes: { profesionalId, filasViejas: viejos.length }, despues: { fechaInicio: data.fechaInicio, fechaFin: data.fechaFin, dias: dias.length, motivo: data.motivo },
+      sedeId: data.sedeId, ip: req.ip,
+    },
+  });
+  res.json({ ok: true, creados, dias: dias.length });
+});
+
 // ─── DELETE /permisos/:id ─────────────────────────────────────────────────────
 router.delete('/:id', requireAuth, requireRol('admin', 'coordinadora_sedes'), async (req, res) => {
   const b = await prisma.bloqueoAgenda.findUnique({ where: { id: req.params.id } });

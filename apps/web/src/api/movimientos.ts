@@ -41,6 +41,8 @@ export interface PreviewMovimiento {
   nuevaAsignacion: { sedeNombre: string; fechaInicio: string; fechaFin: string | null };
   proximaAsignacion: { sedeNombre: string; fechaInicio: string } | null;
   conflicto: { mensaje: string } | null;
+  // El movimiento pisa días de vacaciones del profesional → bloquea el guardado.
+  vacaciones: { desde: string; hasta: string; dias: number; mensaje: string } | null;
   descripcion: string;
 }
 

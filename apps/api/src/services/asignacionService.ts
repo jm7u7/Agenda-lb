@@ -43,11 +43,48 @@ export function esProfesionalFijo(nombres: string): boolean {
   return nombres.trim().toLowerCase() === 'adicional';
 }
 
+// ─── Coordinación Movimientos ↔ Vacaciones (que las tablas "se hablen") ──────────
+// Las vacaciones viven en `bloqueos_agenda` (esVacaciones=true, un bloqueo de día
+// completo por día). Un movimiento NO puede pisar días de vacación del profesional:
+// si el rango del movimiento solapa CUALQUIER día de vacación, se rechaza. Así
+// Movimientos deja de poder sacar a alguien de su vacación (o "cerrarla") en silencio.
+export async function vacacionesEnRango(
+  db: Pick<Prisma.TransactionClient, 'bloqueoAgenda'>,
+  profesionalId: string,
+  ini: Date,
+  fin: Date | null,
+): Promise<{ desde: Date; hasta: Date; dias: number } | null> {
+  const diaUtc = (d: Date, h: number, m: number, s: number) =>
+    new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m, s));
+  const rangeStart = diaUtc(ini, 0, 0, 0);
+  // Movimiento sin fecha de fin (abierto): se revisa una ventana de 1 año hacia adelante.
+  const finBound = fin ?? addDays(ini, 365);
+  const rangeEnd = diaUtc(finBound, 23, 59, 59);
+  const rows = await db.bloqueoAgenda.findMany({
+    where: {
+      profesionalId,
+      esVacaciones: true,
+      deletedAt: null,
+      fechaInicio: { gte: rangeStart, lte: rangeEnd },
+    },
+    orderBy: { fechaInicio: 'asc' },
+    select: { fechaInicio: true },
+  });
+  if (rows.length === 0) return null;
+  return { desde: rows[0]!.fechaInicio, hasta: rows[rows.length - 1]!.fechaInicio, dias: rows.length };
+}
+
 // Núcleo de la creación, COMPONIBLE dentro de una transacción externa (lo usan
 // crearMovimiento y la edición estructural de PUT /movimientos/:id, que recrea).
 export async function crearMovimientoEnTx(tx: Prisma.TransactionClient, data: CrearMovimientoInput) {
+  // Las vacaciones NO se registran por Movimientos: van a Permisos → Vacaciones
+  // (tabla bloqueos_agenda). Bloqueamos el motivo para que las dos tablas no se pisen.
+  if (data.motivo === 'VACACIONES') {
+    throw new AppError('Las vacaciones se registran en Permisos → Vacaciones, no en Movimientos.', 400, 'MOTIVO_VACACIONES_NO_PERMITIDO');
+  }
+
   // Guard: los "Adicional" son fijos de su sede y no pueden moverse.
-  const prof = await tx.profesional.findUnique({ where: { id: data.profesionalId }, select: { nombres: true } });
+  const prof = await tx.profesional.findUnique({ where: { id: data.profesionalId }, select: { nombres: true, apellidos: true } });
   if (prof && esProfesionalFijo(prof.nombres)) {
     throw new AppError('Los profesionales "Adicional" son fijos de su sede y no pueden moverse.', 400, 'PROFESIONAL_FIJO');
   }
@@ -79,6 +116,18 @@ export async function crearMovimientoEnTx(tx: Prisma.TransactionClient, data: Cr
       },
     });
     if (totalCitas > 0) throw new CitasPendientesError(totalCitas, asignacionOrigen?.sedeId ?? data.sedeId);
+
+    // ── 0-bis. Coordinación con VACACIONES: un movimiento no puede pisar días de
+    //          vacación del profesional (las tablas se hablan). ──────────────────
+    const vac = await vacacionesEnRango(tx, data.profesionalId, nuevaFechaInicio, nuevaFechaFin);
+    if (vac) {
+      const nom = prof ? `${prof.nombres.split(' ')[0]} ${prof.apellidos.split(' ')[0]}` : 'la profesional';
+      throw new AppError(
+        `No se puede mover a ${nom}: tiene vacaciones del ${fechaLabel(vac.desde)} al ${fechaLabel(vac.hasta)}. Ajusta el rango del movimiento o elimina/edita las vacaciones primero.`,
+        409,
+        'VACACIONES_EN_PERIODO',
+      );
+    }
 
     // ── 1. Encontrar y cerrar la asignación vigente ─────────────────────────
     const actual = await tx.asignacionSede.findFirst({
@@ -378,6 +427,9 @@ export async function previewMovimiento(params: {
 
   const nombre = `${profesional.nombres.split(' ')[0]} ${profesional.apellidos.split(' ')[0]}`;
 
+  // Coordinación con vacaciones: avisar (y bloquear el guardado) si el rango pisa vacación.
+  const vac = await vacacionesEnRango(prisma, params.profesionalId, nuevaFechaInicio, nuevaFechaFin);
+
   // Detectar conflicto sin cerrar nada
   const conflicto = await prisma.asignacionSede.findFirst({
     where: {
@@ -431,6 +483,10 @@ export async function previewMovimiento(params: {
       : null,
     conflicto: conflicto
       ? { mensaje: `Conflicto con asignación existente en ${conflicto.sede.nombre} (${fechaLabel(conflicto.fechaInicio)} – ${conflicto.fechaFin ? fechaLabel(conflicto.fechaFin) : 'indefinido'})` }
+      : null,
+    vacaciones: vac
+      ? { desde: fechaLabel(vac.desde), hasta: fechaLabel(vac.hasta), dias: vac.dias,
+          mensaje: `${nombre} tiene vacaciones del ${fechaLabel(vac.desde)} al ${fechaLabel(vac.hasta)} — el movimiento no puede pisar esos días.` }
       : null,
     descripcion,
   };

@@ -36,7 +36,29 @@ export const permisosApi = {
     api.post<VacacionesPreview>('/permisos/vacaciones/preview', data),
   crearVacaciones: (data: { profesionalIds: string[]; sedeId: string; fechaInicio: string; fechaFin: string; motivo: string }) =>
     api.post<{ ok: boolean; creados: number; dias: number; profesionales: string[]; invalidos: { profesionalId: string; motivo: string }[] }>('/permisos/vacaciones', data),
+  // Resumen de TODAS las vacaciones vigentes, agrupadas por rango (no por día).
+  listarVacaciones: (params?: { sedeId?: string; profesionalId?: string }) =>
+    api.get<VacacionGrupo[]>('/permisos/vacaciones', params as Record<string, string> | undefined),
+  // Elimina una vacación COMPLETA (todas sus filas de una vez).
+  eliminarVacacion: (ids: string[]) =>
+    api.post<{ ok: boolean; eliminados: number }>('/permisos/vacaciones/eliminar', { ids }),
+  // Edita el rango/motivo de una vacación (borra las filas viejas y crea el nuevo rango).
+  editarVacacion: (data: { ids: string[]; sedeId: string; fechaInicio: string; fechaFin: string; motivo: string }) =>
+    api.patch<{ ok: boolean; creados: number; dias: number }>('/permisos/vacaciones', data),
 };
+
+// Una vacación vigente agrupada como rango (lo que devuelve GET /permisos/vacaciones).
+export interface VacacionGrupo {
+  profesionalId: string;
+  profesional: { id: string; nombres: string; apellidos: string; tipo: string; colorAvatar: string | null };
+  sedeId: string | null;
+  sede: { id: string; nombre: string; color: string | null } | null;
+  motivo: string;
+  fechaInicio: string; // YYYY-MM-DD
+  fechaFin: string;    // YYYY-MM-DD
+  dias: number;
+  ids: string[];
+}
 
 export interface VacacionesConflictoCita { fecha: string; horaInicio: string; paciente: string; telefono: string; servicio: string; estado: string }
 export interface VacacionesProfReporte { profesionalId: string; nombre: string; bloqueable: boolean; conflictos: VacacionesConflictoCita[] }

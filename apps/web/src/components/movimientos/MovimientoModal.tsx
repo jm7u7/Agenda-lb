@@ -14,7 +14,10 @@ interface Props {
   prefillSedeId?: string;
 }
 
-const MOTIVOS = Object.entries(MOTIVO_LABELS) as [MotivoMovimiento, string][];
+// "Vacaciones" NO es un motivo de movimiento: se registra en Permisos → Vacaciones
+// (tabla de bloqueos). Se excluye del selector; el backend además rechaza motivo=VACACIONES.
+const MOTIVOS = (Object.entries(MOTIVO_LABELS) as [MotivoMovimiento, string][])
+  .filter(([m]) => m !== 'VACACIONES');
 
 const ESTADO_BADGE: Record<string, string> = {
   agendada:    'bg-slate-100 text-slate-600',
@@ -404,8 +407,9 @@ export function MovimientoModal({ onClose, movimientoEditar, prefillSedeId }: Pr
   });
 
   const hayConflicto = !esEdicion && !!preview?.conflicto;
+  const hayVacaciones = !esEdicion && !!preview?.vacaciones; // el movimiento pisa vacaciones → bloquea
   const bloqueadoPorCitas = !esEdicion && (verificacion?.bloqueado ?? false);
-  const puedeGuardar = profesionalId && sedeId && fechaInicio && motivo && !hayConflicto && !bloqueadoPorCitas;
+  const puedeGuardar = profesionalId && sedeId && fechaInicio && motivo && !hayConflicto && !hayVacaciones && !bloqueadoPorCitas;
   const isPending = crearMutation.isPending || editarMutation.isPending;
 
   return (
@@ -575,13 +579,20 @@ export function MovimientoModal({ onClose, movimientoEditar, prefillSedeId }: Pr
               <div className={cn(
                 'rounded-xl border p-3.5 text-sm transition-all',
                 previewLoading ? 'border-slate-200 bg-slate-50' :
-                (preview?.conflicto || bloqueadoPorCitas) ? 'border-red-200 bg-red-50' :
+                (preview?.conflicto || preview?.vacaciones || bloqueadoPorCitas) ? 'border-red-200 bg-red-50' :
                 (preview && verificacion) ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50',
               )}>
                 {previewLoading ? (
                   <div className="flex items-center gap-2 text-slate-500">
                     <span className="w-3.5 h-3.5 border-2 border-slate-400/40 border-t-slate-500 rounded-full animate-spin shrink-0" />
                     Calculando impacto…
+                  </div>
+                ) : preview?.vacaciones ? (
+                  <div className="space-y-1">
+                    <p className="font-semibold text-red-700 text-xs flex items-center gap-1.5">
+                      <span>🌴</span> Tiene vacaciones en ese período
+                    </p>
+                    <p className="text-red-600 text-xs leading-relaxed">{preview.vacaciones.mensaje}</p>
                   </div>
                 ) : preview?.conflicto ? (
                   <div className="space-y-1">
