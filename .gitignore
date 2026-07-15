@@ -31,8 +31,9 @@ apps/api/uploads/
 .claude/settings.local.json
 .vscode/
 
-# ─── Herramientas locales de Claude Code / skills (no van al repo) ────
-.claude/
+# ─── Herramientas locales de Claude Code ────
+# .claude/ SÍ va al repo (launch.json, skills), PERO settings.local.json NO
+# (contiene credenciales en texto plano) — excluido arriba (línea 31).
 .agents/
 skills-lock.json
 sync-nightly.log
